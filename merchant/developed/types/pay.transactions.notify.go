@@ -1,10 +1,15 @@
 package types
 
 import (
+	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rsa"
+	"crypto/sha256"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"time"
 )
@@ -69,91 +74,83 @@ type Notify struct {
 	Resource *Resource `json:"resource"`
 }
 
-// 常量定义
-const (
-	EventTypeTransactionSuccess = "TRANSACTION.SUCCESS" // 支付成功
-	EventTypeRefundSuccess      = "REFUND.SUCCESS"      // 退款成功
-)
+// VerifySignature 验证签名
+// timestamp: 时间戳
+// nonce: 随机串
+// body: 请求体
+// signature: 签名
+func (n *Notify) VerifySignature(timestamp, nonce, signature, body, publicKey string) bool {
+	// 构造验签串
+	message := fmt.Sprintf("%s\n%s\n%s\n", timestamp, nonce, body)
 
-// DecryptResource 解密回调通知资源数据
+	// 解析公钥
+	block, _ := pem.Decode([]byte(publicKey))
+	if block == nil {
+		return false
+	}
+
+	pubKey, err := x509.ParsePKIXPublicKey(block.Bytes)
+	if err != nil {
+		return false
+	}
+
+	rsaPublicKey, ok := pubKey.(*rsa.PublicKey)
+	if !ok {
+		return false
+	}
+
+	// Base64解码签名
+	signatureBytes, err := base64.StdEncoding.DecodeString(signature)
+	if err != nil {
+		return false
+	}
+
+	// 计算消息摘要
+	hashed := sha256.Sum256([]byte(message))
+
+	// 验证签名
+	err = rsa.VerifyPKCS1v15(rsaPublicKey, crypto.SHA256, hashed[:], signatureBytes)
+	return err == nil
+}
+
+// DecryptResource 解密数据
 func (n *Notify) DecryptResource(apiV3Key string) (*Transaction, error) {
-	if n.Resource == nil {
-		return nil, fmt.Errorf("resource is nil")
-	}
-
-	// Base64解码密文
-	ciphertext, err := base64.StdEncoding.DecodeString(n.Resource.Ciphertext)
+	dataBytes, err := n.DecryptAES256GCM(apiV3Key)
 	if err != nil {
-		return nil, fmt.Errorf("base64 decode ciphertext failed: %v", err)
+		return nil, err
 	}
-
-	// Base64解码随机串
-	nonce, err := base64.StdEncoding.DecodeString(n.Resource.Nonce)
-	if err != nil {
-		return nil, fmt.Errorf("base64 decode nonce failed: %v", err)
-	}
-
-	// 解密数据
-	plaintext, err := decryptAESGCM([]byte(apiV3Key), nonce, ciphertext, []byte(n.Resource.AssociatedData))
-	if err != nil {
-		return nil, fmt.Errorf("decrypt failed: %v", err)
-	}
-
-	// 解析JSON
 	var transaction Transaction
-	if err := json.Unmarshal(plaintext, &transaction); err != nil {
-		return nil, fmt.Errorf("unmarshal transaction failed: %v", err)
+	err = json.Unmarshal(dataBytes, &transaction)
+	if err != nil {
+		return nil, err
 	}
-
 	return &transaction, nil
 }
 
-// decryptAESGCM AES-GCM解密
-func decryptAESGCM(key, nonce, ciphertext, additionalData []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+// DecryptAES256GCM 使用 AEAD_AES_256_GCM 算法进行解密 - 官方实现
+// 你可以使用此算法完成微信支付平台证书和回调报文解密，详见：
+// https://wechatpay-api.gitbook.io/wechatpay-api-v3/qian-ming-zhi-nan-1/zheng-shu-he-hui-tiao-bao-wen-jie-mi
+func (n *Notify) DecryptAES256GCM(aesKey string) (plaintext []byte, err error) {
+	decodedCiphertext, err := base64.StdEncoding.DecodeString(n.Resource.Ciphertext)
 	if err != nil {
 		return nil, err
 	}
-
-	aesGCM, err := cipher.NewGCM(block)
+	c, err := aes.NewCipher([]byte(aesKey))
 	if err != nil {
 		return nil, err
 	}
-
-	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, additionalData)
+	gcm, err := cipher.NewGCM(c)
 	if err != nil {
 		return nil, err
 	}
-
-	return plaintext, nil
+	dataBytes, err := gcm.Open(nil, []byte(n.Resource.Nonce), decodedCiphertext, []byte(n.Resource.AssociatedData))
+	if err != nil {
+		return nil, err
+	}
+	return dataBytes, nil
 }
 
 // IsPaymentSuccess 判断是否支付成功
 func (n *Notify) IsPaymentSuccess() bool {
-	return n.EventType == EventTypeTransactionSuccess
-}
-
-// IsRefundSuccess 判断是否退款成功
-func (n *Notify) IsRefundSuccess() bool {
-	return n.EventType == EventTypeRefundSuccess
-}
-
-// GetTransactionInfo 获取交易信息（需要先解密）
-func (t *Transaction) GetTransactionInfo() map[string]interface{} {
-	return map[string]interface{}{
-		"transaction_id":   t.TransactionId,
-		"out_trade_no":     t.OutTradeNo,
-		"trade_state":      t.TradeState,
-		"trade_state_desc": t.TradeStateDesc,
-		"trade_type":       t.TradeType,
-		"success_time":     t.SuccessTime,
-		"total_amount":     t.Amount.Total,
-		"payer_openid":     t.Payer.Openid,
-		"attach":           t.Attach,
-	}
-}
-
-// IsTradeSuccess 判断交易是否成功
-func (t *Transaction) IsTradeSuccess() bool {
-	return t.TradeState == TradeStateSUCCESS
+	return n.EventType == "TRANSACTION.SUCCESS"
 }
