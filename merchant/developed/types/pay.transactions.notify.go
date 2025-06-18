@@ -1,6 +1,13 @@
 package types
 
-import "time"
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"time"
+)
 
 // Resource
 // 【通知数据】通知资源数据。
@@ -17,8 +24,26 @@ type Resource struct {
 	Nonce string `json:"nonce"`
 }
 
-// Notify
-// 支付成功回调通知
+// Transaction TransactionResource
+// resource解密后字段
+type Transaction struct {
+	TransactionId   string             `json:"transaction_id"`
+	Amount          *Amount            `json:"amount"`
+	Mchid           string             `json:"mchid"`
+	TradeState      TradeState         `json:"trade_state"`
+	BankType        string             `json:"bank_type"`
+	PromotionDetail []*PromotionDetail `json:"promotion_detail"`
+	SuccessTime     time.Time          `json:"success_time"`
+	Payer           *Payer             `json:"payer"`
+	OutTradeNo      string             `json:"out_trade_no"`
+	Appid           string             `json:"appid"`
+	TradeStateDesc  string             `json:"trade_state_desc"`
+	TradeType       string             `json:"trade_type"`
+	Attach          string             `json:"attach"`
+	SceneInfo       *SceneInfo         `json:"scene_info"`
+}
+
+// Notify 支付成功回调通知
 type Notify struct {
 	//【通知ID】回调通知的唯一编号。
 	Id string `json:"id"`
@@ -44,21 +69,91 @@ type Notify struct {
 	Resource *Resource `json:"resource"`
 }
 
-// Transaction TransactionResource
-// resource解密后字段
-type Transaction struct {
-	TransactionId   string             `json:"transaction_id"`
-	Amount          *Amount            `json:"amount"`
-	Mchid           string             `json:"mchid"`
-	TradeState      string             `json:"trade_state"`
-	BankType        string             `json:"bank_type"`
-	PromotionDetail []*PromotionDetail `json:"promotion_detail"`
-	SuccessTime     time.Time          `json:"success_time"`
-	Payer           *Payer             `json:"payer"`
-	OutTradeNo      string             `json:"out_trade_no"`
-	Appid           string             `json:"appid"`
-	TradeStateDesc  string             `json:"trade_state_desc"`
-	TradeType       string             `json:"trade_type"`
-	Attach          string             `json:"attach"`
-	SceneInfo       *SceneInfo         `json:"scene_info"`
+// 常量定义
+const (
+	EventTypeTransactionSuccess = "TRANSACTION.SUCCESS" // 支付成功
+	EventTypeRefundSuccess      = "REFUND.SUCCESS"      // 退款成功
+)
+
+// DecryptResource 解密回调通知资源数据
+func (n *Notify) DecryptResource(apiV3Key string) (*Transaction, error) {
+	if n.Resource == nil {
+		return nil, fmt.Errorf("resource is nil")
+	}
+
+	// Base64解码密文
+	ciphertext, err := base64.StdEncoding.DecodeString(n.Resource.Ciphertext)
+	if err != nil {
+		return nil, fmt.Errorf("base64 decode ciphertext failed: %v", err)
+	}
+
+	// Base64解码随机串
+	nonce, err := base64.StdEncoding.DecodeString(n.Resource.Nonce)
+	if err != nil {
+		return nil, fmt.Errorf("base64 decode nonce failed: %v", err)
+	}
+
+	// 解密数据
+	plaintext, err := decryptAESGCM([]byte(apiV3Key), nonce, ciphertext, []byte(n.Resource.AssociatedData))
+	if err != nil {
+		return nil, fmt.Errorf("decrypt failed: %v", err)
+	}
+
+	// 解析JSON
+	var transaction Transaction
+	if err := json.Unmarshal(plaintext, &transaction); err != nil {
+		return nil, fmt.Errorf("unmarshal transaction failed: %v", err)
+	}
+
+	return &transaction, nil
+}
+
+// decryptAESGCM AES-GCM解密
+func decryptAESGCM(key, nonce, ciphertext, additionalData []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	aesGCM, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	plaintext, err := aesGCM.Open(nil, nonce, ciphertext, additionalData)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
+}
+
+// IsPaymentSuccess 判断是否支付成功
+func (n *Notify) IsPaymentSuccess() bool {
+	return n.EventType == EventTypeTransactionSuccess
+}
+
+// IsRefundSuccess 判断是否退款成功
+func (n *Notify) IsRefundSuccess() bool {
+	return n.EventType == EventTypeRefundSuccess
+}
+
+// GetTransactionInfo 获取交易信息（需要先解密）
+func (t *Transaction) GetTransactionInfo() map[string]interface{} {
+	return map[string]interface{}{
+		"transaction_id":   t.TransactionId,
+		"out_trade_no":     t.OutTradeNo,
+		"trade_state":      t.TradeState,
+		"trade_state_desc": t.TradeStateDesc,
+		"trade_type":       t.TradeType,
+		"success_time":     t.SuccessTime,
+		"total_amount":     t.Amount.Total,
+		"payer_openid":     t.Payer.Openid,
+		"attach":           t.Attach,
+	}
+}
+
+// IsTradeSuccess 判断交易是否成功
+func (t *Transaction) IsTradeSuccess() bool {
+	return t.TradeState == TradeStateSUCCESS
 }
