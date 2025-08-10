@@ -120,7 +120,7 @@ type QueryResponse struct {
 	//	T 字符用于分隔日期和时间部分；
 	//	HH:mm:ss 表示具体的时分秒；
 	//	TIMEZONE 表示时区（例如，+08:00 对应东八区时间，即北京时间）。
-	//	示例：2015-05-20T13:29:35+08:00 表示北京时间2015年5月20日13点29分35秒。
+	//	example：2015-05-20T13:29:35+08:00 表示北京时间2015年5月20日13点29分35秒。
 	SuccessTime time.Time `json:"success_time"`
 	//【支付者信息】 订单的支付者信息。
 	Payer *Payer `json:"payer"`
