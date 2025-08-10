@@ -41,6 +41,7 @@ go get github.com/godrealms/go-wechat-sdk
 package main
 
 import (
+    "context"
     "github.com/godrealms/go-wechat-sdk/offiaccount"
     "github.com/godrealms/go-wechat-sdk/merchant"
 )
@@ -48,24 +49,51 @@ import (
 func main() {
     // 初始化公众号配置
     officialConfig := &offiaccount.Config{
-        AppID:     "your-app-id",
+        AppId:     "your-app-id",
         AppSecret: "your-app-secret",
     }
     
     // 创建公众号实例
-    official := offiaccount.NewClient(officialConfig)
+    official := offiaccount.NewClient(context.Background(), officialConfig)
     
     // 初始化支付配置
-    payConfig := &merchant.Config{
-        MchID:    "your-merchant-id",
-        ApiKey:   "your-api-key",
-        CertFile: "path/to/cert.pem",
-    }
-    
-    // 创建支付实例
-    pay := merchant.NewClient(payConfig)
+    payClient := merchant.NewWechatClient().
+        WithAppid("your-app-id").
+        WithMchid("your-merchant-id").
+        WithCertificateNumber("your-certificate-number").
+        WithAPIv3Key("your-api-v3-key")
 }
 ```
+
+## 模块说明
+
+### 微信支付 (merchant)
+
+微信支付模块支持完整的支付功能，包括：
+- JSAPI支付
+- APP支付
+- H5支付
+- Native支付
+- 小程序支付
+- 退款处理
+- 订单查询
+- 账单下载
+
+支付模块采用链式调用设计，配置更加灵活。
+
+### 公众号 (offiaccount)
+
+公众号模块提供完整的公众号API支持，包括：
+- 基础接口支持
+- 自定义菜单管理
+- 消息管理
+- 素材管理
+- 用户管理
+- 账号管理
+
+### 其他模块
+
+其他模块如小程序、小游戏、企业微信等目前提供基础框架，可根据需要进行扩展。
 
 ## 示例
 
@@ -90,7 +118,7 @@ func login(code string) (*miniprogram.LoginResponse, error) {
 import "github.com/godrealms/go-wechat-sdk/offiaccount"
 
 func sendTemplate(openID, templateID string, data interface{}) error {
-    client := offiaccount.NewClient(config)
+    client := offiaccount.NewClient(context.Background(), config)
     
     msg := &offiaccount.TemplateMessage{
         ToUser:     openID,
