@@ -119,6 +119,7 @@ func (h *HTTP) do(ctx context.Context, method, path string, body interface{}, qu
 		return fmt.Errorf("read response body failed: %w", err)
 	}
 
+	log.Println("response:", string(respBody))
 	// 检查响应状态码
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))

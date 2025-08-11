@@ -8,7 +8,7 @@ import (
 
 // CreateCustomMenu 创建自定义菜单
 // 该接口用于创建公众号/服务号的自定义菜单。
-func (c *Client) CreateCustomMenu(body *CustomMenu) error {
+func (c *Client) CreateCustomMenu(body *CreateMenuButton) error {
 	path := fmt.Sprintf("/cgi-bin/menu/create?access_token=%s", c.GetAccessToken())
 	result := &Resp{}
 	err := c.Https.Post(c.ctx, path, body, result)
@@ -20,102 +20,97 @@ func (c *Client) CreateCustomMenu(body *CustomMenu) error {
 	return nil
 }
 
-type T struct {
-	// 菜单是否开启，0代表未开启，1代表开启
-	IsMenuOpen int `json:"is_menu_open"`
-	// 自定义菜单信息
-	SelfMenuInfo struct {
-		// 菜单按钮
-		Button []struct {
-			// 菜单的类型，具体参考新增 API 的描述
-			Type string `json:"type,omitempty"`
-			// 菜单名称
-			Name string `json:"name"`
-			// 对于不同的菜单类型，value的值意义不同。
-			//	官网上设置的自定义菜单：
-			//	Text:保存文字到value；
-			//	Img、voice：保存mediaID到value；
-			//	Video：保存视频下载链接到value；
-			//	News：保存图文消息到news_info，
-			//	同时保存mediaID到value；
-			//	View：保存链接到url。
-			//	使用API设置的自定义菜单： click、scancode_push、scancode_waitmsg、pic_sysphoto、pic_photo_or_album、 pic_weixin、location_select：保存值到key；
-			//	view：保存链接到url
-			Key string `json:"key,omitempty"`
-			// 对于不同的菜单类型，value的值意义不同。
-			// 官网上设置的自定义菜单：
-			// 	Text:保存文字到value；
-			//	Img、voice：保存mediaID到value；
-			//	Video：保存视频下载链接到value；
-			//	News：保存图文消息到news_info，同时保存mediaID到value；
-			//	View：保存链接到url。
-			//	使用API设置的自定义菜单： click、scancode_push、scancode_waitmsg、pic_sysphoto、pic_photo_or_album、 pic_weixin、location_select：保存值到key；
-			//	view：保存链接到url
-			Value string `json:"value,omitempty"`
-			// 对于不同的菜单类型，value的值意义不同。
-			//	官网上设置的自定义菜单：
-			//	Text:保存文字到value；
-			//	Img、voice：保存mediaID到value；
-			//	Video：保存视频下载链接到value；
-			//	News：保存图文消息到news_info，同时保存mediaID到value；
-			//	View：保存链接到url。
-			//	使用API设置的自定义菜单： click、scancode_push、scancode_waitmsg、pic_sysphoto、pic_photo_or_album、 pic_weixin、location_select：保存值到key；
-			//	view：保存链接到url
-			Url      string `json:"url,omitempty"`
-			NewsInfo struct {
-				// 图文消息列表
-				List []struct {
-					// // 标题
-					Title string `json:"title"`
-					// // 摘要
-					Digest string `json:"digest"`
-					// // 作者
-					Author string `json:"author"`
-					// // 是否显示封面，0为不显示，1为显示
-					ShowCover int `json:"show_cover"`
-					// // 封面图片的URL
-					CoverUrl string `json:"cover_url"`
-					// // 正文的URL
-					ContentUrl string `json:"content_url"`
-					// // 原文的URL，若置空则无查看原文入口
-					SourceUrl string `json:"source_url"`
-				} `json:"list"`
-			} `json:"news_info,omitempty"`
-			SubButton struct {
-				//
-				List []struct {
-					Type     string `json:"type"`
-					Name     string `json:"name"`
-					Url      string `json:"url,omitempty"`
-					Value    string `json:"value,omitempty"`
-					NewsInfo struct {
-						List []struct {
-							Title      string `json:"title"`
-							Author     string `json:"author"`
-							Digest     string `json:"digest"`
-							ShowCover  int    `json:"show_cover"`
-							CoverUrl   string `json:"cover_url"`
-							ContentUrl string `json:"content_url"`
-							SourceUrl  string `json:"source_url"`
-						} `json:"list"`
-					} `json:"news_info,omitempty"`
-				} `json:"list"`
-			} `json:"sub_button,omitempty"`
-		} `json:"button"`
-	} `json:"selfmenu_info"`
-}
-
-// GetCurrentSelfMenuInfo 获取自定义菜单配置
+// GetCurrentSelfMenuInfo 查询自定义菜单信息
 // 本接口提供公众号当前使用的自定义菜单的配置，如果公众号是通过API调用设置的菜单，则返回菜单的开发配置，
 // 而如果公众号是在公众平台官网通过网站功能发布菜单，则本接口返回运营者设置的菜单配置。
-func (c *Client) GetCurrentSelfMenuInfo() (map[string]interface{}, error) {
+func (c *Client) GetCurrentSelfMenuInfo() (*SelfMenu, error) {
 	query := url.Values{
 		"access_token": {c.GetAccessToken()},
 	}
-	result := make(map[string]interface{})
+	result := &SelfMenu{}
 	err := c.Https.Get(c.ctx, "/cgi-bin/get_current_selfmenu_info", query, result)
 	if err != nil {
 		return nil, err
+	}
+	return result, nil
+}
+
+// GetMenu 获取自定义菜单配置
+// 使用接口创建自定义菜单后，开发者还可使用接口查询自定义菜单的结构。
+func (c *Client) GetMenu() (*QueryCustomMenu, error) {
+	query := url.Values{
+		"access_token": {c.GetAccessToken()},
+	}
+	result := &QueryCustomMenu{}
+	err := c.Https.Get(c.ctx, "/cgi-bin/menu/get", query, result)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+// DeleteMenu 删除自定义菜单
+// 删除当前使用的自定义菜单。注意：调用此接口会删除默认菜单及全部个性化菜单。
+func (c *Client) DeleteMenu() error {
+	query := url.Values{
+		"access_token": {c.GetAccessToken()},
+	}
+	result := &Resp{}
+	err := c.Https.Get(c.ctx, "/cgi-bin/menu/delete", query, result)
+	if err != nil {
+		return err
+	} else if result.ErrCode != 0 {
+		return errors.New(result.ErrMsg)
+	}
+	return nil
+}
+
+// AddConditionalMenu 创建个性化菜单
+// 为了帮助公众号实现灵活的业务运营，微信公众平台新增了个性化菜单接口，开发者可以通过该接口，让公众号的不同用户群体看到不一样的自定义菜单。
+//
+// 开发者可以通过以下条件来设置用户看到的菜单：
+//
+// 用户标签（开发者的业务需求可以借助用户标签来完成）
+// 使用普通自定义菜单查询接口可以获取默认菜单和全部个性化菜单信息，请见自定义菜单查询接口的说明。
+// 使用普通自定义菜单删除接口可以删除所有自定义菜单（包括默认菜单和全部个性化菜单），请见自定义菜单删除接口的说明。
+func (c *Client) AddConditionalMenu(body *ConditionalMenu) (*AddConditionalMenuResponse, error) {
+	path := fmt.Sprintf("/cgi-bin/menu/addconditional?access_token=%s", c.GetAccessToken())
+	result := &AddConditionalMenuResponse{}
+	err := c.Https.Post(c.ctx, path, body, result)
+	if err != nil {
+		return nil, err
+	} else if result.ErrCode != 0 {
+		return nil, errors.New(result.ErrMsg)
+	}
+	return result, nil
+}
+
+// DeleteConditionalMenu 删除个性化菜单
+// 删除指定个性化菜单
+func (c *Client) DeleteConditionalMenu(menuId string) (*Resp, error) {
+	body := map[string]string{"menuid": menuId}
+	path := fmt.Sprintf("/cgi-bin/menu/delconditional?access_token=%s", c.GetAccessToken())
+	result := &Resp{}
+	err := c.Https.Post(c.ctx, path, body, result)
+	if err != nil {
+		return nil, err
+	} else if result.ErrCode != 0 {
+		return nil, errors.New(result.ErrMsg)
+	}
+	return result, nil
+}
+
+// TryMatchMenu 测试个性化菜单匹配结果
+// 测试个性化菜单，测试用户看到的菜单配置。
+func (c *Client) TryMatchMenu(userId string) (*QueryCustomMenu, error) {
+	body := map[string]string{"user_id": userId}
+	path := fmt.Sprintf("/cgi-bin/menu/trymatch?access_token=%s", c.GetAccessToken())
+	result := &QueryCustomMenu{}
+	err := c.Https.Post(c.ctx, path, body, result)
+	if err != nil {
+		return nil, err
+	} else if result.ErrCode != 0 {
+		return nil, errors.New(result.ErrMsg)
 	}
 	return result, nil
 }
