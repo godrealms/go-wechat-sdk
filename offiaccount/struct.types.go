@@ -631,12 +631,6 @@ func (r *MassSendByTagRequest) Validate() error {
 	return nil
 }
 
-package wechat
-
-import (
-"fmt"
-)
-
 // AddNewsMaterialRequest 新增临时图文素材请求结构体
 type AddNewsMaterialRequest struct {
 	Articles []Article `json:"articles"` // 图文消息，一个图文消息支持1到8条图文
@@ -644,15 +638,15 @@ type AddNewsMaterialRequest struct {
 
 // Article 图文消息单条内容结构体
 type Article struct {
-	Title                string `json:"title"`                          // 图文消息的标题（必填）
-	Author               string `json:"author,omitempty"`               // 图文消息的作者
-	ThumbMediaID         string `json:"thumb_media_id"`                 // 图文消息缩略图的media_id（必填）
-	Content              string `json:"content"`                        // 图文消息页面的内容，支持HTML标签（必填）
-	ContentSourceURL     string `json:"content_source_url,omitempty"`   // 点击"阅读原文"后的页面链接
-	Digest               string `json:"digest,omitempty"`               // 图文消息的描述，为空时默认抓取正文前64个字
-	ShowCoverPic         int    `json:"show_cover_pic,omitempty"`       // 是否显示封面：1显示，0不显示
-	NeedOpenComment      int    `json:"need_open_comment,omitempty"`    // 是否打开评论：0不打开，1打开
-	OnlyFansCanComment   int    `json:"only_fans_can_comment,omitempty"` // 是否粉丝才可评论：0所有人可评论，1粉丝才可评论
+	Title              string `json:"title"`                           // 图文消息的标题（必填）
+	Author             string `json:"author,omitempty"`                // 图文消息的作者
+	ThumbMediaID       string `json:"thumb_media_id"`                  // 图文消息缩略图的media_id（必填）
+	Content            string `json:"content"`                         // 图文消息页面的内容，支持HTML标签（必填）
+	ContentSourceURL   string `json:"content_source_url,omitempty"`    // 点击"阅读原文"后的页面链接
+	Digest             string `json:"digest,omitempty"`                // 图文消息的描述，为空时默认抓取正文前64个字
+	ShowCoverPic       int    `json:"show_cover_pic,omitempty"`        // 是否显示封面：1显示，0不显示
+	NeedOpenComment    int    `json:"need_open_comment,omitempty"`     // 是否打开评论：0不打开，1打开
+	OnlyFansCanComment int    `json:"only_fans_can_comment,omitempty"` // 是否粉丝才可评论：0所有人可评论，1粉丝才可评论
 }
 
 // AddNewsMaterialResponse 新增临时图文素材响应结构体
@@ -675,8 +669,8 @@ const (
 	CommentOpen   = 1 // 打开评论
 
 	// 评论权限设置
-	CommentAllUsers  = 0 // 所有人可评论
-	CommentFansOnly  = 1 // 粉丝才可评论
+	CommentAllUsers = 0 // 所有人可评论
+	CommentFansOnly = 1 // 粉丝才可评论
 
 	// 图文消息数量限制
 	MaxArticleCount = 8 // 最多8条图文
