@@ -10,8 +10,8 @@ import (
 func main() {
 	ctx := context.Background()
 	config := &offiaccount.Config{
-		AppId:     "wx93d460503a63a0de",
-		AppSecret: "a6bba3685980beb82ef6a4d2bbef6655",
+		AppId:     "your app id",
+		AppSecret: "your app secret",
 	}
 	client := offiaccount.NewClient(ctx, config)
 	// 上传图片
