@@ -31,4 +31,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	//info, err := client.GetRidInfo("")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//log.Printf("%+v", info)
 }
