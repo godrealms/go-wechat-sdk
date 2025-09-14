@@ -13,6 +13,7 @@
 - 完善的错误处理机制
 - 详细的使用文档
 - 丰富的示例代码
+- 自动 Access Token 管理
 
 ## 支持的服务
 
@@ -43,7 +44,7 @@ package main
 import (
     "context"
     "github.com/godrealms/go-wechat-sdk/offiaccount"
-    "github.com/godrealms/go-wechat-sdk/merchant"
+    "github.com/godrealms/go-wechat-sdk/merchant/developed"
 )
 
 func main() {
@@ -57,7 +58,7 @@ func main() {
     official := offiaccount.NewClient(context.Background(), officialConfig)
     
     // 初始化支付配置
-    payClient := merchant.NewWechatClient().
+    payClient := wechat.NewWechatClient().
         WithAppid("your-app-id").
         WithMchid("your-merchant-id").
         WithCertificateNumber("your-certificate-number").
@@ -84,12 +85,31 @@ func main() {
 ### 公众号 (offiaccount)
 
 公众号模块提供完整的公众号API支持，包括：
-- 基础接口支持
+
+#### 核心功能
 - 自定义菜单管理
-- 消息管理
-- 素材管理
-- 用户管理
-- 账号管理
+- 消息管理（客服消息、模板消息、群发消息）
+- 素材管理（临时素材、永久素材、草稿箱）
+- 用户管理（用户信息、标签管理、黑名单）
+- 账号管理（二维码、短Key URL、数据统计）
+
+#### 高级功能
+- 发票功能（电子发票、财政电子票据）
+- 非税支付
+- 一码通
+- 医疗助手
+- 留言功能
+- 数据分析
+- 微信门店
+- 微信AI开放平台（OCR识别、语音识别）
+- JS-SDK支持
+- 网页授权
+- 评论管理
+
+#### 特色功能
+- 自动 Access Token 管理
+- 完善的错误处理机制
+- 详细的接口文档和示例代码
 
 ### 其他模块
 
@@ -133,6 +153,9 @@ func sendTemplate(openID, templateID string, data interface{}) error {
 ## 文档
 
 详细文档请访问我们的 [Wiki](https://github.com/godrealms/go-wechat-sdk/wiki)
+
+每个模块都有详细的 README 文档：
+- [公众号模块文档](offiaccount/README.md)
 
 ## 贡献指南
 

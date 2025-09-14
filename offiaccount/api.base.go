@@ -11,21 +11,7 @@ import (
 // GetAccessToken 获取接口调用凭据
 // 获取全局唯一后台接口调用凭据，token有效期为7200s，开发者需要进行妥善保存。
 func (c *Client) GetAccessToken() string {
-	if c.AccessToken != nil && c.AccessToken.ExpiresIn > time.Now().Unix() {
-		return c.GetAccessToken()
-	}
-	query := url.Values{
-		"grant_type": {"client_credential"},
-		"appid":      {c.Config.AppId},
-		"secret":     {c.Config.AppSecret},
-	}
-	result := &AccessToken{}
-	err := c.Https.Get(context.Background(), "/cgi-bin/token", query, result)
-	if err != nil {
-		return ""
-	}
-	c.AccessToken = result
-	return result.AccessToken
+	return c.getAccessToken()
 }
 
 // GetStableAccessToken 获取稳定 AccessToken
@@ -48,7 +34,11 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	c.AccessToken = result
+	// 提前10秒过期，避免临界点问题
+	result.ExpiresIn = result.ExpiresIn + time.Now().Unix() - 10
+	c.tokenMutex.Lock()
+	c.accessToken = result
+	c.tokenMutex.Unlock()
 	return result, nil
 }
 
@@ -59,7 +49,7 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 //	check_operator:	检测运营商：CHINANET(电信)/UNICOM(联通)/CAP(腾讯)/DEFAULT(自动)
 func (c *Client) CallbackCheck(action, checkOperator string) (*CallbackCheckResponse, error) {
 	query := url.Values{
-		"access_token": {c.GetAccessToken()},
+		"access_token": {c.getAccessToken()},
 	}
 	body := map[string]interface{}{
 		"action":         action,
@@ -79,7 +69,7 @@ func (c *Client) CallbackCheck(action, checkOperator string) (*CallbackCheckResp
 // 如果开发者基于安全等考虑，需要获知微信服务器的IP地址列表，以便进行相关限制，可以通过该接口获得微信服务器IP地址列表或者IP网段信息。
 func (c *Client) GetCallbackIp() ([]string, error) {
 	query := url.Values{
-		"access_token": {c.GetAccessToken()},
+		"access_token": {c.getAccessToken()},
 	}
 	var result = &IpList{}
 	err := c.Https.Get(context.Background(), "/cgi-bin/getcallbackip", query, result)
@@ -97,10 +87,10 @@ func (c *Client) GetCallbackIp() ([]string, error) {
 // 如果开发者基于安全等考虑，需要获知微信服务器的IP地址列表，以便进行相关限制，可以通过该接口获得微信服务器IP地址列表或者IP网段信息。
 func (c *Client) GetApiDomainIP() ([]string, error) {
 	query := url.Values{
-		"access_token": {c.GetAccessToken()},
+		"access_token": {c.getAccessToken()},
 	}
 	var result = &IpList{}
-	err := c.Https.Get(context.Background(), "/cgi-bin/get_api_domain_ip", query, &result)
+	err := c.Https.Get(context.Background(), "/cgi-bin/get_api_domain_ip", query, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
