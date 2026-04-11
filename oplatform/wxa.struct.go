@@ -127,3 +127,27 @@ type WxaListTestersResp struct {
 		UserStr string `json:"userstr"`
 	} `json:"members"`
 }
+
+// ----- code -----
+
+type WxaCommitReq struct {
+	TemplateID  int    `json:"template_id"`
+	UserVersion string `json:"user_version"`
+	UserDesc    string `json:"user_desc"`
+	ExtJSON     string `json:"ext_json"`
+}
+
+type WxaGetPageResp struct {
+	PageList []string `json:"page_list"`
+}
+
+type WxaGetCodeCategoryResp struct {
+	CategoryList []struct {
+		FirstClass  string `json:"first_class"`
+		SecondClass string `json:"second_class"`
+		ThirdClass  string `json:"third_class,omitempty"`
+		FirstID     int    `json:"first_id"`
+		SecondID    int    `json:"second_id"`
+		ThirdID     int    `json:"third_id,omitempty"`
+	} `json:"category_list"`
+}
