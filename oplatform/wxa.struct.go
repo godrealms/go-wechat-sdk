@@ -115,3 +115,15 @@ type WxaModifyDomainDirectlyReq struct {
 	Uploaddomain    []string `json:"uploaddomain,omitempty"`
 	Downloaddomain  []string `json:"downloaddomain,omitempty"`
 }
+
+// ----- tester -----
+
+type WxaBindTesterResp struct {
+	UserStr string `json:"userstr"`
+}
+
+type WxaListTestersResp struct {
+	Members []struct {
+		UserStr string `json:"userstr"`
+	} `json:"members"`
+}
