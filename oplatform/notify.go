@@ -1,7 +1,6 @@
 package oplatform
 
 import (
-	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -40,6 +39,7 @@ func (c *Client) ParseNotify(r *http.Request, rawBody []byte) (*ComponentNotify,
 	if r == nil {
 		return nil, fmt.Errorf("oplatform: nil request")
 	}
+	ctx := touchContext(r.Context())
 	q := r.URL.Query()
 
 	if rawBody == nil {
@@ -84,7 +84,7 @@ func (c *Client) ParseNotify(r *http.Request, rawBody []byte) (*ComponentNotify,
 	}
 
 	if notify.InfoType == "component_verify_ticket" && notify.ComponentVerifyTicket != "" {
-		if err := c.store.SetVerifyTicket(context.Background(), notify.ComponentVerifyTicket); err != nil {
+		if err := c.store.SetVerifyTicket(ctx, notify.ComponentVerifyTicket); err != nil {
 			return nil, fmt.Errorf("oplatform: store set verify ticket: %w", err)
 		}
 	}

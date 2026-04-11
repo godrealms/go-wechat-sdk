@@ -13,8 +13,3 @@ type MsgCrypto = wxcrypto.MsgCrypto
 func NewMsgCrypto(token, encodingAESKey, appid string) (*MsgCrypto, error) {
 	return wxcrypto.New(token, encodingAESKey, appid)
 }
-
-// subtleConstEq 历史符号，保留以兼容同包内引用。新代码请用 wxcrypto.SubtleConstEq。
-func subtleConstEq(a, b string) bool {
-	return wxcrypto.SubtleConstEq(a, b)
-}
