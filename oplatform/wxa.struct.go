@@ -72,3 +72,46 @@ type WxaModifyCategoryReq struct {
 		Value string `json:"value"`
 	} `json:"certicates,omitempty"`
 }
+
+// ----- domain -----
+
+type WxaModifyServerDomainReq struct {
+	Action          string   `json:"action"` // add/delete/set/get/delete_legal_domain
+	Requestdomain   []string `json:"requestdomain,omitempty"`
+	Wsrequestdomain []string `json:"wsrequestdomain,omitempty"`
+	Uploaddomain    []string `json:"uploaddomain,omitempty"`
+	Downloaddomain  []string `json:"downloaddomain,omitempty"`
+	Udpdomain       []string `json:"udpdomain,omitempty"`
+	Tcpdomain       []string `json:"tcpdomain,omitempty"`
+}
+
+type WxaServerDomainResp struct {
+	Requestdomain          []string `json:"requestdomain,omitempty"`
+	Wsrequestdomain        []string `json:"wsrequestdomain,omitempty"`
+	Uploaddomain           []string `json:"uploaddomain,omitempty"`
+	Downloaddomain         []string `json:"downloaddomain,omitempty"`
+	Udpdomain              []string `json:"udpdomain,omitempty"`
+	Tcpdomain              []string `json:"tcpdomain,omitempty"`
+	InvalidRequestdomain   []string `json:"invalid_requestdomain,omitempty"`
+	InvalidWsrequestdomain []string `json:"invalid_wsrequestdomain,omitempty"`
+	InvalidUploaddomain    []string `json:"invalid_uploaddomain,omitempty"`
+	InvalidDownloaddomain  []string `json:"invalid_downloaddomain,omitempty"`
+}
+
+type WxaSetWebviewDomainReq struct {
+	Action        string   `json:"action"`
+	Webviewdomain []string `json:"webviewdomain,omitempty"`
+}
+
+type WxaDomainConfirmFile struct {
+	FileName    string `json:"file_name"`
+	FileContent string `json:"file_content"`
+}
+
+type WxaModifyDomainDirectlyReq struct {
+	Action          string   `json:"action"`
+	Requestdomain   []string `json:"requestdomain,omitempty"`
+	Wsrequestdomain []string `json:"wsrequestdomain,omitempty"`
+	Uploaddomain    []string `json:"uploaddomain,omitempty"`
+	Downloaddomain  []string `json:"downloaddomain,omitempty"`
+}
