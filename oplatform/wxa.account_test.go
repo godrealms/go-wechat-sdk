@@ -102,3 +102,48 @@ func TestWxaAdmin_ModifySignature(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestWxaAdmin_GetAccountBasicInfo(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.Path, "/cgi-bin/account/getaccountbasicinfo") {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("access_token") != "ATOK" {
+			t.Errorf("access_token: %s", r.URL.Query().Get("access_token"))
+		}
+		_, _ = w.Write([]byte(`{
+  "errcode": 0,
+  "appid": "wxBIZ",
+  "account_type": 0,
+  "principal_type": 1,
+  "principal_name": "Acme Corp",
+  "realname_status": 1,
+  "nickname": "Cool App",
+  "head_img": "https://example.com/h.png",
+  "signature": "hello",
+  "registered_country": 1,
+  "wx_verify_info": {"qualification_verify": true, "naming_verify": true},
+  "signature_info": {"signature": "hello", "modify_used_count": 1, "modify_quota": 5},
+  "head_image_info": {"head_image_url": "https://example.com/h.png", "modify_used_count": 0, "modify_quota": 5}
+}`))
+	}))
+	defer srv.Close()
+	w := newTestWxaAdmin(t, srv.URL)
+
+	info, err := w.GetAccountBasicInfo(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.AppID != "wxBIZ" || info.PrincipalName != "Acme Corp" {
+		t.Errorf("top-level: %+v", info)
+	}
+	if !info.WxVerifyInfo.QualificationVerify {
+		t.Errorf("wx_verify_info not parsed")
+	}
+	if info.SignatureInfo.ModifyQuota != 5 {
+		t.Errorf("signature_info: %+v", info.SignatureInfo)
+	}
+	if info.HeadImageInfo.HeadImageURL == "" {
+		t.Errorf("head_image_info: %+v", info.HeadImageInfo)
+	}
+}

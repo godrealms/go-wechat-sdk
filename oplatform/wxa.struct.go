@@ -198,3 +198,31 @@ type WxaSupportVersionResp struct {
 		} `json:"items"`
 	} `json:"uv_info"`
 }
+
+// ----- account basic info -----
+
+type WxaAccountBasicInfo struct {
+	AppID             string `json:"appid"`
+	AccountType       int    `json:"account_type"`
+	PrincipalType     int    `json:"principal_type"`
+	PrincipalName     string `json:"principal_name"`
+	RealnameStatus    int    `json:"realname_status"`
+	Nickname          string `json:"nickname,omitempty"`
+	HeadImg           string `json:"head_img,omitempty"`
+	Signature         string `json:"signature,omitempty"`
+	RegisteredCountry int    `json:"registered_country,omitempty"`
+	WxVerifyInfo      struct {
+		QualificationVerify bool `json:"qualification_verify"`
+		NamingVerify        bool `json:"naming_verify"`
+	} `json:"wx_verify_info,omitempty"`
+	SignatureInfo struct {
+		Signature       string `json:"signature"`
+		ModifyUsedCount int    `json:"modify_used_count"`
+		ModifyQuota     int    `json:"modify_quota"`
+	} `json:"signature_info,omitempty"`
+	HeadImageInfo struct {
+		HeadImageURL    string `json:"head_image_url"`
+		ModifyUsedCount int    `json:"modify_used_count"`
+		ModifyQuota     int    `json:"modify_quota"`
+	} `json:"head_image_info,omitempty"`
+}

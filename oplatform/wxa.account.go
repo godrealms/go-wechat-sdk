@@ -53,3 +53,14 @@ func (w *WxaAdminClient) ModifySignature(ctx context.Context, signature string) 
 	body := map[string]string{"signature": signature}
 	return w.doPost(ctx, "/cgi-bin/account/modifysignature", body, nil)
 }
+
+// GetAccountBasicInfo 获取小程序账号基本信息。
+// /cgi-bin/account/getaccountbasicinfo
+// 这是 authorizer 级别接口（需要 authorizer_access_token）；使用 GET。
+func (w *WxaAdminClient) GetAccountBasicInfo(ctx context.Context) (*WxaAccountBasicInfo, error) {
+	var resp WxaAccountBasicInfo
+	if err := w.doGet(ctx, "/cgi-bin/account/getaccountbasicinfo", nil, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
