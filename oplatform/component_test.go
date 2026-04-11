@@ -3,6 +3,7 @@ package oplatform
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -112,5 +113,80 @@ func TestClient_RefreshComponentToken_ForcesFetch(t *testing.T) {
 	}
 	if got := atomic.LoadInt32(&calls); got != 2 {
 		t.Errorf("expected 2 fetches after forced refresh, got %d", got)
+	}
+}
+
+func TestClient_PreAuthCode(t *testing.T) {
+	var gotBody string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_create_preauthcode", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("component_access_token") != "CTOK" {
+			t.Errorf("missing component_access_token in query")
+		}
+		bb, _ := io.ReadAll(r.Body)
+		gotBody = string(bb)
+		_, _ = w.Write([]byte(`{"pre_auth_code":"PREAUTH","expires_in":600}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	code, err := c.PreAuthCode(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if code != "PREAUTH" {
+		t.Errorf("got %q", code)
+	}
+	if !strings.Contains(gotBody, `"component_appid":"wxcomp"`) {
+		t.Errorf("unexpected body: %s", gotBody)
+	}
+}
+
+func TestClient_AuthorizeURL(t *testing.T) {
+	c, err := NewClient(testConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	u := c.AuthorizeURL("PC", "https://example.com/cb", 3, "")
+	if !strings.Contains(u, "component_appid=wxcomp") {
+		t.Errorf("missing component_appid: %s", u)
+	}
+	if !strings.Contains(u, "pre_auth_code=PC") {
+		t.Errorf("missing pre_auth_code: %s", u)
+	}
+	if !strings.Contains(u, "redirect_uri=https%3A%2F%2Fexample.com%2Fcb") {
+		t.Errorf("redirect_uri not encoded: %s", u)
+	}
+	if !strings.Contains(u, "auth_type=3") {
+		t.Errorf("missing auth_type: %s", u)
+	}
+	if strings.Contains(u, "biz_appid") {
+		t.Errorf("biz_appid should be absent when empty: %s", u)
+	}
+}
+
+func TestClient_AuthorizeURL_WithBizAppid(t *testing.T) {
+	c, _ := NewClient(testConfig())
+	u := c.AuthorizeURL("PC", "https://x/cb", 1, "wxbiz")
+	if !strings.Contains(u, "biz_appid=wxbiz") {
+		t.Errorf("biz_appid missing: %s", u)
+	}
+}
+
+func TestClient_MobileAuthorizeURL(t *testing.T) {
+	c, _ := NewClient(testConfig())
+	u := c.MobileAuthorizeURL("PC", "https://x/cb", 3, "")
+	if !strings.Contains(u, "action=bindcomponent") {
+		t.Errorf("missing action=bindcomponent: %s", u)
+	}
+	if !strings.Contains(u, "pre_auth_code=PC") {
+		t.Errorf("missing pre_auth_code: %s", u)
 	}
 }
