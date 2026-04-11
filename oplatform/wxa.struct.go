@@ -34,3 +34,41 @@ type WxaCheckNicknameResp struct {
 	HitCondition bool   `json:"hit_condition"`
 	Wording      string `json:"wording,omitempty"`
 }
+
+// ----- category -----
+
+type WxaCategoryItem struct {
+	First       int    `json:"first"`
+	Second      int    `json:"second"`
+	FirstName   string `json:"first_name,omitempty"`
+	SecondName  string `json:"second_name,omitempty"`
+	AuditStatus int    `json:"audit_status,omitempty"`
+	AuditReason string `json:"audit_reason,omitempty"`
+}
+
+type WxaGetCategoryResp struct {
+	CategoriesList []WxaCategoryItem `json:"categories_list"`
+}
+
+type WxaGetAllCategoriesResp struct {
+	CategoriesList []struct {
+		ID       int    `json:"id"`
+		Name     string `json:"name"`
+		Level    int    `json:"level"`
+		Father   int    `json:"father"`
+		Children []int  `json:"children,omitempty"`
+	} `json:"categories_list"`
+}
+
+type WxaAddCategoryReq struct {
+	Categories []WxaCategoryItem `json:"categories"`
+}
+
+type WxaModifyCategoryReq struct {
+	First      int `json:"first"`
+	Second     int `json:"second"`
+	Certicates []struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"certicates,omitempty"`
+}
