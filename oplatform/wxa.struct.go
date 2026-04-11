@@ -199,6 +199,37 @@ type WxaSupportVersionResp struct {
 	} `json:"uv_info"`
 }
 
+// ----- plugin -----
+
+type WxaPluginListItem struct {
+	AppID      string `json:"appid"`
+	Status     int    `json:"status"` // 1=申请中 2=申请通过 3=已拒绝 4=已超时
+	Nickname   string `json:"nickname,omitempty"`
+	HeadImgURL string `json:"headimgurl,omitempty"`
+}
+
+type WxaPluginList struct {
+	PluginList []WxaPluginListItem `json:"plugin_list"`
+}
+
+type WxaPluginDevApplyItem struct {
+	AppID      string `json:"appid"`
+	Status     int    `json:"status"`
+	Nickname   string `json:"nickname,omitempty"`
+	HeadImgURL string `json:"headimgurl,omitempty"`
+	Categories []struct {
+		First  string `json:"first"`
+		Second string `json:"second"`
+	} `json:"categories,omitempty"`
+	CreateTime string `json:"create_time,omitempty"`
+	ApplyURL   string `json:"apply_url,omitempty"`
+	Reason     string `json:"reason,omitempty"`
+}
+
+type WxaPluginDevApplyList struct {
+	ApplyList []WxaPluginDevApplyItem `json:"apply_list"`
+}
+
 // ----- account basic info -----
 
 type WxaAccountBasicInfo struct {
