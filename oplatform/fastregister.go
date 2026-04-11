@@ -45,3 +45,80 @@ func (f *FastRegisterClient) doPost(ctx context.Context, path string, body, out 
 	}
 	return decodeRaw(path, raw, out)
 }
+
+// CreateEnterpriseAccount 企业快速注册小程序。
+// /cgi-bin/component/fastregisterweapp?action=create
+func (f *FastRegisterClient) CreateEnterpriseAccount(ctx context.Context, req *FastRegEnterpriseReq) (*FastRegEnterpriseResp, error) {
+	var resp FastRegEnterpriseResp
+	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterweapp?action=create", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// QueryEnterpriseAccount 查询企业快速注册任务状态。
+// /cgi-bin/component/fastregisterweapp?action=search
+func (f *FastRegisterClient) QueryEnterpriseAccount(ctx context.Context, legalPersonaWechat, legalPersonaName string) (*FastRegEnterpriseStatus, error) {
+	body := map[string]string{
+		"legal_persona_wechat": legalPersonaWechat,
+		"legal_persona_name":   legalPersonaName,
+	}
+	var resp FastRegEnterpriseStatus
+	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterweapp?action=search", body, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// CreatePersonalAccount 个人类型小程序快速注册。
+// /cgi-bin/component/fastregisterpersonalweapp?action=create
+func (f *FastRegisterClient) CreatePersonalAccount(ctx context.Context, req *FastRegPersonalReq) (*FastRegPersonalResp, error) {
+	var resp FastRegPersonalResp
+	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterpersonalweapp?action=create", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// QueryPersonalAccount 查询个人注册任务状态。
+// /cgi-bin/component/fastregisterpersonalweapp?action=query
+func (f *FastRegisterClient) QueryPersonalAccount(ctx context.Context, taskID string) (*FastRegPersonalStatus, error) {
+	body := map[string]string{"taskid": taskID}
+	var resp FastRegPersonalStatus
+	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterpersonalweapp?action=query", body, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// CreateBetaAccount 复用主体创建试用版小程序。
+// /cgi-bin/component/fastregisterbetaweapp?action=create
+func (f *FastRegisterClient) CreateBetaAccount(ctx context.Context, req *FastRegBetaReq) (*FastRegBetaResp, error) {
+	var resp FastRegBetaResp
+	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterbetaweapp?action=create", req, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// QueryBetaAccount 查询试用版创建任务状态。
+// /cgi-bin/component/fastregisterbetaweapp?action=search
+func (f *FastRegisterClient) QueryBetaAccount(ctx context.Context, uniqueID string) (*FastRegBetaStatus, error) {
+	body := map[string]string{"unique_id": uniqueID}
+	var resp FastRegBetaStatus
+	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterbetaweapp?action=search", body, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// GenerateAdminRebindQrcode 生成小程序管理员变更二维码。
+// /cgi-bin/account/componentrebindadmin
+func (f *FastRegisterClient) GenerateAdminRebindQrcode(ctx context.Context, redirectURI string) (*RebindAdminQrcode, error) {
+	body := map[string]string{"redirect_uri": redirectURI}
+	var resp RebindAdminQrcode
+	if err := f.doPost(ctx, "/cgi-bin/account/componentrebindadmin", body, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
