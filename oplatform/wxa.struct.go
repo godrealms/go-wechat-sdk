@@ -327,3 +327,35 @@ type WxaAccountBasicInfo struct {
 		ModifyQuota     int    `json:"modify_quota"`
 	} `json:"head_image_info,omitempty"`
 }
+
+// ----- customer message -----
+
+type WxaCustomerTextPayload struct {
+	Content string `json:"content"`
+}
+
+type WxaCustomerImagePayload struct {
+	MediaID string `json:"media_id"`
+}
+
+type WxaCustomerLinkPayload struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	URL         string `json:"url"`
+	ThumbURL    string `json:"thumb_url"`
+}
+
+type WxaCustomerMiniProgramPagePayload struct {
+	Title        string `json:"title"`
+	Pagepath     string `json:"pagepath"`
+	ThumbMediaID string `json:"thumb_media_id"`
+}
+
+type WxaSendCustomerMessageReq struct {
+	ToUser          string                             `json:"touser"`
+	MsgType         string                             `json:"msgtype"` // text/image/link/miniprogrampage
+	Text            *WxaCustomerTextPayload            `json:"text,omitempty"`
+	Image           *WxaCustomerImagePayload           `json:"image,omitempty"`
+	Link            *WxaCustomerLinkPayload            `json:"link,omitempty"`
+	MiniProgramPage *WxaCustomerMiniProgramPagePayload `json:"miniprogrampage,omitempty"`
+}
