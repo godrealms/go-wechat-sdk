@@ -151,3 +151,50 @@ type WxaGetCodeCategoryResp struct {
 		ThirdID     int    `json:"third_id,omitempty"`
 	} `json:"category_list"`
 }
+
+// ----- release -----
+
+type WxaSubmitAuditReq struct {
+	ItemList []struct {
+		Address     string `json:"address"`
+		Tag         string `json:"tag"`
+		FirstClass  string `json:"first_class"`
+		SecondClass string `json:"second_class"`
+		ThirdClass  string `json:"third_class,omitempty"`
+		FirstID     int    `json:"first_id"`
+		SecondID    int    `json:"second_id"`
+		ThirdID     int    `json:"third_id,omitempty"`
+		Title       string `json:"title,omitempty"`
+	} `json:"item_list,omitempty"`
+	PreviewInfo *struct {
+		VideoIDList []string `json:"video_id_list,omitempty"`
+		PicIDList   []string `json:"pic_id_list,omitempty"`
+	} `json:"preview_info,omitempty"`
+	VersionDesc   string `json:"version_desc,omitempty"`
+	FeedbackInfo  string `json:"feedback_info,omitempty"`
+	FeedbackStuff string `json:"feedback_stuff,omitempty"`
+}
+
+type WxaSubmitAuditResp struct {
+	AuditID int64 `json:"auditid"`
+}
+
+type WxaAuditStatus struct {
+	AuditID         int64  `json:"auditid,omitempty"`
+	Status          int    `json:"status"`
+	Reason          string `json:"reason,omitempty"`
+	ScreenShot      string `json:"screenshot,omitempty"`
+	UserVersion     string `json:"user_version,omitempty"`
+	UserDesc        string `json:"user_desc,omitempty"`
+	SubmitAuditTime int64  `json:"submit_audit_time,omitempty"`
+}
+
+type WxaSupportVersionResp struct {
+	NowVersion string `json:"now_version"`
+	UVInfo     struct {
+		Items []struct {
+			Percentage float64 `json:"percentage"`
+			Version    string  `json:"version"`
+		} `json:"items"`
+	} `json:"uv_info"`
+}
