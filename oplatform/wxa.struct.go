@@ -230,6 +230,76 @@ type WxaPluginDevApplyList struct {
 	ApplyList []WxaPluginDevApplyItem `json:"apply_list"`
 }
 
+// ----- subscribe message -----
+
+type WxaSubscribeCategoryItem struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type WxaSubscribeCategoryResp struct {
+	Data []WxaSubscribeCategoryItem `json:"data"`
+}
+
+type WxaPubTemplateTitleItem struct {
+	TID        int    `json:"tid"`
+	Title      string `json:"title"`
+	Type       int    `json:"type"` // 2=一次性 3=长期
+	CategoryID string `json:"categoryId"`
+}
+
+type WxaPubTemplateTitles struct {
+	Count int                       `json:"count"`
+	Data  []WxaPubTemplateTitleItem `json:"data"`
+}
+
+type WxaPubTemplateKeywordItem struct {
+	KID     int    `json:"kid"`
+	Name    string `json:"name"`
+	Example string `json:"example"`
+	Rule    string `json:"rule"`
+}
+
+type WxaPubTemplateKeywords struct {
+	Count int                         `json:"count"`
+	Data  []WxaPubTemplateKeywordItem `json:"data"`
+}
+
+type WxaAddSubscribeTemplateReq struct {
+	TID       string `json:"tid"`
+	KidList   []int  `json:"kidList"`
+	SceneDesc string `json:"sceneDesc,omitempty"`
+}
+
+type WxaAddSubscribeTemplateResp struct {
+	PriTmplID string `json:"priTmplId"`
+}
+
+type WxaSubscribeTemplateItem struct {
+	PriTmplID string `json:"priTmplId"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Example   string `json:"example"`
+	Type      int    `json:"type"`
+}
+
+type WxaSubscribeTemplateList struct {
+	Data []WxaSubscribeTemplateItem `json:"data"`
+}
+
+type WxaSubscribeTemplateDataField struct {
+	Value string `json:"value"`
+}
+
+type WxaSendSubscribeReq struct {
+	ToUser           string                                   `json:"touser"`
+	TemplateID       string                                   `json:"template_id"`
+	Page             string                                   `json:"page,omitempty"`
+	MiniprogramState string                                   `json:"miniprogram_state,omitempty"`
+	Lang             string                                   `json:"lang,omitempty"`
+	Data             map[string]WxaSubscribeTemplateDataField `json:"data"`
+}
+
 // ----- account basic info -----
 
 type WxaAccountBasicInfo struct {
