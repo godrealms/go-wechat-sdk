@@ -190,3 +190,130 @@ func TestClient_MobileAuthorizeURL(t *testing.T) {
 		t.Errorf("missing pre_auth_code: %s", u)
 	}
 }
+
+func TestClient_QueryAuth_PopulatesStore(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_query_auth", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{
+  "authorization_info": {
+    "authorizer_appid": "wxAuthed",
+    "authorizer_access_token": "ATOK",
+    "expires_in": 7200,
+    "authorizer_refresh_token": "RTOK",
+    "func_info": [{"funcscope_category": {"id": 1}}]
+  }
+}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	info, err := c.QueryAuth(context.Background(), "AUTHCODE")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.AuthorizerAppID != "wxAuthed" {
+		t.Errorf("appid mismatch: %+v", info)
+	}
+	got, err := store.GetAuthorizer(context.Background(), "wxAuthed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.AccessToken != "ATOK" || got.RefreshToken != "RTOK" {
+		t.Errorf("store mismatch: %+v", got)
+	}
+	if !got.ExpireAt.After(time.Now()) {
+		t.Errorf("expire_at should be future, got %v", got.ExpireAt)
+	}
+}
+
+func TestClient_GetAuthorizerInfo(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_get_authorizer_info", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{
+  "authorizer_info": {"nick_name":"biz","user_name":"gh_x","principal_name":"Acme"},
+  "authorization_info": {"authorizer_appid":"wxAuthed","authorizer_refresh_token":"RTOK"}
+}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	got, err := c.GetAuthorizerInfo(context.Background(), "wxAuthed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.AuthorizerInfo.NickName != "biz" || got.AuthorizerInfo.PrincipalName != "Acme" {
+		t.Errorf("unexpected: %+v", got)
+	}
+}
+
+func TestClient_GetAuthorizerList(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_get_authorizer_list", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{
+  "total_count": 2,
+  "list": [
+    {"authorizer_appid":"wxA","refresh_token":"rA","auth_time":1700000000},
+    {"authorizer_appid":"wxB","refresh_token":"rB","auth_time":1700000001}
+  ]
+}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	list, err := c.GetAuthorizerList(context.Background(), 0, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if list.TotalCount != 2 || len(list.List) != 2 {
+		t.Errorf("unexpected: %+v", list)
+	}
+}
+
+func TestClient_GetSetAuthorizerOption(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_get_authorizer_option", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"authorizer_appid":"wxA","option_name":"voice_recognize","option_value":"1"}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_set_authorizer_option", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	opt, err := c.GetAuthorizerOption(context.Background(), "wxA", "voice_recognize")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opt.OptionValue != "1" {
+		t.Errorf("unexpected: %+v", opt)
+	}
+	if err := c.SetAuthorizerOption(context.Background(), "wxA", "voice_recognize", "0"); err != nil {
+		t.Fatal(err)
+	}
+}
