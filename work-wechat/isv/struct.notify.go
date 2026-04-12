@@ -45,24 +45,147 @@ type ResetPermanentCodeEvent struct {
 	AuthCorpID string
 }
 
-// ChangeContactEvent —— 通讯录变更(成员/部门/标签)。
-type ChangeContactEvent struct {
-	baseEvent
-	AuthCorpID string
-	ChangeType string // create_user / update_user / delete_user / create_party / update_party / delete_party / update_tag
-	UserID     string
-	Name       string
-	Department string
-	NewUserID  string // 仅 update_user 在 userid 变更时出现
-}
+// ── Contact change: user ──────────────────────────────────────────
 
-// ChangeExternalContactEvent —— 外部联系人变更。
-type ChangeExternalContactEvent struct {
+// ContactCreateUserEvent is fired when a user is created in the authorized corp.
+type ContactCreateUserEvent struct {
 	baseEvent
 	AuthCorpID     string
-	ChangeType     string
+	ChangeType     string // "create_user"
+	UserID         string
+	Name           string
+	Department     string
+	Mobile         string
+	Email          string
+	Position       string
+	Gender         int
+	Avatar         string
+	Status         int
+	IsLeaderInDept string
+	ExtAttr        string
+}
+
+// ContactUpdateUserEvent is fired when a user is updated.
+type ContactUpdateUserEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string // "update_user"
+	UserID         string
+	NewUserID      string
+	Name           string
+	Department     string
+	Mobile         string
+	Email          string
+	Position       string
+	Gender         int
+	Avatar         string
+	Status         int
+	IsLeaderInDept string
+	ExtAttr        string
+}
+
+// ContactDeleteUserEvent is fired when a user is deleted.
+type ContactDeleteUserEvent struct {
+	baseEvent
+	AuthCorpID string
+	ChangeType string // "delete_user"
+	UserID     string
+}
+
+// ── Contact change: department ────────────────────────────────────
+
+// ContactCreatePartyEvent is fired when a department is created.
+type ContactCreatePartyEvent struct {
+	baseEvent
+	AuthCorpID string
+	ChangeType string // "create_party"
+	ID         int
+	Name       string
+	ParentID   int
+	Order      int
+}
+
+// ContactUpdatePartyEvent is fired when a department is updated.
+type ContactUpdatePartyEvent struct {
+	baseEvent
+	AuthCorpID string
+	ChangeType string // "update_party"
+	ID         int
+	Name       string
+	ParentID   int
+}
+
+// ContactDeletePartyEvent is fired when a department is deleted.
+type ContactDeletePartyEvent struct {
+	baseEvent
+	AuthCorpID string
+	ChangeType string // "delete_party"
+	ID         int
+}
+
+// ── Contact change: tag ───────────────────────────────────────────
+
+// ContactUpdateTagEvent is fired when a tag's membership changes.
+type ContactUpdateTagEvent struct {
+	baseEvent
+	AuthCorpID    string
+	ChangeType    string // "update_tag"
+	TagID         int
+	AddUserItems  string
+	DelUserItems  string
+	AddPartyItems string
+	DelPartyItems string
+}
+
+// ── External contact changes ──────────────────────────────────────
+
+// ExtContactAddEvent is fired when an external contact is added.
+type ExtContactAddEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string // "add_external_contact"
 	UserID         string
 	ExternalUserID string
+	State          string
+	WelcomeCode    string
+}
+
+// ExtContactEditEvent is fired when an external contact is edited.
+type ExtContactEditEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string // "edit_external_contact"
+	UserID         string
+	ExternalUserID string
+}
+
+// ExtContactDelEvent is fired when an external contact is deleted.
+type ExtContactDelEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string // "del_external_contact"
+	UserID         string
+	ExternalUserID string
+}
+
+// ExtContactDelFollowEvent is fired when a follow user is removed.
+type ExtContactDelFollowEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string // "del_follow_user"
+	UserID         string
+	ExternalUserID string
+}
+
+// ExtContactAddHalfEvent is fired for a half-added external contact.
+type ExtContactAddHalfEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string // "add_half_external_contact"
+	UserID         string
+	ExternalUserID string
+	State          string
+	WelcomeCode    string
 }
 
 // ShareAgentChangeEvent —— 共享应用变更。
