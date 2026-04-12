@@ -138,3 +138,132 @@ func TestGetLoginInfo_WeixinError(t *testing.T) {
 		t.Errorf("want *WeixinError errcode=40029, got %v", err)
 	}
 }
+
+func TestGetRegisterCode_HappyPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/cgi-bin/service/get_provider_token":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"provider_access_token": "PTOK",
+				"expires_in":            7200,
+			})
+		case "/cgi-bin/service/get_register_code":
+			if got := r.URL.Query().Get("provider_access_token"); got != "PTOK" {
+				t.Errorf("token query: %q", got)
+			}
+			var body map[string]string
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if body["template_id"] != "tmpl1" || body["corp_name"] != "ACME" || body["state"] != "s1" {
+				t.Errorf("body: %+v", body)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"register_code": "REG123",
+				"expires_in":    604800,
+			})
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestISVClientWithProvider(t, srv.URL)
+	resp, err := c.GetRegisterCode(context.Background(), &GetRegisterCodeReq{
+		TemplateID: "tmpl1",
+		CorpName:   "ACME",
+		State:      "s1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.RegisterCode != "REG123" || resp.ExpiresIn != 604800 {
+		t.Errorf("resp: %+v", resp)
+	}
+}
+
+func TestGetRegisterCode_NilRequest(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/cgi-bin/service/get_provider_token":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"provider_access_token": "PTOK",
+				"expires_in":            7200,
+			})
+		case "/cgi-bin/service/get_register_code":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"register_code": "REG_EMPTY",
+				"expires_in":    3600,
+			})
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestISVClientWithProvider(t, srv.URL)
+	resp, err := c.GetRegisterCode(context.Background(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.RegisterCode != "REG_EMPTY" {
+		t.Errorf("resp: %+v", resp)
+	}
+}
+
+func TestGetRegistrationInfo_HappyPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/cgi-bin/service/get_provider_token":
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"provider_access_token": "PTOK",
+				"expires_in":            7200,
+			})
+		case "/cgi-bin/service/get_registration_info":
+			var body map[string]string
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			if body["register_code"] != "REG123" {
+				t.Errorf("body: %+v", body)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"corp_info": map[string]interface{}{
+					"corpid":        "wxcorp1",
+					"corp_name":     "ACME",
+					"corp_user_max": 200,
+					"subject_type":  1,
+					"corp_industry": "Tech",
+				},
+				"auth_user_info": map[string]interface{}{
+					"userid": "admin1",
+					"name":   "Root",
+				},
+				"contact_sync": map[string]interface{}{
+					"access_token": "CTOK",
+					"expires_in":   7200,
+				},
+				"auth_info": map[string]interface{}{
+					"agent": []map[string]interface{}{
+						{"agentid": 1000001, "name": "HR"},
+					},
+				},
+				"permanent_code": "PERM_REG",
+			})
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestISVClientWithProvider(t, srv.URL)
+	resp, err := c.GetRegistrationInfo(context.Background(), "REG123")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.CorpInfo.CorpID != "wxcorp1" || resp.CorpInfo.CorpName != "ACME" {
+		t.Errorf("corp_info: %+v", resp.CorpInfo)
+	}
+	if resp.AuthUserInfo.UserID != "admin1" {
+		t.Errorf("auth_user_info: %+v", resp.AuthUserInfo)
+	}
+	if resp.ContactSync.AccessToken != "CTOK" {
+		t.Errorf("contact_sync: %+v", resp.ContactSync)
+	}
+	if len(resp.AuthInfo.Agent) != 1 || resp.AuthInfo.Agent[0].AgentID != 1000001 {
+		t.Errorf("auth_info: %+v", resp.AuthInfo)
+	}
+	if resp.PermanentCode != "PERM_REG" {
+		t.Errorf("permanent_code: %q", resp.PermanentCode)
+	}
+}
