@@ -59,6 +59,7 @@ type componentInner struct {
 
 // decryptNotify reads, verifies, and decrypts a callback request body.
 func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
+	defer r.Body.Close()
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("isv: read body: %w", err)
