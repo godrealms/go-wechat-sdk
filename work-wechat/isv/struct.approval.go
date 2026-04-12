@@ -25,7 +25,7 @@ type ApprovalContent struct {
 // ApprovalControl 审批模板控件。
 type ApprovalControl struct {
 	Property ApprovalControlProperty `json:"property"`
-	Config   ApprovalControlConfig   `json:"config,omitempty"`
+	Config   *ApprovalControlConfig  `json:"config,omitempty"`
 }
 
 // ApprovalControlProperty 控件属性。

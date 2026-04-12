@@ -67,7 +67,7 @@ type ScheduleAttendee struct {
 // ScheduleReminder 日程提醒。
 type ScheduleReminder struct {
 	IsRemind     int `json:"is_remind"`
-	RemindBefore int `json:"remind_before_event_secs,omitempty"`
+	RemindBefore *int `json:"remind_before_event_secs,omitempty"`
 }
 
 // CreateScheduleReq 创建日程请求。
