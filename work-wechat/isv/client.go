@@ -170,14 +170,3 @@ func decodeRaw(raw []byte, out interface{}) error {
 	}
 	return nil
 }
-
-// GetSuiteAccessToken is implemented in suite.token.go (Task 4).
-// During Task 3 we provide a minimal stub that reads directly from Store so
-// client_test.go's doPost test can pre-seed a token. Task 4 replaces the body.
-func (c *Client) GetSuiteAccessToken(ctx context.Context) (string, error) {
-	tok, _, err := c.store.GetSuiteToken(ctx, c.cfg.SuiteID)
-	if err != nil {
-		return "", err
-	}
-	return tok, nil
-}
