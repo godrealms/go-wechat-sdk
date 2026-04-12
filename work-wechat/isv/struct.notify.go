@@ -44,3 +44,45 @@ type ResetPermanentCodeEvent struct {
 	baseEvent
 	AuthCorpID string
 }
+
+// ChangeContactEvent —— 通讯录变更(成员/部门/标签)。
+type ChangeContactEvent struct {
+	baseEvent
+	AuthCorpID string
+	ChangeType string // create_user / update_user / delete_user / create_party / update_party / delete_party / update_tag
+	UserID     string
+	Name       string
+	Department string
+	NewUserID  string // 仅 update_user 在 userid 变更时出现
+}
+
+// ChangeExternalContactEvent —— 外部联系人变更。
+type ChangeExternalContactEvent struct {
+	baseEvent
+	AuthCorpID     string
+	ChangeType     string
+	UserID         string
+	ExternalUserID string
+}
+
+// ShareAgentChangeEvent —— 共享应用变更。
+type ShareAgentChangeEvent struct {
+	baseEvent
+	AuthCorpID string
+	AgentID    string
+}
+
+// ChangeAppAdminEvent —— 应用管理员变更。
+type ChangeAppAdminEvent struct {
+	baseEvent
+	AuthCorpID string
+	UserID     string
+	IsAdmin    bool
+}
+
+// RawEvent 是未知 InfoType 的兜底,调用方可以自行 unmarshal。
+type RawEvent struct {
+	baseEvent
+	InfoType string
+	RawXML   string
+}

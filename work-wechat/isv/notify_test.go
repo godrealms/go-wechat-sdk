@@ -131,6 +131,95 @@ func TestParseNotify_ResetPermanentCode(t *testing.T) {
 	}
 }
 
+func TestParseNotify_ChangeContact(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	inner := `<xml>
+<SuiteId><![CDATA[suite1]]></SuiteId>
+<InfoType><![CDATA[change_contact]]></InfoType>
+<AuthCorpId><![CDATA[wxcorp1]]></AuthCorpId>
+<ChangeType><![CDATA[update_user]]></ChangeType>
+<UserID><![CDATA[u1]]></UserID>
+<NewUserID><![CDATA[u1new]]></NewUserID>
+<Name><![CDATA[Alice]]></Name>
+</xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	ev, err := c.ParseNotify(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cev, ok := ev.(*ChangeContactEvent)
+	if !ok {
+		t.Fatalf("type: %T", ev)
+	}
+	if cev.ChangeType != "update_user" || cev.NewUserID != "u1new" {
+		t.Errorf("event: %+v", cev)
+	}
+}
+
+func TestParseNotify_ChangeExternalContact(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[change_external_contact]]></InfoType><AuthCorpId><![CDATA[wxcorp1]]></AuthCorpId><ChangeType><![CDATA[add_external_contact]]></ChangeType><UserID><![CDATA[u1]]></UserID><ExternalUserID><![CDATA[ex1]]></ExternalUserID></xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	ev, err := c.ParseNotify(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cev, ok := ev.(*ChangeExternalContactEvent)
+	if !ok || cev.ExternalUserID != "ex1" {
+		t.Fatalf("event: %T %+v", ev, ev)
+	}
+}
+
+func TestParseNotify_ShareAgentChange(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[share_agent_change]]></InfoType><AuthCorpId><![CDATA[wxcorp1]]></AuthCorpId><AgentID><![CDATA[1000001]]></AgentID></xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	ev, err := c.ParseNotify(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sev, ok := ev.(*ShareAgentChangeEvent)
+	if !ok || sev.AgentID != "1000001" {
+		t.Fatalf("event: %T %+v", ev, ev)
+	}
+}
+
+func TestParseNotify_ChangeAppAdmin(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[change_app_admin]]></InfoType><AuthCorpId><![CDATA[wxcorp1]]></AuthCorpId><UserID><![CDATA[u_admin]]></UserID><IsAdmin>1</IsAdmin></xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	ev, err := c.ParseNotify(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	aev, ok := ev.(*ChangeAppAdminEvent)
+	if !ok || !aev.IsAdmin || aev.UserID != "u_admin" {
+		t.Fatalf("event: %T %+v", ev, ev)
+	}
+}
+
+func TestParseNotify_UnknownInfoType_ReturnsRawEvent(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[brand_new_event]]></InfoType><Foo><![CDATA[bar]]></Foo></xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	ev, err := c.ParseNotify(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rev, ok := ev.(*RawEvent)
+	if !ok || rev.InfoType != "brand_new_event" {
+		t.Fatalf("event: %T %+v", ev, ev)
+	}
+	if !strings.Contains(rev.RawXML, "<Foo>") {
+		t.Errorf("RawXML missing Foo: %q", rev.RawXML)
+	}
+}
+
 func TestParseNotify_BadSignature(t *testing.T) {
 	c := newTestISVClient(t, "http://unused")
 	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[suite_ticket]]></InfoType><SuiteTicket><![CDATA[X]]></SuiteTicket></xml>`

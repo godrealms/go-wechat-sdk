@@ -85,6 +85,42 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 		return &CancelAuthEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
 	case "reset_permanent_code":
 		return &ResetPermanentCodeEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
+	case "change_contact":
+		return &ChangeContactEvent{
+			baseEvent:  base,
+			AuthCorpID: inner.AuthCorpID,
+			ChangeType: inner.ChangeType,
+			UserID:     inner.UserID,
+			Name:       inner.Name,
+			Department: inner.Department,
+			NewUserID:  inner.NewUserID,
+		}, nil
+	case "change_external_contact":
+		return &ChangeExternalContactEvent{
+			baseEvent:      base,
+			AuthCorpID:     inner.AuthCorpID,
+			ChangeType:     inner.ChangeType,
+			UserID:         inner.UserID,
+			ExternalUserID: inner.ExternalUserID,
+		}, nil
+	case "share_agent_change":
+		return &ShareAgentChangeEvent{
+			baseEvent:  base,
+			AuthCorpID: inner.AuthCorpID,
+			AgentID:    inner.AgentID,
+		}, nil
+	case "change_app_admin":
+		return &ChangeAppAdminEvent{
+			baseEvent:  base,
+			AuthCorpID: inner.AuthCorpID,
+			UserID:     inner.UserID,
+			IsAdmin:    inner.IsAdmin == 1,
+		}, nil
+	default:
+		return &RawEvent{
+			baseEvent: base,
+			InfoType:  inner.InfoType,
+			RawXML:    string(plain),
+		}, nil
 	}
-	return nil, errors.New("isv: unknown InfoType " + inner.InfoType) // Task 10 replaces with *RawEvent
 }
