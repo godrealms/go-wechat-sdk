@@ -15,13 +15,17 @@ func newTestCorpClient(t *testing.T, baseURL string) *CorpClient {
 	t.Helper()
 	c := newTestISVClient(t, baseURL)
 	ctx := context.Background()
-	_ = c.store.PutSuiteToken(ctx, "suite1", "STOK", time.Now().Add(time.Hour))
-	_ = c.store.PutAuthorizer(ctx, "suite1", "wxcorp1", &AuthorizerTokens{
+	if err := c.store.PutSuiteToken(ctx, "suite1", "STOK", time.Now().Add(time.Hour)); err != nil {
+		t.Fatalf("seed suite token: %v", err)
+	}
+	if err := c.store.PutAuthorizer(ctx, "suite1", "wxcorp1", &AuthorizerTokens{
 		CorpID:            "wxcorp1",
 		PermanentCode:     "PERM",
 		CorpAccessToken:   "CTOK",
 		CorpTokenExpireAt: time.Now().Add(time.Hour),
-	})
+	}); err != nil {
+		t.Fatalf("seed authorizer: %v", err)
+	}
 	return c.CorpClient("wxcorp1")
 }
 
