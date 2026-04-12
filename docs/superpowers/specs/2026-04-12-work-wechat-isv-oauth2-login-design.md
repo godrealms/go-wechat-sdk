@@ -116,11 +116,11 @@ func (c *Client) providerDoGet(ctx context.Context, path string, extra url.Value
     for k, vs := range extra {
         q[k] = vs
     }
-    return c.doGet(ctx, path, q, out)
+    return c.doRequestRaw(ctx, http.MethodGet, path, q, nil, out)
 }
 ```
 
-注意:`doGet` 已经在子项目 1 存在 —— 这里只做 token 注入的包装。
+注意:不能复用 `c.doGet` —— 后者会自动注入 `suite_access_token`,与 provider 作用域冲突。直接调用底层 `doRequestRaw`。
 
 ## 3. DTO 设计(`struct.oauth2.go`)
 

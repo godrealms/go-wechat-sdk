@@ -6,6 +6,12 @@ import (
 	"strconv"
 )
 
+// OAuth2 scope 常量。企业微信仅接受这两个值。
+const (
+	ScopeBase        = "snsapi_base"        // 静默授权,只能拿到 UserId
+	ScopePrivateInfo = "snsapi_privateinfo" // 手动授权,可拿到 user_ticket 换敏感详情
+)
+
 // OAuth2Option 配置 OAuth2URL 的可选参数。
 type OAuth2Option func(*oauth2Params)
 
@@ -35,7 +41,7 @@ func WithOAuth2AgentID(agentID int) OAuth2Option {
 // redirectURI:用户同意授权后企业微信回跳的 URL,必须在服务商后台白名单内。
 // state:调用方自定义的防 CSRF 值,回跳时原样带回。
 func (c *Client) OAuth2URL(redirectURI, state string, opts ...OAuth2Option) string {
-	p := &oauth2Params{scope: "snsapi_privateinfo"}
+	p := &oauth2Params{scope: ScopePrivateInfo}
 	for _, opt := range opts {
 		opt(p)
 	}

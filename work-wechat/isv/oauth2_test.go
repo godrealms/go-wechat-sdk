@@ -141,10 +141,18 @@ func TestGetUserInfo3rd_NonMember(t *testing.T) {
 				"expires_in":            7200,
 			})
 		case "/cgi-bin/service/auth/getuserinfo3rd":
+			if r.Method != http.MethodGet {
+				t.Errorf("method: %s", r.Method)
+			}
+			if got := r.URL.Query().Get("provider_access_token"); got != "PTOK" {
+				t.Errorf("token query: %q", got)
+			}
 			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"CorpId": "wxcorp1",
 				"OpenId": "oAbCdEf",
 			})
+		default:
+			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
 	}))
 	defer srv.Close()
@@ -187,6 +195,7 @@ func TestGetUserDetail3rd(t *testing.T) {
 				"userid":   "u1",
 				"gender":   "1",
 				"avatar":   "http://img/a.png",
+				"qr_code":  "https://open.work.weixin.qq.com/wwopen/userQRCode?vcode=abc",
 				"mobile":   "13800000000",
 				"email":    "u1@example.com",
 				"biz_mail": "u1@biz.example.com",
@@ -209,5 +218,8 @@ func TestGetUserDetail3rd(t *testing.T) {
 	}
 	if resp.Gender != "1" || resp.Avatar != "http://img/a.png" || resp.Address != "Beijing" {
 		t.Errorf("profile: %+v", resp)
+	}
+	if resp.QRCode != "https://open.work.weixin.qq.com/wwopen/userQRCode?vcode=abc" {
+		t.Errorf("qr_code: %q", resp.QRCode)
 	}
 }
