@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 )
@@ -77,6 +78,20 @@ func (c *Client) providerDoPost(ctx context.Context, path string, body, out inte
 	}
 	q := url.Values{"provider_access_token": {tok}}
 	return c.doPostRaw(ctx, path, q, body, out)
+}
+
+// providerDoGet 和 doGet 类似,只是注入的 token 是 provider_access_token。
+// 不能复用 c.doGet —— 后者会自动注入 suite_access_token。
+func (c *Client) providerDoGet(ctx context.Context, path string, extra url.Values, out interface{}) error {
+	tok, err := c.getProviderAccessToken(ctx)
+	if err != nil {
+		return err
+	}
+	q := url.Values{"provider_access_token": {tok}}
+	for k, vs := range extra {
+		q[k] = vs
+	}
+	return c.doRequestRaw(ctx, http.MethodGet, path, q, nil, out)
 }
 
 // CorpIDToOpenCorpID 把企业 corpid 转换成跨服务商匿名的 open_corpid。
