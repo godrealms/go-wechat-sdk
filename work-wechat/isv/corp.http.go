@@ -29,3 +29,16 @@ func (cc *CorpClient) doGet(ctx context.Context, path string, extra url.Values, 
 	}
 	return cc.parent.doRequestRaw(ctx, http.MethodGet, path, q, nil, out)
 }
+
+// doPostExtra is like doPost but merges extra query params alongside access_token.
+func (cc *CorpClient) doPostExtra(ctx context.Context, path string, extra url.Values, body, out interface{}) error {
+	tok, err := cc.AccessToken(ctx)
+	if err != nil {
+		return err
+	}
+	q := url.Values{"access_token": {tok}}
+	for k, vs := range extra {
+		q[k] = vs
+	}
+	return cc.parent.doPostRaw(ctx, path, q, body, out)
+}
