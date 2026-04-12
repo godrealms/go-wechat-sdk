@@ -168,3 +168,64 @@ func TestListUserDetail(t *testing.T) {
 		t.Errorf("UserList[0].Status: %d", resp.UserList[0].Status)
 	}
 }
+
+func TestUpdateUser(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method: %s", r.Method)
+		}
+		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
+			t.Errorf("access_token: %q", got)
+		}
+		if r.URL.Path != "/cgi-bin/user/update" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		var body UpdateUserReq
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body.UserID != "zhangsan" {
+			t.Errorf("body.UserID: %q", body.UserID)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"errcode": 0,
+			"errmsg":  "ok",
+		})
+	}))
+	defer srv.Close()
+
+	cc := newTestCorpClient(t, srv.URL)
+	err := cc.UpdateUser(context.Background(), &UpdateUserReq{
+		UserID: "zhangsan",
+		Name:   "Zhang San Updated",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDeleteUser(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			t.Errorf("method: %s", r.Method)
+		}
+		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
+			t.Errorf("access_token: %q", got)
+		}
+		if got := r.URL.Query().Get("userid"); got != "zhangsan" {
+			t.Errorf("query userid: %q", got)
+		}
+		if r.URL.Path != "/cgi-bin/user/delete" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"errcode": 0,
+			"errmsg":  "ok",
+		})
+	}))
+	defer srv.Close()
+
+	cc := newTestCorpClient(t, srv.URL)
+	err := cc.DeleteUser(context.Background(), "zhangsan")
+	if err != nil {
+		t.Fatal(err)
+	}
+}

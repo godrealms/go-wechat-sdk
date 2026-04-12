@@ -116,3 +116,39 @@ func TestDeleteDepartment(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestUpdateDepartment(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method: %s", r.Method)
+		}
+		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
+			t.Errorf("access_token: %q", got)
+		}
+		if r.URL.Path != "/cgi-bin/department/update" {
+			t.Errorf("path: %s", r.URL.Path)
+		}
+		var body UpdateDeptReq
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body.ID != 2 {
+			t.Errorf("body.ID: %d", body.ID)
+		}
+		if body.Name != "Engineering" {
+			t.Errorf("body.Name: %q", body.Name)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"errcode": 0,
+			"errmsg":  "ok",
+		})
+	}))
+	defer srv.Close()
+
+	cc := newTestCorpClient(t, srv.URL)
+	err := cc.UpdateDepartment(context.Background(), &UpdateDeptReq{
+		ID:   2,
+		Name: "Engineering",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
