@@ -103,3 +103,9 @@ func (c *Client) UserIDToOpenUserID(ctx context.Context, corpID string, userIDs 
 	}
 	return &resp, nil
 }
+
+// GetProviderAccessToken 返回当前 provider_access_token(lazy 获取 + 自动缓存)。
+// 未在 Config 里配置 ProviderCorpID / ProviderSecret 时返回对应哨兵错误。
+func (c *Client) GetProviderAccessToken(ctx context.Context) (string, error) {
+	return c.getProviderAccessToken(ctx)
+}

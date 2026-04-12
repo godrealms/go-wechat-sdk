@@ -105,6 +105,40 @@ func TestProviderNotConfigured(t *testing.T) {
 	}
 }
 
+func TestGetProviderAccessToken_Exposed(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/cgi-bin/service/get_provider_token" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"provider_access_token": "PTOK_PUB",
+			"expires_in":            7200,
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestISVClientWithProvider(t, srv.URL)
+	tok, err := c.GetProviderAccessToken(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tok != "PTOK_PUB" {
+		t.Errorf("tok: %q", tok)
+	}
+}
+
+func TestGetProviderAccessToken_MissingConfig(t *testing.T) {
+	cfg := testConfig()
+	c, err := NewClient(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.GetProviderAccessToken(context.Background())
+	if !errors.Is(err, ErrProviderCorpIDMissing) {
+		t.Fatalf("want ErrProviderCorpIDMissing, got %v", err)
+	}
+}
+
 func TestProviderTokenExpiredRefresh(t *testing.T) {
 	var providerHits int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
