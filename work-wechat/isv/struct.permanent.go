@@ -87,3 +87,17 @@ type AdminInfo struct {
 type AdminListResp struct {
 	Admin []AdminInfo `json:"admin"`
 }
+
+// ---------- provider ID convert ----------
+
+// UserIDOpenUserIDPair 是 userid ↔ open_userid 的一对。
+type UserIDOpenUserIDPair struct {
+	UserID     string `json:"userid"`
+	OpenUserID string `json:"open_userid"`
+}
+
+// UserIDConvertResp 是 service/batch/userid_to_openuserid 的响应。
+type UserIDConvertResp struct {
+	OpenUserIDList    []UserIDOpenUserIDPair `json:"open_userid_list"`
+	InvalidUserIDList []string               `json:"invalid_userid_list"`
+}
