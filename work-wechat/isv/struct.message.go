@@ -189,3 +189,169 @@ type SendMiniProgramNoticeReq struct {
 	MessageHeader
 	MiniProgramNotice MiniProgramNoticeContent `json:"miniprogram_notice"`
 }
+
+// ---- template_card ----
+
+// TCSource 卡片来源样式。
+type TCSource struct {
+	IconURL   string `json:"icon_url,omitempty"`
+	Desc      string `json:"desc,omitempty"`
+	DescColor int    `json:"desc_color,omitempty"` // 0 灰 / 1 黑 / 2 红 / 3 绿
+}
+
+// TCActionMenuItem 右上角菜单项。
+type TCActionMenuItem struct {
+	Text string `json:"text"`
+	Key  string `json:"key"`
+}
+
+// TCActionMenu 右上角菜单。
+type TCActionMenu struct {
+	Desc       string             `json:"desc,omitempty"`
+	ActionList []TCActionMenuItem `json:"action_list"`
+}
+
+// TCMainTitle 一级标题。
+type TCMainTitle struct {
+	Title string `json:"title,omitempty"`
+	Desc  string `json:"desc,omitempty"`
+}
+
+// TCEmphasisContent 关键数据。
+type TCEmphasisContent struct {
+	Title string `json:"title,omitempty"`
+	Desc  string `json:"desc,omitempty"`
+}
+
+// TCQuoteArea 引用。
+type TCQuoteArea struct {
+	Type      int    `json:"type,omitempty"` // 0 文本 / 1 链接
+	URL       string `json:"url,omitempty"`
+	Title     string `json:"title,omitempty"`
+	QuoteText string `json:"quote_text,omitempty"`
+}
+
+// TCHorizontalContent 二级标题 + 文本列表。
+type TCHorizontalContent struct {
+	KeyName string `json:"keyname"`
+	Value   string `json:"value,omitempty"`
+	Type    int    `json:"type,omitempty"` // 0 文本 / 1 链接 / 2 附件 / 3 @人
+	URL     string `json:"url,omitempty"`
+	MediaID string `json:"media_id,omitempty"`
+	UserID  string `json:"userid,omitempty"`
+}
+
+// TCJumpItem 跳转列表项。
+type TCJumpItem struct {
+	Type     int    `json:"type,omitempty"` // 0 链接 / 1 小程序
+	Title    string `json:"title"`
+	URL      string `json:"url,omitempty"`
+	AppID    string `json:"appid,omitempty"`
+	PagePath string `json:"pagepath,omitempty"`
+}
+
+// TCCardAction 整体卡片跳转。
+type TCCardAction struct {
+	Type     int    `json:"type"` // 1 链接 / 2 小程序
+	URL      string `json:"url,omitempty"`
+	AppID    string `json:"appid,omitempty"`
+	PagePath string `json:"pagepath,omitempty"`
+}
+
+// TCOption 选项（投票/多选共用）。
+type TCOption struct {
+	ID        string `json:"id"`
+	Text      string `json:"text"`
+	IsChecked bool   `json:"is_checked,omitempty"`
+}
+
+// TCButton 按钮。
+type TCButton struct {
+	Text  string `json:"text"`
+	Style int    `json:"style,omitempty"` // 1 常规 / 2 强调
+	Key   string `json:"key"`
+}
+
+// TCButtonSelection 下拉按钮。
+type TCButtonSelection struct {
+	QuestionKey string     `json:"question_key"`
+	Title       string     `json:"title,omitempty"`
+	OptionList  []TCOption `json:"option_list"`
+	SelectedID  string     `json:"selected_id,omitempty"`
+}
+
+// TCSelectItem 多选列表单项。
+type TCSelectItem struct {
+	QuestionKey string     `json:"question_key"`
+	Title       string     `json:"title,omitempty"`
+	SelectedID  string     `json:"selected_id,omitempty"`
+	OptionList  []TCOption `json:"option_list"`
+}
+
+// TCCheckbox 多选框。
+type TCCheckbox struct {
+	QuestionKey string     `json:"question_key"`
+	OptionList  []TCOption `json:"option_list"`
+	Mode        int        `json:"mode,omitempty"` // 0 多选 / 1 单选
+}
+
+// TCSubmitButton 提交按钮。
+type TCSubmitButton struct {
+	Text string `json:"text"`
+	Key  string `json:"key"`
+}
+
+// TCCardImage 卡片图片（news_notice 子类型）。
+type TCCardImage struct {
+	URL         string  `json:"url"`
+	AspectRatio float64 `json:"aspect_ratio,omitempty"`
+}
+
+// TCImageTextArea 左图右文（news_notice 子类型）。
+type TCImageTextArea struct {
+	Type     int    `json:"type,omitempty"`
+	URL      string `json:"url,omitempty"`
+	Title    string `json:"title,omitempty"`
+	Desc     string `json:"desc,omitempty"`
+	ImageURL string `json:"image_url"`
+}
+
+// TCVerticalContent 竖向内容。
+type TCVerticalContent struct {
+	Title string `json:"title"`
+	Desc  string `json:"desc,omitempty"`
+}
+
+// TemplateCardContent 是 template_card 消息的 content 结构。
+// card_type 决定哪些字段有效:
+//   - text_notice / news_notice: 基本字段
+//   - button_interaction: + ButtonSelection + ButtonList
+//   - vote_interaction: + ButtonSelection + ButtonList
+//   - multiple_interaction: + SelectList + Checkbox + SubmitButton
+type TemplateCardContent struct {
+	CardType              string                `json:"card_type"`
+	Source                *TCSource             `json:"source,omitempty"`
+	ActionMenu            *TCActionMenu         `json:"action_menu,omitempty"`
+	TaskID                string                `json:"task_id,omitempty"`
+	MainTitle             TCMainTitle           `json:"main_title"`
+	EmphasisContent       *TCEmphasisContent    `json:"emphasis_content,omitempty"`
+	QuoteArea             *TCQuoteArea          `json:"quote_area,omitempty"`
+	SubTitleText          string                `json:"sub_title_text,omitempty"`
+	HorizontalContentList []TCHorizontalContent `json:"horizontal_content_list,omitempty"`
+	JumpList              []TCJumpItem          `json:"jump_list,omitempty"`
+	CardAction            TCCardAction          `json:"card_action"`
+	ButtonSelection       *TCButtonSelection    `json:"button_selection,omitempty"`
+	ButtonList            []TCButton            `json:"button_list,omitempty"`
+	SelectList            []TCSelectItem        `json:"select_list,omitempty"`
+	Checkbox              *TCCheckbox           `json:"checkbox,omitempty"`
+	SubmitButton          *TCSubmitButton       `json:"submit_button,omitempty"`
+	CardImage             *TCCardImage          `json:"card_image,omitempty"`
+	ImageTextArea         *TCImageTextArea      `json:"image_text_area,omitempty"`
+	VerticalContentList   []TCVerticalContent   `json:"vertical_content_list,omitempty"`
+}
+
+// SendTemplateCardReq 模板卡片消息请求。
+type SendTemplateCardReq struct {
+	MessageHeader
+	TemplateCard TemplateCardContent `json:"template_card"`
+}
