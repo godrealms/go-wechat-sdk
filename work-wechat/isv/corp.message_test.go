@@ -204,6 +204,39 @@ func TestSendTemplateCard_TextNotice(t *testing.T) {
 	}
 }
 
+func TestSendRemainingTypes(t *testing.T) {
+	srv := msgSendServer(t, func(m map[string]interface{}) {
+		// Just verify msgtype is set — all methods share the same wire pattern.
+		if m["msgtype"] == nil || m["msgtype"] == "" {
+			t.Errorf("msgtype missing")
+		}
+	})
+	defer srv.Close()
+
+	cc := newTestCorpClient(t, srv.URL)
+	ctx := context.Background()
+	hdr := MessageHeader{ToUser: "u1", AgentID: 1000001}
+
+	if _, err := cc.SendImage(ctx, &SendImageReq{MessageHeader: hdr, Image: ImageContent{MediaID: "M1"}}); err != nil {
+		t.Errorf("SendImage: %v", err)
+	}
+	if _, err := cc.SendVoice(ctx, &SendVoiceReq{MessageHeader: hdr, Voice: VoiceContent{MediaID: "M2"}}); err != nil {
+		t.Errorf("SendVoice: %v", err)
+	}
+	if _, err := cc.SendVideo(ctx, &SendVideoReq{MessageHeader: hdr, Video: VideoContent{MediaID: "M3", Title: "T"}}); err != nil {
+		t.Errorf("SendVideo: %v", err)
+	}
+	if _, err := cc.SendFile(ctx, &SendFileReq{MessageHeader: hdr, File: FileContent{MediaID: "M4"}}); err != nil {
+		t.Errorf("SendFile: %v", err)
+	}
+	if _, err := cc.SendMpNews(ctx, &SendMpNewsReq{MessageHeader: hdr, MpNews: MpNewsContent{Articles: []MpNewsArticle{{Title: "T", ThumbMediaID: "TM", Content: "C"}}}}); err != nil {
+		t.Errorf("SendMpNews: %v", err)
+	}
+	if _, err := cc.SendMiniProgramNotice(ctx, &SendMiniProgramNoticeReq{MessageHeader: hdr, MiniProgramNotice: MiniProgramNoticeContent{AppID: "wx123", Title: "T"}}); err != nil {
+		t.Errorf("SendMiniProgramNotice: %v", err)
+	}
+}
+
 func TestSendMessage_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
