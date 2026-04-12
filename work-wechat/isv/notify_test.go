@@ -148,7 +148,7 @@ func TestParseNotify_ChangeContact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cev, ok := ev.(*ChangeContactEvent)
+	cev, ok := ev.(*ContactUpdateUserEvent)
 	if !ok {
 		t.Fatalf("type: %T", ev)
 	}
@@ -166,7 +166,7 @@ func TestParseNotify_ChangeExternalContact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cev, ok := ev.(*ChangeExternalContactEvent)
+	cev, ok := ev.(*ExtContactAddEvent)
 	if !ok || cev.ExternalUserID != "ex1" {
 		t.Fatalf("event: %T %+v", ev, ev)
 	}

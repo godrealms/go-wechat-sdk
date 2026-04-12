@@ -33,15 +33,32 @@ type componentInner struct {
 	ExternalUserID string   `xml:"ExternalUserID,omitempty"`
 	AgentID        string   `xml:"AgentID,omitempty"`
 	IsAdmin        int      `xml:"IsAdmin,omitempty"`
+	// Contact change – user fields
+	Mobile         string `xml:"Mobile,omitempty"`
+	Email          string `xml:"Email,omitempty"`
+	Position       string `xml:"Position,omitempty"`
+	Avatar         string `xml:"Avatar,omitempty"`
+	Gender         int    `xml:"Gender,omitempty"`
+	Status         int    `xml:"Status,omitempty"`
+	IsLeaderInDept string `xml:"IsLeaderInDept,omitempty"`
+	ExtAttr        string `xml:"ExtAttr,omitempty"`
+	// Contact change – department fields
+	ID       int `xml:"Id,omitempty"`
+	ParentID int `xml:"ParentId,omitempty"`
+	Order    int `xml:"Order,omitempty"`
+	// Contact change – tag fields
+	TagID         int    `xml:"TagId,omitempty"`
+	AddUserItems  string `xml:"AddUserItems,omitempty"`
+	DelUserItems  string `xml:"DelUserItems,omitempty"`
+	AddPartyItems string `xml:"AddPartyItems,omitempty"`
+	DelPartyItems string `xml:"DelPartyItems,omitempty"`
+	// External contact fields
+	State       string `xml:"State,omitempty"`
+	WelcomeCode string `xml:"WelcomeCode,omitempty"`
 }
 
-// ParseNotify 校验、解密、解析企业微信回调,并返回强类型事件。
-//
-// 对 suite_ticket 事件本函数自动调用 Store.PutSuiteTicket。
-// 对未知 InfoType 返回 *RawEvent(Task 10 引入),不报错。
-func (c *Client) ParseNotify(r *http.Request) (Event, error) {
-	ctx := r.Context()
-
+// decryptNotify reads, verifies, and decrypts a callback request body.
+func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("isv: read body: %w", err)
@@ -63,13 +80,28 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 	if err != nil {
 		return nil, fmt.Errorf("isv: decrypt: %w", err)
 	}
+	return plain, nil
+}
+
+// ParseNotify 校验、解密、解析企业微信回调,并返回强类型事件。
+//
+// 对 suite_ticket 事件本函数自动调用 Store.PutSuiteTicket。
+// 对未知 InfoType 返回 *RawEvent,不报错。
+func (c *Client) ParseNotify(r *http.Request) (Event, error) {
+	ctx := r.Context()
+
+	plain, err := c.decryptNotify(r)
+	if err != nil {
+		return nil, err
+	}
 
 	var inner componentInner
 	if err := xml.Unmarshal(plain, &inner); err != nil {
 		return nil, fmt.Errorf("isv: parse inner: %w", err)
 	}
 
-	base := baseEvent{SuiteID: inner.SuiteID, ReceiveAt: time.Now()}
+	now := time.Now()
+	base := baseEvent{SuiteID: inner.SuiteID, ReceiveAt: now}
 
 	switch inner.InfoType {
 	case "suite_ticket":
@@ -85,42 +117,111 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 		return &CancelAuthEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
 	case "reset_permanent_code":
 		return &ResetPermanentCodeEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
+
 	case "change_contact":
-		return &ChangeContactEvent{
-			baseEvent:  base,
-			AuthCorpID: inner.AuthCorpID,
-			ChangeType: inner.ChangeType,
-			UserID:     inner.UserID,
-			Name:       inner.Name,
-			Department: inner.Department,
-			NewUserID:  inner.NewUserID,
-		}, nil
+		switch inner.ChangeType {
+		case "create_user":
+			return &ContactCreateUserEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				Name: inner.Name, Department: inner.Department,
+				Mobile: inner.Mobile, Email: inner.Email,
+				Position: inner.Position, Gender: inner.Gender,
+				Avatar: inner.Avatar, Status: inner.Status,
+				IsLeaderInDept: inner.IsLeaderInDept, ExtAttr: inner.ExtAttr,
+			}, nil
+		case "update_user":
+			return &ContactUpdateUserEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				NewUserID: inner.NewUserID, Name: inner.Name,
+				Department: inner.Department, Mobile: inner.Mobile,
+				Email: inner.Email, Position: inner.Position,
+				Gender: inner.Gender, Avatar: inner.Avatar,
+				Status: inner.Status, IsLeaderInDept: inner.IsLeaderInDept,
+				ExtAttr: inner.ExtAttr,
+			}, nil
+		case "delete_user":
+			return &ContactDeleteUserEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+			}, nil
+		case "create_party":
+			return &ContactCreatePartyEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, ID: inner.ID,
+				Name: inner.Name, ParentID: inner.ParentID, Order: inner.Order,
+			}, nil
+		case "update_party":
+			return &ContactUpdatePartyEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, ID: inner.ID,
+				Name: inner.Name, ParentID: inner.ParentID,
+			}, nil
+		case "delete_party":
+			return &ContactDeletePartyEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, ID: inner.ID,
+			}, nil
+		case "update_tag":
+			return &ContactUpdateTagEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, TagID: inner.TagID,
+				AddUserItems: inner.AddUserItems, DelUserItems: inner.DelUserItems,
+				AddPartyItems: inner.AddPartyItems, DelPartyItems: inner.DelPartyItems,
+			}, nil
+		default:
+			return &RawEvent{baseEvent: base, InfoType: inner.InfoType, RawXML: string(plain)}, nil
+		}
+
 	case "change_external_contact":
-		return &ChangeExternalContactEvent{
-			baseEvent:      base,
-			AuthCorpID:     inner.AuthCorpID,
-			ChangeType:     inner.ChangeType,
-			UserID:         inner.UserID,
-			ExternalUserID: inner.ExternalUserID,
-		}, nil
+		switch inner.ChangeType {
+		case "add_external_contact":
+			return &ExtContactAddEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				ExternalUserID: inner.ExternalUserID,
+				State: inner.State, WelcomeCode: inner.WelcomeCode,
+			}, nil
+		case "edit_external_contact":
+			return &ExtContactEditEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				ExternalUserID: inner.ExternalUserID,
+			}, nil
+		case "del_external_contact":
+			return &ExtContactDelEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				ExternalUserID: inner.ExternalUserID,
+			}, nil
+		case "del_follow_user":
+			return &ExtContactDelFollowEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				ExternalUserID: inner.ExternalUserID,
+			}, nil
+		case "add_half_external_contact":
+			return &ExtContactAddHalfEvent{
+				baseEvent: base, AuthCorpID: inner.AuthCorpID,
+				ChangeType: inner.ChangeType, UserID: inner.UserID,
+				ExternalUserID: inner.ExternalUserID,
+				State: inner.State, WelcomeCode: inner.WelcomeCode,
+			}, nil
+		default:
+			return &RawEvent{baseEvent: base, InfoType: inner.InfoType, RawXML: string(plain)}, nil
+		}
+
 	case "share_agent_change":
 		return &ShareAgentChangeEvent{
-			baseEvent:  base,
-			AuthCorpID: inner.AuthCorpID,
-			AgentID:    inner.AgentID,
+			baseEvent: base, AuthCorpID: inner.AuthCorpID, AgentID: inner.AgentID,
 		}, nil
 	case "change_app_admin":
 		return &ChangeAppAdminEvent{
-			baseEvent:  base,
-			AuthCorpID: inner.AuthCorpID,
-			UserID:     inner.UserID,
-			IsAdmin:    inner.IsAdmin == 1,
+			baseEvent: base, AuthCorpID: inner.AuthCorpID,
+			UserID: inner.UserID, IsAdmin: inner.IsAdmin == 1,
 		}, nil
 	default:
-		return &RawEvent{
-			baseEvent: base,
-			InfoType:  inner.InfoType,
-			RawXML:    string(plain),
-		}, nil
+		return &RawEvent{baseEvent: base, InfoType: inner.InfoType, RawXML: string(plain)}, nil
 	}
 }
