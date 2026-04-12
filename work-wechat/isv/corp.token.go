@@ -84,6 +84,9 @@ func (cc *CorpClient) readValidCorpToken(ctx context.Context) (string, bool, err
 func (cc *CorpClient) refreshLocked(ctx context.Context) (string, error) {
 	tokens, err := cc.parent.store.GetAuthorizer(ctx, cc.parent.cfg.SuiteID, cc.corpID)
 	if err != nil {
+		if errors.Is(err, ErrNotFound) {
+			return "", ErrAuthorizerRevoked
+		}
 		return "", err
 	}
 	resp, err := cc.parent.GetCorpToken(ctx, cc.corpID, tokens.PermanentCode)

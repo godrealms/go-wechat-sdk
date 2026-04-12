@@ -2,6 +2,7 @@ package isv
 
 import (
 	"context"
+	"errors"
 	"time"
 )
 
@@ -13,18 +14,20 @@ func (c *Client) GetPermanentCode(ctx context.Context, authCode string) (*Perman
 		return nil, err
 	}
 
-	// 首次同时拿到 corp_token,写入 Store
-	if resp.AccessToken != "" && resp.AuthCorpInfo.CorpID != "" {
-		expiresAt := time.Now().Add(time.Duration(resp.ExpiresIn)*time.Second - safetyMargin)
-		tokens := &AuthorizerTokens{
-			CorpID:            resp.AuthCorpInfo.CorpID,
-			PermanentCode:     resp.PermanentCode,
-			CorpAccessToken:   resp.AccessToken,
-			CorpTokenExpireAt: expiresAt,
-		}
-		if err := c.store.PutAuthorizer(ctx, c.cfg.SuiteID, resp.AuthCorpInfo.CorpID, tokens); err != nil {
-			return nil, err
-		}
+	// 首次同时拿到 corp_token,写入 Store。
+	// 缺字段视为 API 返回不完整,直接报错,避免后续调用拿到 ErrAuthorizerRevoked。
+	if resp.AuthCorpInfo.CorpID == "" || resp.PermanentCode == "" || resp.AccessToken == "" {
+		return nil, errors.New("isv: get_permanent_code response missing required fields (auth_corp_info.corpid / permanent_code / access_token)")
+	}
+	expiresAt := time.Now().Add(time.Duration(resp.ExpiresIn)*time.Second - safetyMargin)
+	tokens := &AuthorizerTokens{
+		CorpID:            resp.AuthCorpInfo.CorpID,
+		PermanentCode:     resp.PermanentCode,
+		CorpAccessToken:   resp.AccessToken,
+		CorpTokenExpireAt: expiresAt,
+	}
+	if err := c.store.PutAuthorizer(ctx, c.cfg.SuiteID, resp.AuthCorpInfo.CorpID, tokens); err != nil {
+		return nil, err
 	}
 	return &resp, nil
 }

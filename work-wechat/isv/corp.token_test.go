@@ -3,6 +3,7 @@ package isv
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -171,4 +172,30 @@ func TestRefreshAll(t *testing.T) {
 
 func TestCorpClient_ImplementsTokenSource(t *testing.T) {
 	var _ TokenSource = (*CorpClient)(nil)
+}
+
+func TestCorpClient_Refresh_UnregisteredCorp_ReturnsRevoked(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	ctx := context.Background()
+	_ = c.store.PutSuiteToken(ctx, "suite1", "STOK", time.Now().Add(time.Hour))
+
+	// No PutAuthorizer — corp is not registered.
+	err := c.CorpClient("ghost").Refresh(ctx)
+	if err == nil {
+		t.Fatal("want error, got nil")
+	}
+	if !errors.Is(err, ErrAuthorizerRevoked) {
+		t.Fatalf("want ErrAuthorizerRevoked, got %v", err)
+	}
+}
+
+func TestCorpClient_AccessToken_UnregisteredCorp_ReturnsRevoked(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	ctx := context.Background()
+	_ = c.store.PutSuiteToken(ctx, "suite1", "STOK", time.Now().Add(time.Hour))
+
+	_, err := c.CorpClient("ghost").AccessToken(ctx)
+	if !errors.Is(err, ErrAuthorizerRevoked) {
+		t.Fatalf("want ErrAuthorizerRevoked, got %v", err)
+	}
 }

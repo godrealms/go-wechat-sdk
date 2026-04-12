@@ -9,11 +9,22 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils/wxcrypto"
 )
 
-const defaultBaseURL = "https://qyapi.weixin.qq.com"
+const (
+	defaultBaseURL    = "https://qyapi.weixin.qq.com"
+	defaultHTTPTimout = 10 * time.Second
+)
+
+// newDefaultHTTPClient returns a private *http.Client with a sane total timeout.
+// Avoids sharing http.DefaultClient (which has no timeout and can leak goroutines
+// on network hangs). Callers can still override with WithHTTPClient.
+func newDefaultHTTPClient() *http.Client {
+	return &http.Client{Timeout: defaultHTTPTimout}
+}
 
 // Config 是 ISV Client 的运行时配置。
 type Config struct {
@@ -72,7 +83,7 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	c := &Client{
 		cfg:     cfg,
 		store:   NewMemoryStore(),
-		http:    http.DefaultClient,
+		http:    newDefaultHTTPClient(),
 		crypto:  cry,
 		baseURL: defaultBaseURL,
 	}
