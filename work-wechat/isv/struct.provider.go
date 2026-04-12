@@ -63,28 +63,14 @@ type RegisterCodeResp struct {
 // ---------- service/get_registration_info ----------
 
 // RegistrationInfoResp 是 service/get_registration_info 的响应。
-// AuthInfo 复用子项目 1 的 AuthInfoAgent(字段布局一致)。
+// CorpInfo / AuthInfo 复用子项目 1 的 AuthCorpInfo / AuthInfoAgent
+// (官方文档字段布局一致,避免重复定义和类型分歧如 verified_end_time)。
 type RegistrationInfoResp struct {
-	CorpInfo      RegistrationCorpInfo  `json:"corp_info"`
+	CorpInfo      AuthCorpInfo          `json:"corp_info"`
 	AuthUserInfo  RegistrationAdminInfo `json:"auth_user_info"`
 	ContactSync   RegistrationContact   `json:"contact_sync"`
 	AuthInfo      AuthInfoAgent         `json:"auth_info"`
 	PermanentCode string                `json:"permanent_code"`
-}
-
-// RegistrationCorpInfo 已注册企业的信息快照。
-type RegistrationCorpInfo struct {
-	CorpID            string `json:"corpid"`
-	CorpName          string `json:"corp_name"`
-	CorpType          string `json:"corp_type"`
-	CorpSquareLogoURL string `json:"corp_square_logo_url"`
-	CorpUserMax       int    `json:"corp_user_max"`
-	SubjectType       int    `json:"subject_type"`
-	VerifiedEndTime   int    `json:"verified_end_time"`
-	CorpWxqrcode      string `json:"corp_wxqrcode"`
-	CorpScale         string `json:"corp_scale"`
-	CorpIndustry      string `json:"corp_industry"`
-	CorpSubIndustry   string `json:"corp_sub_industry"`
 }
 
 // RegistrationAdminInfo 注册企业的初始管理员。
