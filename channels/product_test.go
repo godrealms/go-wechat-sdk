@@ -131,7 +131,8 @@ func TestListProduct(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL)
-	resp, err := c.ListProduct(context.Background(), &ListProductReq{Limit: 10})
+	limit := 10
+	resp, err := c.ListProduct(context.Background(), &ListProductReq{Limit: &limit})
 	if err != nil {
 		t.Fatal(err)
 	}

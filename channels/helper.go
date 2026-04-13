@@ -2,6 +2,7 @@ package channels
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/url"
 )
@@ -12,20 +13,7 @@ type baseResp struct {
 	ErrMsg  string `json:"errmsg"`
 }
 
-// doGet 发送 GET 请求，自动注入 access_token。
-func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out any) error {
-	tok, err := c.AccessToken(ctx)
-	if err != nil {
-		return err
-	}
-	q := url.Values{"access_token": {tok}}
-	for k, vs := range extra {
-		q[k] = vs
-	}
-	return c.http.Get(ctx, path, q, out)
-}
-
-// doPost 发送 POST JSON，自动注入 access_token，检查 errcode。
+// doPost 发送 POST JSON，自动注入 access_token，始终检查 errcode。
 func (c *Client) doPost(ctx context.Context, path string, body any, out any) error {
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
@@ -33,15 +21,19 @@ func (c *Client) doPost(ctx context.Context, path string, body any, out any) err
 	}
 	q := url.Values{"access_token": {tok}}
 	fullPath := path + "?" + q.Encode()
-	if out != nil {
-		return c.http.Post(ctx, fullPath, body, out)
-	}
-	var resp baseResp
-	if err := c.http.Post(ctx, fullPath, body, &resp); err != nil {
+
+	// 始终先解码到 json.RawMessage，确保 errcode 检查不被跳过。
+	var raw json.RawMessage
+	if err := c.http.Post(ctx, fullPath, body, &raw); err != nil {
 		return err
 	}
-	if resp.ErrCode != 0 {
-		return fmt.Errorf("channels: %s errcode=%d errmsg=%s", path, resp.ErrCode, resp.ErrMsg)
+	var base baseResp
+	_ = json.Unmarshal(raw, &base)
+	if base.ErrCode != 0 {
+		return fmt.Errorf("channels: %s errcode=%d errmsg=%s", path, base.ErrCode, base.ErrMsg)
+	}
+	if out != nil {
+		return json.Unmarshal(raw, out)
 	}
 	return nil
 }

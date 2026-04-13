@@ -34,8 +34,8 @@ type GetLiveInfoResp struct {
 
 type GetLiveReplayListReq struct {
 	RoomID string `json:"room_id"`
-	Offset int    `json:"offset,omitempty"`
-	Limit  int    `json:"limit,omitempty"`
+	Offset *int   `json:"offset,omitempty"`
+	Limit  *int   `json:"limit,omitempty"`
 }
 type LiveReplay struct {
 	MediaURL   string `json:"media_url"`

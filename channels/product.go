@@ -9,7 +9,7 @@ type ProductInfo struct {
 	Title      string   `json:"title"`
 	SubTitle   string   `json:"sub_title,omitempty"`
 	HeadImgs   []string `json:"head_imgs,omitempty"`
-	Status     int      `json:"status,omitempty"`
+	Status     *int     `json:"status,omitempty"`
 	CreateTime int64    `json:"create_time,omitempty"`
 }
 
@@ -33,8 +33,8 @@ type GetProductResp struct {
 
 type ListProductReq struct {
 	Status *int `json:"status,omitempty"`
-	Offset int  `json:"offset,omitempty"`
-	Limit  int  `json:"limit,omitempty"`
+	Offset *int `json:"offset,omitempty"`
+	Limit  *int `json:"limit,omitempty"`
 }
 type ListProductResp struct {
 	Products []ProductInfo `json:"products"`

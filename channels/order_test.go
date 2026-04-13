@@ -64,7 +64,8 @@ func TestListOrder(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL)
-	resp, err := c.ListOrder(context.Background(), &ListOrderReq{Limit: 10})
+	limit := 10
+	resp, err := c.ListOrder(context.Background(), &ListOrderReq{Limit: &limit})
 	if err != nil {
 		t.Fatal(err)
 	}

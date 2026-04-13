@@ -7,8 +7,8 @@ import "context"
 type GetFinderLiveDataListReq struct {
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
-	Offset    int    `json:"offset,omitempty"`
-	Limit     int    `json:"limit,omitempty"`
+	Offset    *int   `json:"offset,omitempty"`
+	Limit     *int   `json:"limit,omitempty"`
 }
 type FinderLiveData struct {
 	Date       string `json:"date"`
@@ -22,8 +22,8 @@ type GetFinderLiveDataListResp struct {
 }
 
 type GetFinderListReq struct {
-	Offset int `json:"offset,omitempty"`
-	Limit  int `json:"limit,omitempty"`
+	Offset *int `json:"offset,omitempty"`
+	Limit  *int `json:"limit,omitempty"`
 }
 type FinderInfo struct {
 	FinderID string `json:"finder_id"`

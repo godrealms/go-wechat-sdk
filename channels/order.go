@@ -23,8 +23,8 @@ type ListOrderReq struct {
 	Status    *int  `json:"status,omitempty"`
 	StartTime int64 `json:"start_time,omitempty"`
 	EndTime   int64 `json:"end_time,omitempty"`
-	Offset    int   `json:"offset,omitempty"`
-	Limit     int   `json:"limit,omitempty"`
+	Offset    *int  `json:"offset,omitempty"`
+	Limit     *int  `json:"limit,omitempty"`
 }
 type ListOrderResp struct {
 	Orders []OrderInfo `json:"orders"`

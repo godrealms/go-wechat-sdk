@@ -70,7 +70,8 @@ func TestGetFinderList(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL)
-	resp, err := c.GetFinderList(context.Background(), &GetFinderListReq{Limit: 10})
+	limit := 10
+	resp, err := c.GetFinderList(context.Background(), &GetFinderListReq{Limit: &limit})
 	if err != nil {
 		t.Fatal(err)
 	}
