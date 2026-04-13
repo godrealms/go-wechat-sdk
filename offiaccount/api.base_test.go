@@ -28,7 +28,7 @@ func TestGetCallbackIp_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newBaseTestClient(t, srv)
-	ips, err := c.GetCallbackIp()
+	ips, err := c.GetCallbackIp(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -45,7 +45,7 @@ func TestGetApiDomainIP_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newBaseTestClient(t, srv)
-	ips, err := c.GetApiDomainIP()
+	ips, err := c.GetApiDomainIP(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,7 +66,7 @@ func TestCreateQRCode_Success(t *testing.T) {
 		ActionName: "QR_SCENE",
 		ActionInfo: ActionInfo{Scene: Scene{SceneID: 123}},
 	}
-	result, err := c.CreateQRCode(req)
+	result, err := c.CreateQRCode(context.Background(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -82,7 +82,7 @@ func TestCreateQRCode_NetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
 	c := newBaseTestClient(t, srv)
-	_, err := c.CreateQRCode(&CreateQRCodeRequest{})
+	_, err := c.CreateQRCode(context.Background(), &CreateQRCodeRequest{})
 	if err == nil {
 		t.Error("expected network error")
 	}

@@ -1,13 +1,20 @@
 package offiaccount
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 // CreateKFSession 创建会话
 // kfAccount: 完整客服账号
 // openID: 粉丝的openid
-func (c *Client) CreateKFSession(kfAccount, openID string) (*Resp, error) {
+func (c *Client) CreateKFSession(ctx context.Context, kfAccount, openID string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfsession/create?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/customservice/kfsession/create?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -17,7 +24,7 @@ func (c *Client) CreateKFSession(kfAccount, openID string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -28,9 +35,13 @@ func (c *Client) CreateKFSession(kfAccount, openID string) (*Resp, error) {
 // CloseKFSession 关闭会话
 // kfAccount: 完整客服账号
 // openID: 粉丝的openid
-func (c *Client) CloseKFSession(kfAccount, openID string) (*Resp, error) {
+func (c *Client) CloseKFSession(ctx context.Context, kfAccount, openID string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfsession/close?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/customservice/kfsession/close?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -40,7 +51,7 @@ func (c *Client) CloseKFSession(kfAccount, openID string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -50,13 +61,17 @@ func (c *Client) CloseKFSession(kfAccount, openID string) (*Resp, error) {
 
 // GetKFCustomerSession 获取客户会话状态
 // openID: 粉丝的openid
-func (c *Client) GetKFCustomerSession(openID string) (*KFCustomerSessionInfo, error) {
+func (c *Client) GetKFCustomerSession(ctx context.Context, openID string) (*KFCustomerSessionInfo, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfsession/getsession?access_token=%s&openid=%s", c.GetAccessToken(), openID)
+	path := fmt.Sprintf("/customservice/kfsession/getsession?access_token=%s&openid=%s", token, openID)
 
 	// 发送请求
 	var result KFCustomerSessionInfo
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -66,13 +81,17 @@ func (c *Client) GetKFCustomerSession(openID string) (*KFCustomerSessionInfo, er
 
 // GetKFSessionList 获取客服会话列表
 // kfAccount: 完整客服账号
-func (c *Client) GetKFSessionList(kfAccount string) (*KFSessionListResp, error) {
+func (c *Client) GetKFSessionList(ctx context.Context, kfAccount string) (*KFSessionListResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfsession/getsessionlist?access_token=%s&kf_account=%s", c.GetAccessToken(), kfAccount)
+	path := fmt.Sprintf("/customservice/kfsession/getsessionlist?access_token=%s&kf_account=%s", token, kfAccount)
 
 	// 发送请求
 	var result KFSessionListResp
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -81,13 +100,17 @@ func (c *Client) GetKFSessionList(kfAccount string) (*KFSessionListResp, error) 
 }
 
 // GetWaitCaseList 获取未接入会话列表
-func (c *Client) GetWaitCaseList() (*WaitCaseListResp, error) {
+func (c *Client) GetWaitCaseList(ctx context.Context) (*WaitCaseListResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfsession/getwaitcase?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/customservice/kfsession/getwaitcase?access_token=%s", token)
 
 	// 发送请求
 	var result WaitCaseListResp
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}

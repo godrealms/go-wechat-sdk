@@ -46,7 +46,7 @@ func TestSendTemplateMessage(t *testing.T) {
 				ToUser:     "oUser123",
 				TemplateID: "tplId",
 			}
-			result, err := c.SendTemplateMessage(req)
+			result, err := c.SendTemplateMessage(context.Background(), req)
 			if tc.wantErr {
 				if err == nil {
 					t.Error("expected error, got nil")
@@ -67,7 +67,7 @@ func TestSendTemplateMessage_NetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
 	c := newMsgTestClient(t, srv)
-	_, err := c.SendTemplateMessage(&SubscribeMessageRequest{})
+	_, err := c.SendTemplateMessage(context.Background(), &SubscribeMessageRequest{})
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -77,7 +77,7 @@ func TestAddTemplate(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok","template_id":"tpl123"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	result, err := c.AddTemplate("shortId", []string{"keyword1", "keyword2"})
+	result, err := c.AddTemplate(context.Background(), "shortId", []string{"keyword1", "keyword2"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -90,7 +90,7 @@ func TestAddTemplate_ErrCode(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":40015,"errmsg":"invalid template id"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	_, err := c.AddTemplate("bad", nil)
+	_, err := c.AddTemplate(context.Background(), "bad", nil)
 	if err == nil {
 		t.Error("expected error, got nil")
 	}
@@ -100,7 +100,7 @@ func TestDeleteTemplate(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	_, err := c.DeleteTemplate("tplId")
+	_, err := c.DeleteTemplate(context.Background(), "tplId")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestGetAllTemplates(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok","template_list":[]}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	result, err := c.GetAllTemplates()
+	result, err := c.GetAllTemplates(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -123,7 +123,7 @@ func TestSetIndustry(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	if err := c.SetIndustry("1", "2"); err != nil {
+	if err := c.SetIndustry(context.Background(), "1", "2"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -142,7 +142,7 @@ func TestTemplateSubscribe(t *testing.T) {
 			srv := msgJsonServer(t, 200, tc.resp)
 			defer srv.Close()
 			c := newMsgTestClient(t, srv)
-			err := c.TemplateSubscribe(&TemplateSubscribeReq{})
+			err := c.TemplateSubscribe(context.Background(), &TemplateSubscribeReq{})
 			if tc.wantErr && err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -157,7 +157,7 @@ func TestDeleteMassMsg(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	if err := c.DeleteMassMsg(&DeleteMassMsgRequest{MsgId: 1234567}); err != nil {
+	if err := c.DeleteMassMsg(context.Background(), &DeleteMassMsgRequest{MsgId: 1234567}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -166,7 +166,7 @@ func TestMassSend(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"send job submission success","msg_id":34182}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	result, err := c.MassSend(&MassSendRequest{})
+	result, err := c.MassSend(context.Background(), &MassSendRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestPreview(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	result, err := c.Preview(&MassSendRequest{})
+	result, err := c.Preview(context.Background(), &MassSendRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -192,7 +192,7 @@ func TestSendAll(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"send job submission success","msg_id":34183}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	result, err := c.SendAll(&MassSendByTagRequest{})
+	result, err := c.SendAll(context.Background(), &MassSendByTagRequest{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestSetSpeed(t *testing.T) {
 	srv := msgJsonServer(t, 200, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newMsgTestClient(t, srv)
-	result, err := c.SetSpeed(4)
+	result, err := c.SetSpeed(context.Background(), 4)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

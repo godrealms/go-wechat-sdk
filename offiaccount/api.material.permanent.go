@@ -2,6 +2,7 @@ package offiaccount
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,9 +15,13 @@ import (
 
 // GetMaterial 获取永久素材
 // mediaID: 要获取的素材的media_id
-func (c *Client) GetMaterial(mediaID string) (*GetMaterialNewsResult, *GetMaterialVideoResult, []byte, error) {
+func (c *Client) GetMaterial(ctx context.Context, mediaID string) (*GetMaterialNewsResult, *GetMaterialVideoResult, []byte, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/material/get_material?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/material/get_material?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -28,7 +33,7 @@ func (c *Client) GetMaterial(mediaID string) (*GetMaterialNewsResult, *GetMateri
 	jsonBody, _ := json.Marshal(body)
 
 	// 创建请求
-	req, err := http.NewRequest("POST", fullURL, bytes.NewReader(jsonBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", fullURL, bytes.NewReader(jsonBody))
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("create request failed: %w", err)
 	}
@@ -71,13 +76,17 @@ func (c *Client) GetMaterial(mediaID string) (*GetMaterialNewsResult, *GetMateri
 }
 
 // GetMaterialCount 获取素材总数
-func (c *Client) GetMaterialCount() (*MaterialCount, error) {
+func (c *Client) GetMaterialCount(ctx context.Context) (*MaterialCount, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/material/get_materialcount?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/material/get_materialcount?access_token=%s", token)
 
 	// 发送请求
 	var result MaterialCount
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -87,13 +96,17 @@ func (c *Client) GetMaterialCount() (*MaterialCount, error) {
 
 // BatchGetMaterial 批量获取素材
 // req: 批量获取素材请求参数
-func (c *Client) BatchGetMaterial(req *BatchGetMaterialRequest) (*BatchGetMaterialResult, error) {
+func (c *Client) BatchGetMaterial(ctx context.Context, req *BatchGetMaterialRequest) (*BatchGetMaterialResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/material/batchget_material?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/material/batchget_material?access_token=%s", token)
 
 	// 发送请求
 	var result BatchGetMaterialResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err = c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +117,11 @@ func (c *Client) BatchGetMaterial(req *BatchGetMaterialRequest) (*BatchGetMateri
 // UploadImg 上传图文消息内的图片
 // filename: 图片文件名
 // reader: 图片文件内容读取器
-func (c *Client) UploadImg(filename string, reader io.Reader) (*UploadImgResult, error) {
+func (c *Client) UploadImg(ctx context.Context, filename string, reader io.Reader) (*UploadImgResult, error) {
 	// 获取access_token
-	token := c.GetAccessToken()
-	if token == "" {
-		return nil, fmt.Errorf("get access token failed")
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 构造请求URL
@@ -142,7 +155,7 @@ func (c *Client) UploadImg(filename string, reader io.Reader) (*UploadImgResult,
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("POST", fullURL, &requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -181,7 +194,7 @@ func (c *Client) UploadImg(filename string, reader io.Reader) (*UploadImgResult,
 
 // UploadImageByPath 通过文件路径上传图文消息内的图片
 // filepath: 图片文件路径
-func (c *Client) UploadImageByPath(filepath string) (*UploadImgResult, error) {
+func (c *Client) UploadImageByPath(ctx context.Context, filepath string) (*UploadImgResult, error) {
 	// 打开文件
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -194,7 +207,7 @@ func (c *Client) UploadImageByPath(filepath string) (*UploadImgResult, error) {
 	filename := parts[len(parts)-1]
 
 	// 上传图片
-	return c.UploadImg(filename, file)
+	return c.UploadImg(ctx, filename, file)
 }
 
 // AddMaterial 新增永久素材
@@ -202,11 +215,11 @@ func (c *Client) UploadImageByPath(filepath string) (*UploadImgResult, error) {
 // filename: 媒体文件名
 // reader: 媒体文件内容读取器
 // description: 视频素材描述信息（仅视频素材需要）
-func (c *Client) AddMaterial(materialType MaterialType, filename string, reader io.Reader, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
+func (c *Client) AddMaterial(ctx context.Context, materialType MaterialType, filename string, reader io.Reader, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
 	// 获取access_token
-	token := c.GetAccessToken()
-	if token == "" {
-		return nil, fmt.Errorf("get access token failed")
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 构造请求URL
@@ -250,7 +263,7 @@ func (c *Client) AddMaterial(materialType MaterialType, filename string, reader 
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("POST", fullURL, &requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -291,7 +304,7 @@ func (c *Client) AddMaterial(materialType MaterialType, filename string, reader 
 // materialType: 媒体类型
 // filepath: 媒体文件路径
 // description: 视频素材描述信息（仅视频素材需要）
-func (c *Client) AddMaterialByPath(materialType MaterialType, filepath string, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
+func (c *Client) AddMaterialByPath(ctx context.Context, materialType MaterialType, filepath string, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
 	// 打开文件
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -304,14 +317,18 @@ func (c *Client) AddMaterialByPath(materialType MaterialType, filepath string, d
 	filename := parts[len(parts)-1]
 
 	// 新增素材
-	return c.AddMaterial(materialType, filename, file, description)
+	return c.AddMaterial(ctx, materialType, filename, file, description)
 }
 
 // DelMaterial 删除永久素材
 // mediaID: 要删除的素材media_id
-func (c *Client) DelMaterial(mediaID string) (*Resp, error) {
+func (c *Client) DelMaterial(ctx context.Context, mediaID string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/material/del_material?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/material/del_material?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -320,7 +337,7 @@ func (c *Client) DelMaterial(mediaID string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}

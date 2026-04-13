@@ -66,7 +66,7 @@ func TestCreateCustomMenu(t *testing.T) {
 				defer srv.Close()
 			}
 			c := newMenuTestClient(t, srv)
-			err := c.CreateCustomMenu(&CreateMenuButton{})
+			err := c.CreateCustomMenu(context.Background(), &CreateMenuButton{})
 			if tc.wantErr && err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -104,7 +104,7 @@ func TestGetMenu(t *testing.T) {
 				defer srv.Close()
 			}
 			c := newMenuTestClient(t, srv)
-			result, err := c.GetMenu()
+			result, err := c.GetMenu(context.Background())
 			if tc.wantErr {
 				if err == nil {
 					t.Error("expected error, got nil")
@@ -146,7 +146,7 @@ func TestDeleteMenu(t *testing.T) {
 				defer srv.Close()
 			}
 			c := newMenuTestClient(t, srv)
-			err := c.DeleteMenu()
+			err := c.DeleteMenu(context.Background())
 			if tc.wantErr && err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -165,7 +165,7 @@ func TestGetCurrentSelfMenuInfo(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	result, err := c.GetCurrentSelfMenuInfo()
+	result, err := c.GetCurrentSelfMenuInfo(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestAddConditionalMenu(t *testing.T) {
 				defer srv.Close()
 			}
 			c := newMenuTestClient(t, srv)
-			_, err := c.AddConditionalMenu(&ConditionalMenu{})
+			_, err := c.AddConditionalMenu(context.Background(), &ConditionalMenu{})
 			if tc.wantErr && err == nil {
 				t.Error("expected error, got nil")
 			}
@@ -218,7 +218,7 @@ func TestDeleteConditionalMenu(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	_, err := c.DeleteConditionalMenu("502394")
+	_, err := c.DeleteConditionalMenu(context.Background(), "502394")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -232,7 +232,7 @@ func TestTryMatchMenu(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	result, err := c.TryMatchMenu("oUser123")
+	result, err := c.TryMatchMenu(context.Background(), "oUser123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

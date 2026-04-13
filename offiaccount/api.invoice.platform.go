@@ -2,6 +2,7 @@ package offiaccount
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,13 +12,13 @@ import (
 )
 
 // SetInvoiceUrl 设置商户联系方式（获取开票平台识别码）
-func (c *Client) SetInvoiceUrl() (*SetUrlResult, error) {
+func (c *Client) SetInvoiceUrl(ctx context.Context) (*SetUrlResult, error) {
 	// 构造请求URL
 	path := "/card/invoice/seturl"
 
 	// 发送请求
 	var result SetUrlResult
-	err := c.Https.Post(c.ctx, path, nil, &result)
+	err := c.Https.Post(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -27,13 +28,13 @@ func (c *Client) SetInvoiceUrl() (*SetUrlResult, error) {
 
 // GetPdf 获取pdf文件
 // req: 获取pdf文件请求参数
-func (c *Client) GetPdf(req *GetPdfRequest) (*GetPdfResult, error) {
+func (c *Client) GetPdf(ctx context.Context, req *GetPdfRequest) (*GetPdfResult, error) {
 	// 构造请求URL
 	path := "/card/invoice/platform/getpdf"
 
 	// 发送请求
 	var result GetPdfResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err := c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -43,13 +44,13 @@ func (c *Client) GetPdf(req *GetPdfRequest) (*GetPdfResult, error) {
 
 // UpdateInvoiceStatus 更新发票状态
 // req: 更新发票状态请求参数
-func (c *Client) UpdateInvoiceStatus(req *UpdateInvoiceStatusRequest) (*Resp, error) {
+func (c *Client) UpdateInvoiceStatus(ctx context.Context, req *UpdateInvoiceStatusRequest) (*Resp, error) {
 	// 构造请求URL
 	path := "/card/invoice/platform/updatestatus"
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err := c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -59,11 +60,11 @@ func (c *Client) UpdateInvoiceStatus(req *UpdateInvoiceStatusRequest) (*Resp, er
 
 // SetPdf 设置pdf文件
 // pdf: pdf文件内容
-func (c *Client) SetPdf(filename string, pdf io.Reader) (*SetPdfResult, error) {
+func (c *Client) SetPdf(ctx context.Context, filename string, pdf io.Reader) (*SetPdfResult, error) {
 	// 获取access_token
-	token := c.GetAccessToken()
-	if token == "" {
-		return nil, fmt.Errorf("get access token failed")
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 构造请求URL
@@ -97,7 +98,7 @@ func (c *Client) SetPdf(filename string, pdf io.Reader) (*SetPdfResult, error) {
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("POST", fullURL, &requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -136,13 +137,13 @@ func (c *Client) SetPdf(filename string, pdf io.Reader) (*SetPdfResult, error) {
 
 // CreateCard 创建发票卡券模板
 // req: 创建发票卡券模板请求参数
-func (c *Client) CreateCard(req *CreateCardRequest) (*CreateCardResult, error) {
+func (c *Client) CreateCard(ctx context.Context, req *CreateCardRequest) (*CreateCardResult, error) {
 	// 构造请求URL
 	path := "/card/invoice/platform/createcard"
 
 	// 发送请求
 	var result CreateCardResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err := c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -152,13 +153,13 @@ func (c *Client) CreateCard(req *CreateCardRequest) (*CreateCardResult, error) {
 
 // InsertInvoice 将电子发票卡券插入用户卡包
 // req: 将电子发票卡券插入用户卡包请求参数
-func (c *Client) InsertInvoice(req *InsertInvoiceRequest) (*InsertInvoiceResult, error) {
+func (c *Client) InsertInvoice(ctx context.Context, req *InsertInvoiceRequest) (*InsertInvoiceResult, error) {
 	// 构造请求URL
 	path := "/card/invoice/insert"
 
 	// 发送请求
 	var result InsertInvoiceResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err := c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}

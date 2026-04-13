@@ -33,7 +33,7 @@ func TestGetCallbackIp_ReturnsWeixinError(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	_, err := c.GetCallbackIp()
+	_, err := c.GetCallbackIp(context.Background())
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -60,7 +60,7 @@ func TestGetApiDomainIP_ReturnsWeixinError(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(srv)
-	_, err := c.GetApiDomainIP()
+	_, err := c.GetApiDomainIP(context.Background())
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

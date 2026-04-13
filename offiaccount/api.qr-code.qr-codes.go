@@ -1,6 +1,7 @@
 package offiaccount
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 )
@@ -30,15 +31,19 @@ type CreateQRCodeResult struct {
 	URL           string `json:"url"`
 }
 
-// CreateQRCode creates a QR code ticket that can be exchanged for an image URL via GetQRCodeURL.
-// Set req.ExpireSeconds to 0 for a permanent QR code; provide a positive value for a temporary one.
-func (c *Client) CreateQRCode(req *CreateQRCodeRequest) (*CreateQRCodeResult, error) {
+// CreateQRCode 创建二维码ticket
+// req: 创建二维码请求参数
+func (c *Client) CreateQRCode(ctx context.Context, req *CreateQRCodeRequest) (*CreateQRCodeResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL，添加access_token参数
-	path := fmt.Sprintf("/cgi-bin/qrcode/create?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/qrcode/create?access_token=%s", token)
 
 	// 发送请求
 	var result CreateQRCodeResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err = c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}

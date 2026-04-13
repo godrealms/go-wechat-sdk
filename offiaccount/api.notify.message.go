@@ -2,10 +2,10 @@ package offiaccount
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -13,7 +13,7 @@ import (
 )
 
 // UploadImage 上传图文消息图片
-func (c *Client) UploadImage(filename, mediaType string) (*UploadImageResponse, error) {
+func (c *Client) UploadImage(ctx context.Context, filename, mediaType string) (*UploadImageResponse, error) {
 	// 检查文件是否存在
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return nil, fmt.Errorf("the file does not exist: %s", filename)
@@ -58,11 +58,17 @@ func (c *Client) UploadImage(filename, mediaType string) (*UploadImageResponse, 
 		return nil, fmt.Errorf("closing writer failed: %v", err)
 	}
 
+	// 获取access_token
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	// 构建请求URL
-	uploadURL := fmt.Sprintf("%s/cgi-bin/media/uploadimg?access_token=%s", c.Https.BaseURL, c.GetAccessToken())
+	uploadURL := fmt.Sprintf("%s/cgi-bin/media/uploadimg?access_token=%s", c.Https.BaseURL, token)
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("POST", uploadURL, &requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", uploadURL, &requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -82,7 +88,6 @@ func (c *Client) UploadImage(filename, mediaType string) (*UploadImageResponse, 
 	if err != nil {
 		return nil, fmt.Errorf("read response failed: %v", err)
 	}
-	log.Println(string(respBody))
 	// 解析响应
 	var uploadResp UploadImageResponse
 	err = json.Unmarshal(respBody, &uploadResp)
@@ -100,10 +105,14 @@ func (c *Client) UploadImage(filename, mediaType string) (*UploadImageResponse, 
 
 // DeleteMassMsg 删除群发消息
 // 群发之后，随时可以通过该接口删除群发。
-func (c *Client) DeleteMassMsg(body *DeleteMassMsgRequest) error {
-	path := fmt.Sprintf("/cgi-bin/message/mass/delete?access_token=%s", c.GetAccessToken())
+func (c *Client) DeleteMassMsg(ctx context.Context, body *DeleteMassMsgRequest) error {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/delete?access_token=%s", token)
 	result := &Resp{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
@@ -114,11 +123,15 @@ func (c *Client) DeleteMassMsg(body *DeleteMassMsgRequest) error {
 
 // GetSpeed 获取群发速度
 // 本接口用于获取消息的群发速度
-func (c *Client) getSpeed(speed int) (*SpeedResp, error) {
-	path := fmt.Sprintf("/cgi-bin/message/mass/speed/get?access_token=%s", c.GetAccessToken())
+func (c *Client) getSpeed(ctx context.Context, speed int) (*SpeedResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/speed/get?access_token=%s", token)
 	body := map[string]interface{}{"speed": speed}
 	result := &SpeedResp{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -129,11 +142,15 @@ func (c *Client) getSpeed(speed int) (*SpeedResp, error) {
 
 // GetMassMsg 查询群发消息发送状态
 // 本接口用于查询群发消息发送状态。
-func (c *Client) GetMassMsg(msgId string) (*MassMsgResp, error) {
-	path := fmt.Sprintf("/cgi-bin/message/mass/get?access_token=%s", c.GetAccessToken())
+func (c *Client) GetMassMsg(ctx context.Context, msgId string) (*MassMsgResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/get?access_token=%s", token)
 	body := map[string]interface{}{"msg_id": msgId}
 	result := &MassMsgResp{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -144,10 +161,14 @@ func (c *Client) GetMassMsg(msgId string) (*MassMsgResp, error) {
 
 // MassSend 根据OpenID群发消息
 // 本接口用于根据 openid 列表群发消息
-func (c *Client) MassSend(body *MassSendRequest) (*MassSendResp, error) {
-	path := fmt.Sprintf("/cgi-bin/message/mass/send?access_token=%s", c.GetAccessToken())
+func (c *Client) MassSend(ctx context.Context, body *MassSendRequest) (*MassSendResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/send?access_token=%s", token)
 	result := &MassSendResp{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -158,10 +179,14 @@ func (c *Client) MassSend(body *MassSendRequest) (*MassSendResp, error) {
 
 // Preview 预览群发消息
 // 本接口发送消息给指定用户，在手机端查看消息的样式和排版。
-func (c *Client) Preview(body *MassSendRequest) (*Resp, error) {
-	path := fmt.Sprintf("/cgi-bin/message/mass/preview?access_token=%s", c.GetAccessToken())
+func (c *Client) Preview(ctx context.Context, body *MassSendRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/preview?access_token=%s", token)
 	result := &Resp{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -172,10 +197,14 @@ func (c *Client) Preview(body *MassSendRequest) (*Resp, error) {
 
 // SendAll 根据标签群发消息
 // 本接口用于根据标签群发消息
-func (c *Client) SendAll(body *MassSendByTagRequest) (*MassSendByTagResponse, error) {
-	path := fmt.Sprintf("/cgi-bin/message/mass/sendall?access_token=%s", c.GetAccessToken())
+func (c *Client) SendAll(ctx context.Context, body *MassSendByTagRequest) (*MassSendByTagResponse, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/sendall?access_token=%s", token)
 	result := &MassSendByTagResponse{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -186,11 +215,15 @@ func (c *Client) SendAll(body *MassSendByTagRequest) (*MassSendByTagResponse, er
 
 // SetSpeed 设置群发速度
 // 本接口用于设置消息的群发速度
-func (c *Client) SetSpeed(speed int) (*Resp, error) {
-	path := fmt.Sprintf("/cgi-bin/message/mass/speed/set?access_token=%s", c.GetAccessToken())
+func (c *Client) SetSpeed(ctx context.Context, speed int) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/message/mass/speed/set?access_token=%s", token)
 	body := map[string]interface{}{"speed": speed}
 	result := &Resp{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -201,10 +234,14 @@ func (c *Client) SetSpeed(speed int) (*Resp, error) {
 
 // UploadNewsMsg 上传图文消息素材
 // 本接口用于上传图文消息，该能力已更新为草稿箱
-func (c *Client) UploadNewsMsg(body *AddNewsMaterialRequest) (*AddNewsMaterialResponse, error) {
-	path := fmt.Sprintf("/cgi-bin/media/uploadnews?access_token=%s", c.GetAccessToken())
+func (c *Client) UploadNewsMsg(ctx context.Context, body *AddNewsMaterialRequest) (*AddNewsMaterialResponse, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/cgi-bin/media/uploadnews?access_token=%s", token)
 	result := &AddNewsMaterialResponse{}
-	err := c.Https.Post(c.ctx, path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {

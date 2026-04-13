@@ -928,10 +928,9 @@ type IpList struct {
 
 // AccessToken is the response from the WeChat access-token endpoint.
 type AccessToken struct {
+	Resp
 	AccessToken string `json:"access_token"` // access_token
 	ExpiresIn   int64  `json:"expires_in"`   // access_token的过期时间
-	ErrCode     int    `json:"errcode"`      // 错误码（正常时为0）
-	ErrMsg      string `json:"errmsg"`       // 错误描述
 }
 
 type RidInfoResp struct {

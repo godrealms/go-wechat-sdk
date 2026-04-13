@@ -1,6 +1,7 @@
 package offiaccount
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +16,7 @@ func TestGetTempMedia_BinaryResponse(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	data, videoResult, err := c.GetTempMedia("media123")
+	data, videoResult, err := c.GetTempMedia(context.Background(), "media123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -36,7 +37,7 @@ func TestGetTempMedia_JSONResponse(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	data, videoResult, err := c.GetTempMedia("media123")
+	data, videoResult, err := c.GetTempMedia(context.Background(), "media123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -52,7 +53,7 @@ func TestGetTempMedia_NetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
 	c := newMenuTestClient(t, srv)
-	_, _, err := c.GetTempMedia("media123")
+	_, _, err := c.GetTempMedia(context.Background(), "media123")
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -68,7 +69,7 @@ func TestGetMaterial_News(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	newsResult, videoResult, rawData, err := c.GetMaterial("media_news_123")
+	newsResult, videoResult, rawData, err := c.GetMaterial(context.Background(), "media_news_123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestGetMaterial_NetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
 	c := newMenuTestClient(t, srv)
-	_, _, _, err := c.GetMaterial("media123")
+	_, _, _, err := c.GetMaterial(context.Background(), "media123")
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -98,7 +99,7 @@ func TestAddDraft_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	result, err := c.AddDraft([]*DraftArticle{{Title: "Hello", Content: "World"}})
+	result, err := c.AddDraft(context.Background(), []*DraftArticle{{Title: "Hello", Content: "World"}})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -111,7 +112,7 @@ func TestAddDraft_NetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
 	srv.Close()
 	c := newMenuTestClient(t, srv)
-	_, err := c.AddDraft([]*DraftArticle{})
+	_, err := c.AddDraft(context.Background(), []*DraftArticle{})
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -127,7 +128,7 @@ func TestGetDraft_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newMenuTestClient(t, srv)
-	result, err := c.GetDraft("draft123")
+	result, err := c.GetDraft(context.Background(), "draft123")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

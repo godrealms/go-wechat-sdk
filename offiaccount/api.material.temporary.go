@@ -2,6 +2,7 @@ package offiaccount
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -16,11 +17,11 @@ import (
 // mediaType: 媒体文件类型
 // filename: 媒体文件名
 // reader: 媒体文件内容读取器
-func (c *Client) UploadTempMedia(mediaType TempMediaType, filename string, reader io.Reader) (*UploadTempMediaResult, error) {
+func (c *Client) UploadTempMedia(ctx context.Context, mediaType TempMediaType, filename string, reader io.Reader) (*UploadTempMediaResult, error) {
 	// 获取access_token
-	token := c.GetAccessToken()
-	if token == "" {
-		return nil, fmt.Errorf("get access token failed")
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 构造请求URL
@@ -55,7 +56,7 @@ func (c *Client) UploadTempMedia(mediaType TempMediaType, filename string, reade
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("POST", fullURL, &requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -95,7 +96,7 @@ func (c *Client) UploadTempMedia(mediaType TempMediaType, filename string, reade
 // UploadTempMediaByPath 通过文件路径上传临时素材
 // mediaType: 媒体文件类型
 // filepath: 媒体文件路径
-func (c *Client) UploadTempMediaByPath(mediaType TempMediaType, filepath string) (*UploadTempMediaResult, error) {
+func (c *Client) UploadTempMediaByPath(ctx context.Context, mediaType TempMediaType, filepath string) (*UploadTempMediaResult, error) {
 	// 打开文件
 	file, err := os.Open(filepath)
 	if err != nil {
@@ -108,15 +109,19 @@ func (c *Client) UploadTempMediaByPath(mediaType TempMediaType, filepath string)
 	filename := parts[len(parts)-1]
 
 	// 上传临时素材
-	return c.UploadTempMedia(mediaType, filename, file)
+	return c.UploadTempMedia(ctx, mediaType, filename, file)
 }
 
 // GetTempMedia 获取临时素材
 // mediaID: 媒体文件ID
-func (c *Client) GetTempMedia(mediaID string) ([]byte, *GetTempMediaVideoResult, error) {
+func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, *GetTempMediaVideoResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	// 构造请求URL
 	params := url.Values{}
-	params.Add("access_token", c.GetAccessToken())
+	params.Add("access_token", token)
 	params.Add("media_id", mediaID)
 	path := fmt.Sprintf("/cgi-bin/media/get?%s", params.Encode())
 
@@ -124,7 +129,7 @@ func (c *Client) GetTempMedia(mediaID string) ([]byte, *GetTempMediaVideoResult,
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("GET", fullURL, nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -172,10 +177,14 @@ func (c *Client) GetTempMedia(mediaID string) ([]byte, *GetTempMediaVideoResult,
 
 // GetHDVoice 获取高清语音素材
 // mediaID: 语音素材ID
-func (c *Client) GetHDVoice(mediaID string) ([]byte, *Resp, error) {
+func (c *Client) GetHDVoice(ctx context.Context, mediaID string) ([]byte, *Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
 	// 构造请求URL
 	params := url.Values{}
-	params.Add("access_token", c.GetAccessToken())
+	params.Add("access_token", token)
 	params.Add("media_id", mediaID)
 	path := fmt.Sprintf("/cgi-bin/media/get/jssdk?%s", params.Encode())
 
@@ -183,7 +192,7 @@ func (c *Client) GetHDVoice(mediaID string) ([]byte, *Resp, error) {
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("GET", fullURL, nil)
+	httpReq, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
 		return nil, nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
