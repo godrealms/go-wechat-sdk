@@ -34,10 +34,9 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 	if err != nil {
 		return nil, err
 	}
-	// 提前10秒过期，避免临界点问题
-	result.ExpiresIn = result.ExpiresIn + time.Now().Unix() - 10
 	c.tokenMutex.Lock()
-	c.accessToken = result
+	c.accessToken = result.AccessToken
+	c.expiresAt = time.Now().Add(time.Duration(result.ExpiresIn-10) * time.Second)
 	c.tokenMutex.Unlock()
 	return result, nil
 }

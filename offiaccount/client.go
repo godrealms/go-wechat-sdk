@@ -64,12 +64,6 @@ func NewClient(ctx context.Context, config *Config, opts ...Option) *Client {
 	return c
 }
 
-// GetAccessToken 旧版兼容入口：返回字符串，错误被吞掉。新代码请使用 AccessTokenE。
-func (c *Client) GetAccessToken() string {
-	token, _ := c.AccessTokenE(c.ctx)
-	return token
-}
-
 // AccessTokenE 显式获取 access_token，错误会被传递给调用方。
 // 如果注入了 TokenSource，则委托给它；否则走自有 /cgi-bin/token 流程。
 func (c *Client) AccessTokenE(ctx context.Context) (string, error) {
