@@ -101,4 +101,7 @@ func TestAccessToken_UsesInjectedTokenSource(t *testing.T) {
 	if tok != "INJECTED" {
 		t.Errorf("got %q, want INJECTED", tok)
 	}
+	if fake.calls != 1 {
+		t.Errorf("expected TokenSource called 1 time, got %d", fake.calls)
+	}
 }

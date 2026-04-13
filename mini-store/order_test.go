@@ -1,7 +1,13 @@
 package mini_store
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func TestGetOrder(t *testing.T) {
@@ -54,7 +60,7 @@ func TestUploadShipping(t *testing.T) {
 }
 
 func TestGetAfterSaleOrder(t *testing.T) {
-	srv := apiServer(t, "/shop/aftersale/get_after_sale_order", `{"errcode":0,"errmsg":"ok","after_sale_order":{"id":"ASO001"}}`)
+	srv := apiServer(t, "/shop/aftersale/get_after_sale_order", `{"errcode":0,"errmsg":"ok","after_sale_order":{"after_sale_order_id":"ASO001"}}`)
 	defer srv.Close()
 	resp, err := newTestClient(t, srv.URL).GetAfterSaleOrder(ctx(t), &GetAfterSaleOrderReq{AfterSaleOrderID: "ASO001"})
 	if err != nil {
@@ -78,5 +84,21 @@ func TestRejectRefund(t *testing.T) {
 	defer srv.Close()
 	if err := newTestClient(t, srv.URL).RejectRefund(ctx(t), &RejectRefundReq{AfterSaleOrderID: "ASO001", RejectReason: "Not eligible"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGetOrder_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.GetOrder(context.Background(), &GetOrderReq{OrderID: "ORD001"})
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }

@@ -2,8 +2,12 @@ package xiaowei
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func TestAddMicroProduct(t *testing.T) {
@@ -51,5 +55,21 @@ func TestListMicroProducts(t *testing.T) {
 	}
 	if len(resp.Products) != 1 {
 		t.Errorf("expected 1 product, got %d", len(resp.Products))
+	}
+}
+
+func TestAddMicroProduct_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.AddMicroProduct(context.Background(), &MicroProduct{Title: "Widget", Price: 999})
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }

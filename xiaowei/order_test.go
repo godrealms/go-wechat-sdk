@@ -2,8 +2,12 @@ package xiaowei
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func TestGetMicroOrder(t *testing.T) {
@@ -49,5 +53,21 @@ func TestRefundMicroOrder(t *testing.T) {
 	req := &RefundMicroOrderReq{OrderID: "ORD001", RefundAmount: 0}
 	if err := newTestClient(t, srv.URL).RefundMicroOrder(context.Background(), req); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGetMicroOrder_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.GetMicroOrder(context.Background(), &GetMicroOrderReq{OrderID: "ORD001"})
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }

@@ -2,8 +2,12 @@ package xiaowei
 
 import (
 	"context"
+	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func TestGetStoreInfo(t *testing.T) {
@@ -48,5 +52,21 @@ func TestSubmitKYC(t *testing.T) {
 	req := &SubmitKYCReq{RealName: "Zhang San", IDCardNo: "110101199001011234"}
 	if err := newTestClient(t, srv.URL).SubmitKYC(context.Background(), req); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGetStoreInfo_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.GetStoreInfo(context.Background())
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }

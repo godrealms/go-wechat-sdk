@@ -1,7 +1,13 @@
 package mini_store
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func TestGetMerchantInfo(t *testing.T) {
@@ -49,5 +55,21 @@ func TestGetCategoryList(t *testing.T) {
 	}
 	if len(resp.CategoryList) == 0 {
 		t.Error("expected non-empty CategoryList")
+	}
+}
+
+func TestGetMerchantInfo_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.GetMerchantInfo(context.Background())
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }

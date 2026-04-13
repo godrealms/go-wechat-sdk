@@ -31,12 +31,6 @@ func (f *fakeTokenSource) AccessToken(_ context.Context) (string, error) {
 	return f.token, f.err
 }
 
-func tokenHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/cgi-bin/token" {
-		_, _ = w.Write([]byte(`{"access_token":"TOK","expires_in":7200}`))
-	}
-}
-
 func TestNewClient(t *testing.T) {
 	if _, err := NewClient(Config{}); err == nil {
 		t.Error("expected error for empty AppId")
@@ -93,5 +87,8 @@ func TestAccessToken_UsesInjectedTokenSource(t *testing.T) {
 	}
 	if tok != "INJECTED" {
 		t.Errorf("got %q, want INJECTED", tok)
+	}
+	if fake.calls != 1 {
+		t.Errorf("expected TokenSource called 1 time, got %d", fake.calls)
 	}
 }

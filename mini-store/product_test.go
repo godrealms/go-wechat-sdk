@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func apiServer(t *testing.T, apiPath, respBody string) *httptest.Server {
@@ -107,6 +110,22 @@ func TestCancelProductAudit(t *testing.T) {
 	defer srv.Close()
 	if err := newTestClient(t, srv.URL).CancelProductAudit(ctx(t), &CancelProductAuditReq{ProductID: "spu_001"}); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestAddProduct_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.AddProduct(context.Background(), &Product{Title: "Test"})
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }
 

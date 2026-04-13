@@ -1,7 +1,13 @@
 package mini_store
 
 import (
+	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 func TestAddCoupon(t *testing.T) {
@@ -45,5 +51,21 @@ func TestListCoupons(t *testing.T) {
 	}
 	if len(resp.Coupons) != 1 {
 		t.Errorf("expected 1 coupon, got %d", len(resp.Coupons))
+	}
+}
+
+func TestAddCoupon_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv.Close() // close immediately to force a network error
+	fake := &fakeTokenSource{token: "TOK"}
+	c, err := NewClient(Config{AppId: "wx", AppSecret: "sec"},
+		WithHTTP(utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))),
+		WithTokenSource(fake))
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = c.AddCoupon(context.Background(), &Coupon{Name: "10 off", Type: 1, Discount: 1000})
+	if err == nil {
+		t.Error("expected network error, got nil")
 	}
 }

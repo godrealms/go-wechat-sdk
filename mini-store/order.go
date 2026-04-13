@@ -90,9 +90,18 @@ type GetAfterSaleOrderReq struct {
 	AfterSaleOrderID string `json:"after_sale_order_id"`
 }
 
+// AfterSaleOrderDetail holds the details of an after-sale (refund/return) order.
+type AfterSaleOrderDetail struct {
+	AfterSaleOrderID string `json:"after_sale_order_id,omitempty"`
+	OrderID          string `json:"order_id,omitempty"`
+	RefundAmount     int64  `json:"refund_amount,omitempty"`
+	Status           int    `json:"status,omitempty"`
+	Reason           string `json:"reason,omitempty"`
+}
+
 // GetAfterSaleOrderResp is the response from GetAfterSaleOrder.
 type GetAfterSaleOrderResp struct {
-	AfterSaleOrder map[string]interface{} `json:"after_sale_order"`
+	AfterSaleOrder *AfterSaleOrderDetail `json:"after_sale_order"`
 }
 
 // GetAfterSaleOrder returns the details of an after-sale (refund/return) order.

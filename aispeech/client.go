@@ -110,6 +110,9 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("aispeech: empty access_token")
 	}
 	c.accessToken = out.AccessToken
+	if out.ExpiresIn <= 60 {
+		out.ExpiresIn = 120
+	}
 	c.expiresAt = time.Now().Add(time.Duration(out.ExpiresIn-60) * time.Second)
 	return c.accessToken, nil
 }
