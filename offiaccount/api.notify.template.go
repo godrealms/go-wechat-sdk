@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-// SendTemplateMessage 发送模板消息
-// 本接口用于向用户发送模板消息
+// SendTemplateMessage sends a template message to a user.
+// Template messages are pre-approved message formats used for transactional notifications.
 func (c *Client) SendTemplateMessage(body *SubscribeMessageRequest) (*MassMsgResp, error) {
 	path := fmt.Sprintf("/cgi-bin/message/template/send?access_token=%s", c.GetAccessToken())
 	result := &MassMsgResp{}

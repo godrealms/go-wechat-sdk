@@ -2,9 +2,9 @@ package offiaccount
 
 import "net/url"
 
-// GetUserInfo 获取用户基本信息
-// openid: 普通用户的标识，对当前公众号唯一
-// lang: 返回国家地区语言版本，zh_CN 简体，zh_TW 繁体，en 英语，默认为zh_CN
+// GetUserInfo retrieves the basic profile of a follower identified by openid.
+// lang selects the language of the returned country/region field: zh_CN (simplified Chinese),
+// zh_TW (traditional Chinese), or en (English); defaults to zh_CN when empty.
 func (c *Client) GetUserInfo(openid string, lang string) (*UserInfo, error) {
 	// 构造请求URL和查询参数
 	path := "/cgi-bin/user/info"

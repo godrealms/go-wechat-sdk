@@ -7,20 +7,16 @@ import (
 	"time"
 )
 
-// GetAccessToken 获取接口调用凭据
-// 获取全局唯一后台接口调用凭据，token有效期为7200s，开发者需要进行妥善保存。
+// GetAccessToken returns the current cached access token without triggering a refresh.
+// Returns an empty string if no token has been fetched yet.
+//
+// Deprecated: use AccessTokenE for error propagation.
 func (c *Client) GetAccessToken() string {
 	return c.getAccessToken()
 }
 
-// GetStableAccessToken 获取稳定 AccessToken
-// 获取全局后台接口调用凭据，有效期最长为7200s，开发者需要进行妥善保存；
-// 有两种调用模式:
-//  1. 普通模式，access_token 有效期内重复调用该接口不会更新 access_token，绝大部分场景下使用该模式；
-//  2. 强制刷新模式，会导致上次获取的 access_token 失效，并返回新的 access_token；
-//
-// 该接口调用频率限制为 1万次 每分钟，每天限制调用 50万 次；
-// 与getAccessToken获取的调用凭证完全隔离，互不影响。该接口仅支持 POST JSON 形式的调用；
+// GetStableAccessToken returns a stable access_token that is not invalidated by concurrent calls
+// to the regular token endpoint. Pass forceRefresh=true to rotate the token immediately.
 func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 	body := map[string]interface{}{
 		"grant_type":    "client_credential",
@@ -62,9 +58,8 @@ func (c *Client) CallbackCheck(action, checkOperator string) (*CallbackCheckResp
 	return result, nil
 }
 
-// GetCallbackIp 获取微信推送服务器IP
-// 该接口用于获取微信推送服务器 ip 地址（向开发者服务器推送信息的微信服务器来源地址）
-// 如果开发者基于安全等考虑，需要获知微信服务器的IP地址列表，以便进行相关限制，可以通过该接口获得微信服务器IP地址列表或者IP网段信息。
+// GetCallbackIp returns the list of WeChat server IP addresses used for callback (push message)
+// delivery to the official account's server.
 func (c *Client) GetCallbackIp() ([]string, error) {
 	query := url.Values{
 		"access_token": {c.getAccessToken()},
@@ -80,9 +75,8 @@ func (c *Client) GetCallbackIp() ([]string, error) {
 	return result.IpList, nil
 }
 
-// GetApiDomainIP 获取微信API服务器IP
-// 该接口用于获取微信 api 服务器 ip 地址（开发者服务器主动访问 api.weixin.qq.com 的远端地址）
-// 如果开发者基于安全等考虑，需要获知微信服务器的IP地址列表，以便进行相关限制，可以通过该接口获得微信服务器IP地址列表或者IP网段信息。
+// GetApiDomainIP returns the IP addresses of the WeChat API servers,
+// used for outbound IP allowlisting.
 func (c *Client) GetApiDomainIP() ([]string, error) {
 	query := url.Values{
 		"access_token": {c.getAccessToken()},

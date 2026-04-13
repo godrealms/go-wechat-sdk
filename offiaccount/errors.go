@@ -2,8 +2,8 @@ package offiaccount
 
 import "fmt"
 
-// WeixinError represents a WeChat API business error (errcode != 0).
-// It implements utils.WechatAPIError for generic error inspection.
+// WeixinError wraps a non-zero WeChat errcode returned by any API endpoint.
+// It implements the error interface and can be inspected with errors.As.
 type WeixinError struct {
 	ErrCode int
 	ErrMsg  string
@@ -20,8 +20,8 @@ func (e *WeixinError) Code() int { return e.ErrCode }
 // Message returns the human-readable errmsg. Implements utils.WechatAPIError.
 func (e *WeixinError) Message() string { return e.ErrMsg }
 
-// CheckResp returns a *WeixinError if r.ErrCode != 0, otherwise nil.
-// Use this after every WeChat API call to normalise error handling.
+// CheckResp returns a *WeixinError if r.ErrCode is non-zero, otherwise nil.
+// Callers use it to translate a decoded Resp into a Go error.
 func CheckResp(r *Resp) error {
 	if r.ErrCode == 0 {
 		return nil
