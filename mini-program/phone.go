@@ -2,12 +2,12 @@ package mini_program
 
 import "context"
 
-// GetPhoneNumberReq 获取用户手机号请求。
+// GetPhoneNumberReq is the request body for the get-phone-number API.
 type GetPhoneNumberReq struct {
 	Code string `json:"code"`
 }
 
-// PhoneInfo 手机号信息。
+// PhoneInfo holds the decrypted phone number returned by the WeChat API.
 type PhoneInfo struct {
 	PhoneNumber     string    `json:"phoneNumber"`
 	PurePhoneNumber string    `json:"purePhoneNumber"`
@@ -15,18 +15,18 @@ type PhoneInfo struct {
 	Watermark       Watermark `json:"watermark"`
 }
 
-// Watermark 数据水印。
+// Watermark is the data watermark embedded in WeChat sensitive data responses.
 type Watermark struct {
 	AppID     string `json:"appid"`
 	Timestamp int64  `json:"timestamp"`
 }
 
-// GetPhoneNumberResp 获取用户手机号响应。
+// GetPhoneNumberResp is the response from the get-phone-number API.
 type GetPhoneNumberResp struct {
 	PhoneInfo PhoneInfo `json:"phone_info"`
 }
 
-// GetPhoneNumber 获取用户手机号（用前端 getPhoneNumber 返回的 code 换取）。
+// GetPhoneNumber exchanges the code returned by the front-end getPhoneNumber callback for the user's phone number.
 func (c *Client) GetPhoneNumber(ctx context.Context, code string) (*GetPhoneNumberResp, error) {
 	body := &GetPhoneNumberReq{Code: code}
 	var resp GetPhoneNumberResp

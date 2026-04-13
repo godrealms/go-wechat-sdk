@@ -32,10 +32,10 @@ type Client struct {
 	authMu      sync.Map   // map[string]*sync.Mutex per-authorizer 刷新锁
 }
 
-// Option 构造可选项。
+// Option is a functional option for configuring a Client.
 type Option func(*Client)
 
-// WithStore 注入自定义 Store 实现（默认 MemoryStore）。
+// WithStore injects a custom Store implementation (defaults to MemoryStore).
 func WithStore(s Store) Option {
 	return func(c *Client) {
 		if s != nil {
@@ -44,7 +44,7 @@ func WithStore(s Store) Option {
 	}
 }
 
-// WithHTTP 注入自定义 utils.HTTP 客户端（测试常用）。
+// WithHTTP injects a custom utils.HTTP client (commonly used in tests).
 func WithHTTP(h *utils.HTTP) Option {
 	return func(c *Client) {
 		if h != nil {
@@ -80,13 +80,14 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// Store 暴露底层 Store，便于外部检查/管理（例如清理失效 authorizer）。
+// Store returns the underlying Store, allowing callers to inspect or manage stored tokens
+// (e.g. removing revoked authorizers).
 func (c *Client) Store() Store { return c.store }
 
-// HTTP 暴露底层 HTTP 客户端。
+// HTTP returns the underlying HTTP client.
 func (c *Client) HTTP() *utils.HTTP { return c.http }
 
-// ComponentAppID 返回第三方平台 appid。
+// ComponentAppID returns the third-party platform appid.
 func (c *Client) ComponentAppID() string { return c.cfg.ComponentAppID }
 
 // checkWeixinErr 如果 errcode != 0 则返回 *WeixinError，否则 nil。

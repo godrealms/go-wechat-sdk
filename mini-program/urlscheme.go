@@ -2,14 +2,14 @@ package mini_program
 
 import "context"
 
-// JumpWxa 跳转小程序参数。
+// JumpWxa specifies the Mini Program path and query to open via a URL Scheme.
 type JumpWxa struct {
 	Path       string `json:"path"`
 	Query      string `json:"query"`
 	EnvVersion string `json:"env_version,omitempty"`
 }
 
-// GenerateSchemeReq 生成 URL Scheme 请求。
+// GenerateSchemeReq is the request body for generating a URL Scheme.
 type GenerateSchemeReq struct {
 	JumpWxa        *JumpWxa `json:"jump_wxa,omitempty"`
 	IsExpire       bool     `json:"is_expire,omitempty"`
@@ -18,12 +18,12 @@ type GenerateSchemeReq struct {
 	ExpireInterval int      `json:"expire_interval,omitempty"`
 }
 
-// GenerateSchemeResp 生成 URL Scheme 响应。
+// GenerateSchemeResp is the response from the URL Scheme generation API.
 type GenerateSchemeResp struct {
 	OpenLink string `json:"openlink"`
 }
 
-// GenerateUrlLinkReq 生成 URL Link 请求。
+// GenerateUrlLinkReq is the request body for generating a URL Link.
 type GenerateUrlLinkReq struct {
 	Path           string `json:"path,omitempty"`
 	Query          string `json:"query,omitempty"`
@@ -34,24 +34,24 @@ type GenerateUrlLinkReq struct {
 	ExpireInterval int    `json:"expire_interval,omitempty"`
 }
 
-// GenerateUrlLinkResp 生成 URL Link 响应。
+// GenerateUrlLinkResp is the response from the URL Link generation API.
 type GenerateUrlLinkResp struct {
 	URLLink string `json:"url_link"`
 }
 
-// GenerateShortLinkReq 生成 Short Link 请求。
+// GenerateShortLinkReq is the request body for generating a Short Link.
 type GenerateShortLinkReq struct {
 	PageURL     string `json:"page_url"`
 	PageTitle   string `json:"page_title,omitempty"`
 	IsPermanent bool   `json:"is_permanent,omitempty"`
 }
 
-// GenerateShortLinkResp 生成 Short Link 响应。
+// GenerateShortLinkResp is the response from the Short Link generation API.
 type GenerateShortLinkResp struct {
 	Link string `json:"link"`
 }
 
-// GenerateScheme 生成 URL Scheme（用于短信、邮件等外部拉起小程序）。
+// GenerateScheme generates a URL Scheme for launching the Mini Program from SMS, email, or other external contexts.
 func (c *Client) GenerateScheme(ctx context.Context, req *GenerateSchemeReq) (*GenerateSchemeResp, error) {
 	var resp GenerateSchemeResp
 	if err := c.doPost(ctx, "/wxa/generatescheme", req, &resp); err != nil {
@@ -60,7 +60,7 @@ func (c *Client) GenerateScheme(ctx context.Context, req *GenerateSchemeReq) (*G
 	return &resp, nil
 }
 
-// GenerateUrlLink 生成 URL Link（适用于短信、邮件等无法使用 Scheme 的场景）。
+// GenerateUrlLink generates a URL Link suitable for contexts where URL Schemes cannot be used (e.g. SMS, email).
 func (c *Client) GenerateUrlLink(ctx context.Context, req *GenerateUrlLinkReq) (*GenerateUrlLinkResp, error) {
 	var resp GenerateUrlLinkResp
 	if err := c.doPost(ctx, "/wxa/generate_urllink", req, &resp); err != nil {
@@ -69,7 +69,7 @@ func (c *Client) GenerateUrlLink(ctx context.Context, req *GenerateUrlLinkReq) (
 	return &resp, nil
 }
 
-// GenerateShortLink 生成 Short Link（短链，适用于微信内传播）。
+// GenerateShortLink generates a Short Link for sharing within WeChat.
 func (c *Client) GenerateShortLink(ctx context.Context, req *GenerateShortLinkReq) (*GenerateShortLinkResp, error) {
 	var resp GenerateShortLinkResp
 	if err := c.doPost(ctx, "/wxa/genwxashortlink", req, &resp); err != nil {

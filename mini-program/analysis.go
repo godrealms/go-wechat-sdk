@@ -2,13 +2,13 @@ package mini_program
 
 import "context"
 
-// AnalysisDateReq 数据分析通用日期请求。
+// AnalysisDateReq is the common date-range request for data-analysis endpoints.
 type AnalysisDateReq struct {
 	BeginDate string `json:"begin_date"`
 	EndDate   string `json:"end_date"`
 }
 
-// DailySummaryItem 概况趋势数据项。
+// DailySummaryItem holds a single entry from the daily-summary trend response.
 type DailySummaryItem struct {
 	RefDate    string `json:"ref_date"`
 	VisitTotal int    `json:"visit_total"`
@@ -16,12 +16,12 @@ type DailySummaryItem struct {
 	ShareUV    int    `json:"share_uv"`
 }
 
-// GetDailySummaryResp 概况趋势响应。
+// GetDailySummaryResp is the response for the daily-summary trend API.
 type GetDailySummaryResp struct {
 	List []DailySummaryItem `json:"list"`
 }
 
-// VisitPageItem 页面访问数据项。
+// VisitPageItem holds a single page's visit metrics.
 type VisitPageItem struct {
 	PagePath       string  `json:"page_path"`
 	PageVisitPV    int     `json:"page_visit_pv"`
@@ -33,13 +33,13 @@ type VisitPageItem struct {
 	PageShareUV    int     `json:"page_share_uv"`
 }
 
-// GetVisitPageResp 页面访问数据响应。
+// GetVisitPageResp is the response for the visit-page data API.
 type GetVisitPageResp struct {
 	RefDate string          `json:"ref_date"`
 	List    []VisitPageItem `json:"list"`
 }
 
-// DailyVisitTrendItem 日访问趋势数据项。
+// DailyVisitTrendItem holds a single day's visit trend metrics.
 type DailyVisitTrendItem struct {
 	RefDate         string  `json:"ref_date"`
 	SessionCnt      int     `json:"session_cnt"`
@@ -51,12 +51,12 @@ type DailyVisitTrendItem struct {
 	VisitDepth      float64 `json:"visit_depth"`
 }
 
-// GetDailyVisitTrendResp 日访问趋势响应。
+// GetDailyVisitTrendResp is the response for the daily visit trend API.
 type GetDailyVisitTrendResp struct {
 	List []DailyVisitTrendItem `json:"list"`
 }
 
-// GetDailySummary 获取概况趋势数据。
+// GetDailySummary returns daily summary trend data for the given date range.
 func (c *Client) GetDailySummary(ctx context.Context, beginDate, endDate string) (*GetDailySummaryResp, error) {
 	body := &AnalysisDateReq{BeginDate: beginDate, EndDate: endDate}
 	var resp GetDailySummaryResp
@@ -66,7 +66,7 @@ func (c *Client) GetDailySummary(ctx context.Context, beginDate, endDate string)
 	return &resp, nil
 }
 
-// GetVisitPage 获取页面访问数据。
+// GetVisitPage returns per-page visit data for the given date range.
 func (c *Client) GetVisitPage(ctx context.Context, beginDate, endDate string) (*GetVisitPageResp, error) {
 	body := &AnalysisDateReq{BeginDate: beginDate, EndDate: endDate}
 	var resp GetVisitPageResp
@@ -76,7 +76,7 @@ func (c *Client) GetVisitPage(ctx context.Context, beginDate, endDate string) (*
 	return &resp, nil
 }
 
-// GetDailyVisitTrend 获取日访问趋势。
+// GetDailyVisitTrend returns daily visit trend data for the given date range.
 func (c *Client) GetDailyVisitTrend(ctx context.Context, beginDate, endDate string) (*GetDailyVisitTrendResp, error) {
 	body := &AnalysisDateReq{BeginDate: beginDate, EndDate: endDate}
 	var resp GetDailyVisitTrendResp

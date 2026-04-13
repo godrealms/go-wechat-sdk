@@ -13,11 +13,7 @@ import (
 )
 
 func TestMsgSecCheck(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/cgi-bin/token" {
-			_, _ = w.Write([]byte(`{"access_token":"TOK","expires_in":7200}`))
-			return
-		}
+	srv := httptest.NewServer(tokenHandler(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/wxa/msg_sec_check" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
@@ -75,11 +71,7 @@ func TestMsgSecCheck(t *testing.T) {
 }
 
 func TestMediaCheckAsync(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/cgi-bin/token" {
-			_, _ = w.Write([]byte(`{"access_token":"TOK","expires_in":7200}`))
-			return
-		}
+	srv := httptest.NewServer(tokenHandler(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/wxa/media_check_async" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}

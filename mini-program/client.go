@@ -40,14 +40,14 @@ type Client struct {
 	tokenSource TokenSource
 }
 
-// Option 构造可选项。
+// Option is a functional option for configuring a Client.
 type Option func(*Client)
 
-// WithHTTP 用自定义 HTTP 客户端（主要用于测试）。
+// WithHTTP overrides the default HTTP client (primarily used in tests).
 func WithHTTP(h *utils.HTTP) Option { return func(c *Client) { c.http = h } }
 
-// WithTokenSource 注入外部 access_token 来源（例如开放平台代调用）。
-// 设置后 AccessToken() 不再调用 /cgi-bin/token。
+// WithTokenSource injects an external access token source (e.g. Open Platform delegated calls).
+// When set, AccessToken() no longer calls /cgi-bin/token.
 func WithTokenSource(ts TokenSource) Option {
 	return func(c *Client) { c.tokenSource = ts }
 }
@@ -70,10 +70,10 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// HTTP 返回底层 HTTP 客户端，便于扩展自定义接口。
+// HTTP returns the underlying HTTP client, enabling callers to make custom API calls.
 func (c *Client) HTTP() *utils.HTTP { return c.http }
 
-// Code2SessionResp 是 wx.login 换 session 的响应。
+// Code2SessionResp is the response from the wx.login code-to-session exchange.
 type Code2SessionResp struct {
 	OpenId     string `json:"openid"`
 	SessionKey string `json:"session_key"`
@@ -99,7 +99,7 @@ func (c *Client) Code2Session(ctx context.Context, jsCode string) (*Code2Session
 		return nil, err
 	}
 	if out.ErrCode != 0 {
-		return nil, fmt.Errorf("mini_program: code2session errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return nil, &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/sns/jscode2session"}
 	}
 	return out, nil
 }
@@ -139,7 +139,7 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mini_program: fetch token: %w", err)
 	}
 	if out.ErrCode != 0 {
-		return "", fmt.Errorf("mini_program: token errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return "", &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
 	}
 	if out.AccessToken == "" {
 		return "", fmt.Errorf("mini_program: empty access_token")
@@ -165,7 +165,7 @@ func (c *Client) SendSubscribeMessage(ctx context.Context, body any) error {
 		return err
 	}
 	if out.ErrCode != 0 {
-		return fmt.Errorf("mini_program: subscribe send errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/message/subscribe/send"}
 	}
 	return nil
 }
