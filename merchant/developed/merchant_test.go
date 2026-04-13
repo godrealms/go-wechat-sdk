@@ -1,6 +1,9 @@
 package developed
 
 import (
+	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -8,9 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"crypto/rand"
-	"crypto/rsa"
 
 	"github.com/godrealms/go-wechat-sdk/merchant/developed/types"
 	"github.com/godrealms/go-wechat-sdk/utils"
@@ -572,69 +572,6 @@ func TestFundFlowBill_SetsAuthorizationHeader(t *testing.T) {
 	}
 }
 
-// --- Stub method tests (doV3, postV3, getV3, verifyResponseSignature, apiV3Key, decryptAES256GCM) ---
-
-func TestDoV3_ReturnsNotImplemented(t *testing.T) {
-	c := NewWechatClient()
-	err := c.doV3(nil, "GET", "/test", nil, nil, nil)
-	if err == nil {
-		t.Error("expected error from doV3 stub")
-	}
-	if !strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("expected 'not implemented', got: %q", err.Error())
-	}
-}
-
-func TestPostV3_ReturnsNotImplemented(t *testing.T) {
-	c := NewWechatClient()
-	err := c.postV3(nil, "/test", nil, nil)
-	if err == nil {
-		t.Error("expected error from postV3 stub")
-	}
-	if !strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("expected 'not implemented', got: %q", err.Error())
-	}
-}
-
-func TestGetV3_ReturnsNotImplemented(t *testing.T) {
-	c := NewWechatClient()
-	err := c.getV3(nil, "/test", nil, nil)
-	if err == nil {
-		t.Error("expected error from getV3 stub")
-	}
-	if !strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("expected 'not implemented', got: %q", err.Error())
-	}
-}
-
-func TestVerifyResponseSignature_ReturnsNotImplemented(t *testing.T) {
-	c := NewWechatClient()
-	err := c.verifyResponseSignature(nil, nil, nil)
-	if err == nil {
-		t.Error("expected error from verifyResponseSignature stub")
-	}
-	if !strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("expected 'not implemented', got: %q", err.Error())
-	}
-}
-
-func TestApiV3Key_ReturnsKey(t *testing.T) {
-	c := NewWechatClient().WithAPIv3Key("testkey")
-	if c.apiV3Key() != "testkey" {
-		t.Errorf("expected testkey, got %q", c.apiV3Key())
-	}
-}
-
-func TestDecryptAES256GCM_ReturnsNotImplemented(t *testing.T) {
-	_, err := decryptAES256GCM("key", "nonce", "assoc", "cipher")
-	if err == nil {
-		t.Error("expected error from decryptAES256GCM stub")
-	}
-	if !strings.Contains(err.Error(), "not implemented") {
-		t.Errorf("expected 'not implemented', got: %q", err.Error())
-	}
-}
-
 // --- WithCertificate and WithPublicKey builder tests ---
 
 func TestWechatClient_WithCertificateAndPublicKey(t *testing.T) {
@@ -727,8 +664,8 @@ func TestParseRefundNotify_SignatureError(t *testing.T) {
 
 func TestCreateTransferBatch_StubError(t *testing.T) {
 	c := NewWechatClient()
-	_, err := c.CreateTransferBatch(nil, map[string]any{"test": "val"})
+	_, err := c.CreateTransferBatch(context.Background(), map[string]any{"test": "val"})
 	if err == nil {
-		t.Error("expected error from CreateTransferBatch (postV3 stub)")
+		t.Error("expected error from CreateTransferBatch (no private key/mchid)")
 	}
 }
