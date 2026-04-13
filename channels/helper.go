@@ -3,7 +3,6 @@ package channels
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/url"
 )
 
@@ -30,7 +29,7 @@ func (c *Client) doPost(ctx context.Context, path string, body any, out any) err
 	var base baseResp
 	_ = json.Unmarshal(raw, &base)
 	if base.ErrCode != 0 {
-		return fmt.Errorf("channels: %s errcode=%d errmsg=%s", path, base.ErrCode, base.ErrMsg)
+		return &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
 	}
 	if out != nil {
 		return json.Unmarshal(raw, out)
