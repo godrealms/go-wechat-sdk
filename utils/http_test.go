@@ -2,10 +2,12 @@ package utils
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -336,5 +338,171 @@ func TestHTTP_PostForm_NetworkError(t *testing.T) {
 	err := h.PostForm(context.Background(), "/form", url.Values{}, &struct{}{})
 	if err == nil {
 		t.Fatal("expected network error")
+	}
+}
+
+// --- New tests for DoRequest, DoRequestWithRawResponse, WithLogger, WithHTTPClient ---
+
+func TestDoRequest_Success(t *testing.T) {
+	type Resp struct {
+		ErrCode int    `json:"errcode"`
+		Data    string `json:"data"`
+	}
+	srv := startServer(t, 200, `{"errcode":0,"data":"ok"}`)
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	var result Resp
+	err := h.DoRequest(context.Background(), http.MethodGet, "/api", nil, nil, nil, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.ErrCode != 0 {
+		t.Errorf("expected errcode 0, got %d", result.ErrCode)
+	}
+	if result.Data != "ok" {
+		t.Errorf("expected data=ok, got %q", result.Data)
+	}
+}
+
+func TestDoRequest_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	u := srv.URL
+	srv.Close()
+
+	h := NewHTTP(u, WithTimeout(time.Second))
+	err := h.DoRequest(context.Background(), http.MethodGet, "/path", nil, nil, nil, &struct{}{})
+	if err == nil {
+		t.Fatal("expected network error")
+	}
+}
+
+func TestDoRequest_Non2xxStatus(t *testing.T) {
+	srv := startServer(t, 500, `server error`)
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	err := h.DoRequest(context.Background(), http.MethodGet, "/fail", nil, nil, nil, &struct{}{})
+	if err == nil {
+		t.Fatal("expected error for 500 status")
+	}
+	httpErr, ok := err.(*HTTPError)
+	if !ok {
+		t.Fatalf("expected *HTTPError, got %T: %v", err, err)
+	}
+	if httpErr.StatusCode != 500 {
+		t.Errorf("expected status 500, got %d", httpErr.StatusCode)
+	}
+}
+
+func TestDoRequestWithRawResponse_Success(t *testing.T) {
+	rawBytes := []byte(`raw-binary-data-123`)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(200)
+		_, _ = w.Write(rawBytes)
+	}))
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	statusCode, _, body, err := h.DoRequestWithRawResponse(context.Background(), http.MethodGet, "/raw", nil, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if statusCode != 200 {
+		t.Errorf("expected status 200, got %d", statusCode)
+	}
+	if string(body) != string(rawBytes) {
+		t.Errorf("expected body %q, got %q", rawBytes, body)
+	}
+}
+
+func TestDoRequestWithRawResponse_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	u := srv.URL
+	srv.Close()
+
+	h := NewHTTP(u, WithTimeout(time.Second))
+	_, _, _, err := h.DoRequestWithRawResponse(context.Background(), http.MethodGet, "/path", nil, nil, nil)
+	if err == nil {
+		t.Fatal("expected network error")
+	}
+}
+
+// recordingLogger implements Logger and records all Debugf calls.
+type recordingLogger struct {
+	mu   sync.Mutex
+	msgs []string
+}
+
+func (l *recordingLogger) Debugf(format string, args ...any) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	l.msgs = append(l.msgs, fmt.Sprintf(format, args...))
+}
+
+func (l *recordingLogger) count() int {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return len(l.msgs)
+}
+
+func TestWithLogger_LogsCalled(t *testing.T) {
+	srv := startServer(t, 200, `{"ok":true}`)
+	defer srv.Close()
+
+	logger := &recordingLogger{}
+	h := NewHTTP(srv.URL, WithTimeout(3*time.Second), WithLogger(logger))
+
+	if err := h.Get(context.Background(), "/log-test", nil, &struct{}{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if logger.count() == 0 {
+		t.Error("expected Debugf to be called at least once, but it was not called")
+	}
+}
+
+// recordingTransport records requests and delegates to a real transport.
+type recordingTransport struct {
+	mu       sync.Mutex
+	requests []*http.Request
+	delegate http.RoundTripper
+}
+
+func (rt *recordingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	rt.mu.Lock()
+	rt.requests = append(rt.requests, req)
+	rt.mu.Unlock()
+	return rt.delegate.RoundTrip(req)
+}
+
+func (rt *recordingTransport) count() int {
+	rt.mu.Lock()
+	defer rt.mu.Unlock()
+	return len(rt.requests)
+}
+
+func TestWithHTTPClient_UsesInjectedClient(t *testing.T) {
+	srv := startServer(t, 200, `{"ok":true}`)
+	defer srv.Close()
+
+	transport := &recordingTransport{delegate: http.DefaultTransport}
+	customClient := &http.Client{
+		Timeout:   5 * time.Second,
+		Transport: transport,
+	}
+
+	h := NewHTTP(srv.URL, WithHTTPClient(customClient))
+
+	if err := h.Get(context.Background(), "/custom-client", nil, &struct{}{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if transport.count() == 0 {
+		t.Error("expected request to go through custom transport, but no requests were recorded")
+	}
+	// Verify the injected client is the one stored on the HTTP struct.
+	if h.Client != customClient {
+		t.Error("expected h.Client to be the injected custom client")
 	}
 }
