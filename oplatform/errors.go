@@ -18,6 +18,12 @@ func (e *WeixinError) Error() string {
 	return fmt.Sprintf("oplatform: errcode=%d errmsg=%s", e.ErrCode, e.ErrMsg)
 }
 
+// Code returns the numeric errcode. Implements utils.WechatAPIError.
+func (e *WeixinError) Code() int { return e.ErrCode }
+
+// Message returns the human-readable errmsg. Implements utils.WechatAPIError.
+func (e *WeixinError) Message() string { return e.ErrMsg }
+
 // 常见哨兵错误。
 var (
 	// ErrNotFound 由 Store 实现返回，表示 key 不存在（非 I/O 错误）。
