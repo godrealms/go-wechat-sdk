@@ -47,7 +47,7 @@ type GetLiveReplayListResp struct {
 	Total          int          `json:"total"`
 }
 
-// CreateRoom 创建直播间
+// CreateRoom creates a new live-streaming room for the Channels account.
 func (c *Client) CreateRoom(ctx context.Context, req *CreateRoomReq) (*CreateRoomResp, error) {
 	var resp CreateRoomResp
 	if err := c.doPost(ctx, "/channels/ec/basics/live/createroom", req, &resp); err != nil {
@@ -61,7 +61,7 @@ func (c *Client) DeleteRoom(ctx context.Context, req *DeleteRoomReq) error {
 	return c.doPost(ctx, "/channels/ec/basics/live/deleteroom", req, nil)
 }
 
-// GetLiveInfo 获取直播间信息
+// GetLiveInfo retrieves the current status and metadata for the specified live room.
 func (c *Client) GetLiveInfo(ctx context.Context, req *GetLiveInfoReq) (*GetLiveInfoResp, error) {
 	var resp GetLiveInfoResp
 	if err := c.doPost(ctx, "/channels/ec/basics/live/getliveinfo", req, &resp); err != nil {

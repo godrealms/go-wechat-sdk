@@ -2,7 +2,7 @@ package channels
 
 import "fmt"
 
-// APIError represents a WeChat Channels API business error (errcode != 0).
+// APIError wraps a WeChat Channels API error with the request path, errcode, and errmsg.
 type APIError struct {
 	ErrCode int
 	ErrMsg  string

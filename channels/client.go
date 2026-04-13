@@ -1,4 +1,4 @@
-// Package channels 提供微信视频号 API 的常用入口。
+// Package channels provides a client for the WeChat Channels (视频号) server-side API.
 package channels
 
 import (
@@ -11,13 +11,13 @@ import (
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
-// Config 视频号配置。
+// Config holds the Channels application credentials.
 type Config struct {
 	AppId     string
 	AppSecret string
 }
 
-// Client 视频号服务端客户端。并发安全。
+// Client is the WeChat Channels server-side API client. Safe for concurrent use.
 type Client struct {
 	cfg  Config
 	http *utils.HTTP
@@ -48,7 +48,7 @@ func WithTokenSource(ts TokenSource) Option {
 	return func(c *Client) { c.tokenSource = ts }
 }
 
-// NewClient 构造客户端。
+// NewClient constructs a Channels client.
 func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	if cfg.AppId == "" {
 		return nil, fmt.Errorf("channels: AppId is required")
@@ -76,8 +76,8 @@ type accessTokenResp struct {
 	ErrMsg      string `json:"errmsg,omitempty"`
 }
 
-// AccessToken 获取全局 access_token（带进程内缓存，提前 60 秒过期）。
-// 注入 TokenSource 时直接委托。
+// AccessToken returns a valid global access_token, refreshing it when fewer than
+// 60 seconds remain before expiry. When a TokenSource is injected, delegates to it.
 func (c *Client) AccessToken(ctx context.Context) (string, error) {
 	if c.tokenSource != nil {
 		return c.tokenSource.AccessToken(ctx)

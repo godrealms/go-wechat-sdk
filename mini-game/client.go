@@ -1,4 +1,4 @@
-// Package mini_game 提供微信小游戏服务端 API 的常用入口。
+// Package mini_game provides a client for the WeChat Mini Game (小游戏) server-side API.
 //
 // 当前实现：
 //   - Code2Session: 登录凭证校验（wx.login 换 openid/session_key）
@@ -18,13 +18,13 @@ import (
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
-// Config 小游戏配置。
+// Config holds the Mini Game credentials from the WeChat developer console.
 type Config struct {
 	AppId     string
 	AppSecret string
 }
 
-// Client 小游戏服务端客户端。并发安全。
+// Client is the Mini Game server-side API client. Safe for concurrent use.
 type Client struct {
 	cfg  Config
 	http *utils.HTTP
@@ -55,7 +55,7 @@ func WithTokenSource(ts TokenSource) Option {
 	return func(c *Client) { c.tokenSource = ts }
 }
 
-// NewClient 构造客户端。
+// NewClient constructs a Mini Game client.
 func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	if cfg.AppId == "" {
 		return nil, fmt.Errorf("mini_game: AppId is required")
@@ -85,7 +85,8 @@ type Code2SessionResp struct {
 	ErrMsg     string `json:"errmsg,omitempty"`
 }
 
-// Code2Session 登录凭证校验。
+// Code2Session exchanges the js_code obtained from wx.login for the user's openid,
+// session_key, and (if applicable) unionid.
 func (c *Client) Code2Session(ctx context.Context, jsCode string) (*Code2SessionResp, error) {
 	if jsCode == "" {
 		return nil, fmt.Errorf("mini_game: jsCode is required")
@@ -113,8 +114,8 @@ type accessTokenResp struct {
 	ErrMsg      string `json:"errmsg,omitempty"`
 }
 
-// AccessToken 获取全局 access_token（带进程内缓存，提前 60 秒过期）。
-// 注入 TokenSource 时直接委托。
+// AccessToken returns a valid global access_token, refreshing it when fewer than
+// 60 seconds remain before expiry. When a TokenSource is injected, delegates to it.
 func (c *Client) AccessToken(ctx context.Context) (string, error) {
 	if c.tokenSource != nil {
 		return c.tokenSource.AccessToken(ctx)

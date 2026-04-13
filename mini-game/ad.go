@@ -19,6 +19,7 @@ type GetGameAdDataResp struct {
 	Items []GameAdData `json:"items"`
 }
 
+// GetGameAdData retrieves advertising performance data for the Mini Game within the given date range.
 func (c *Client) GetGameAdData(ctx context.Context, req *GetGameAdDataReq) (*GetGameAdDataResp, error) {
 	var resp GetGameAdDataResp
 	if err := c.doPost(ctx, "/wxa/game/getgameaddata", req, &resp); err != nil {

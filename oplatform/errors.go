@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// WeixinError 微信业务错误 (errcode != 0).
+// WeixinError wraps a non-zero WeChat errcode from the Open Platform API.
 type WeixinError struct {
 	ErrCode int
 	ErrMsg  string

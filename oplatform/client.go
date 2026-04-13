@@ -1,3 +1,6 @@
+// Package oplatform provides a client for the WeChat Open Platform (开放平台)
+// third-party platform API. Use it to manage component access tokens and
+// delegate API calls on behalf of authorized official accounts.
 package oplatform
 
 import (
@@ -10,7 +13,7 @@ import (
 	"github.com/godrealms/go-wechat-sdk/utils/wxcrypto"
 )
 
-// Config 开放平台第三方平台配置。
+// Config holds the Open Platform component credentials.
 type Config struct {
 	ComponentAppID     string // 第三方平台 appid
 	ComponentAppSecret string // 第三方平台 secret
@@ -18,7 +21,7 @@ type Config struct {
 	EncodingAESKey     string // 43 字符 AESKey
 }
 
-// Client 开放平台客户端。并发安全。
+// Client is the WeChat Open Platform third-party platform client. Safe for concurrent use.
 type Client struct {
 	cfg    Config
 	http   *utils.HTTP
@@ -50,7 +53,7 @@ func WithHTTP(h *utils.HTTP) Option {
 	}
 }
 
-// NewClient 构造开放平台 Client。构造期间不发起任何网络请求。
+// NewClient constructs an Open Platform client. No network requests are made during construction.
 func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	if cfg.ComponentAppID == "" {
 		return nil, fmt.Errorf("oplatform: ComponentAppID is required")
