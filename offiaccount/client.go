@@ -1,3 +1,6 @@
+// Package offiaccount provides a client for the WeChat Official Account (公众号) server-side API.
+// Create a Client with NewClient, then call any of the API methods.
+// Token refresh is automatic and concurrency-safe.
 package offiaccount
 
 import (
@@ -10,6 +13,7 @@ import (
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
+// Config holds the Official Account credentials from the WeChat developer console.
 type Config struct {
 	AppId          string `json:"appId"`
 	AppSecret      string `json:"appSecret"`
@@ -17,7 +21,8 @@ type Config struct {
 	EncodingAESKey string `json:"encodingAESKey"`
 }
 
-// Client 微信公众号
+// Client manages access token lifecycle and provides methods for the WeChat Official Account (公众号) server-side API.
+// It is safe for concurrent use.
 type Client struct {
 	ctx    context.Context
 	Config *Config
@@ -30,16 +35,17 @@ type Client struct {
 	tokenSource TokenSource
 }
 
-// Option 构造可选项。
+// Option is a functional configuration applied to a Client during NewClient.
 type Option func(*Client)
 
-// WithTokenSource 注入外部 access_token 来源（例如开放平台代调用）。
-// 设置后 AccessTokenE 不再调用 /cgi-bin/token。
+// WithTokenSource configures the client to obtain access tokens from src instead of calling /cgi-bin/token directly.
+// Use this for open-platform component-on-behalf-of flows.
 func WithTokenSource(ts TokenSource) Option {
 	return func(c *Client) { c.tokenSource = ts }
 }
 
-// WithHTTPClient 允许替换底层 HTTP 客户端（主要用于测试注入）。
+// WithHTTPClient replaces the client's default HTTP transport.
+// Useful for testing with a mock server or for setting a custom base URL.
 func WithHTTPClient(h *utils.HTTP) Option {
 	return func(c *Client) {
 		if h != nil {
@@ -48,7 +54,8 @@ func WithHTTPClient(h *utils.HTTP) Option {
 	}
 }
 
-// NewClient 创建客户端
+// NewClient creates an Official Account client. A background Context is used when ctx is nil.
+// Call WithTokenSource to delegate token management to an open-platform authorizer.
 func NewClient(ctx context.Context, config *Config, opts ...Option) *Client {
 	if ctx == nil {
 		ctx = context.Background()
@@ -64,14 +71,9 @@ func NewClient(ctx context.Context, config *Config, opts ...Option) *Client {
 	return c
 }
 
-// GetAccessToken 旧版兼容入口：返回字符串，错误被吞掉。新代码请使用 AccessTokenE。
-func (c *Client) GetAccessToken() string {
-	token, _ := c.AccessTokenE(c.ctx)
-	return token
-}
-
-// AccessTokenE 显式获取 access_token，错误会被传递给调用方。
-// 如果注入了 TokenSource，则委托给它；否则走自有 /cgi-bin/token 流程。
+// AccessTokenE returns a valid access_token, propagating any fetch error to the caller.
+// It uses an in-process read-write-locked cache; the token is refreshed 60 s before expiry.
+// When a TokenSource is configured the call is delegated to it without touching /cgi-bin/token.
 func (c *Client) AccessTokenE(ctx context.Context) (string, error) {
 	if ctx == nil {
 		ctx = c.ctx

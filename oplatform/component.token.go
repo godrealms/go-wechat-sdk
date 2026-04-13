@@ -10,8 +10,8 @@ import (
 // componentTokenSafetyWindow 提前过期 60 秒，避免临界抖动。
 const componentTokenSafetyWindow = 60 * time.Second
 
-// ComponentAccessToken 读取 Store 中的 component_access_token；
-// 过期则调用微信接口刷新并写回 Store。
+// ComponentAccessToken returns the component_access_token, refreshing it from the
+// WeChat API when the cached value is within 60 seconds of expiry.
 func (c *Client) ComponentAccessToken(ctx context.Context) (string, error) {
 	ctx = touchContext(ctx)
 
@@ -39,7 +39,8 @@ func (c *Client) ComponentAccessToken(ctx context.Context) (string, error) {
 	return c.fetchComponentTokenLocked(ctx)
 }
 
-// RefreshComponentToken 无视缓存强制刷新。
+// RefreshComponentToken forces an unconditional refresh of the component_access_token,
+// bypassing the cache.
 func (c *Client) RefreshComponentToken(ctx context.Context) error {
 	ctx = touchContext(ctx)
 	c.componentMu.Lock()

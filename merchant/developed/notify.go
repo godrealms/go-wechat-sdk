@@ -1,4 +1,4 @@
-package pay
+package developed
 
 import (
 	"context"
@@ -10,23 +10,7 @@ import (
 	"github.com/godrealms/go-wechat-sdk/merchant/developed/types"
 )
 
-// ParseNotification 解析微信支付回调请求。
-// 它会：
-//  1. 从 HTTP header 取出 Wechatpay-* 签名字段；
-//  2. 用本地缓存的平台证书验签（必要时自动拉取 /v3/certificates）；
-//  3. 解析请求体为 *types.Notify；
-//  4. 使用 APIv3 密钥解密 resource 字段，得到明文；
-//  5. 如果 result != nil，就把明文 unmarshal 进去。
-//
-// 返回的第一个值总是原始 *types.Notify（即使 result 为 nil）。
-//
-// 典型用法：
-//
-//	var txn types.Transaction
-//	notify, err := client.ParseNotification(ctx, r, &txn)
-//	if err != nil { ... }
-//	// notify.EventType / notify.Id ...
-//	// txn 已经是解密后的交易结构
+// ParseNotification decodes and verifies an inbound WeChat Pay callback notification from r. It decrypts the resource field using AES-256-GCM with the configured APIv3 key.
 func (c *Client) ParseNotification(ctx context.Context, r *http.Request, result any) (*types.Notify, error) {
 	if r == nil {
 		return nil, fmt.Errorf("pay: nil *http.Request")
@@ -53,7 +37,7 @@ func (c *Client) ParseNotification(ctx context.Context, r *http.Request, result 
 		return notify, nil
 	}
 
-	plaintext, err := decryptNotifyResource(notify.Resource, c.apiV3Key)
+	plaintext, err := decryptNotifyResource(notify.Resource, c.apiV3Key())
 	if err != nil {
 		return nil, fmt.Errorf("pay: decrypt notify resource: %w", err)
 	}

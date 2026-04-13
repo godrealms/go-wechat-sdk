@@ -1,7 +1,6 @@
 package offiaccount
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 )
@@ -15,7 +14,7 @@ func (c *Client) DelWxAnewTemplate(priTmplId string) error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -29,7 +28,7 @@ func (c *Client) GetCategory() (*CategoryResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -47,7 +46,7 @@ func (c *Client) GetPubNewTemplateKeyWords(tid string) (*TemplateKeyWordsResp, e
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -70,7 +69,7 @@ func (c *Client) GetPubNewTemplateTitles(ids string, start, limit int) (*Templat
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -86,7 +85,7 @@ func (c *Client) GetWxaPubNewTemplate() (*PubNewTemplateResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -104,7 +103,7 @@ func (c *Client) AddWxaNewTemplate(tid string, kidList []int, sceneDesc string) 
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -117,7 +116,7 @@ func (c *Client) SendNewSubscribeMsg(body *SubscribeMsg) error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

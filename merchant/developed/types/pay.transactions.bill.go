@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// TradeBillQuest 申请交易账单
+// TradeBillQuest is the query parameter set for downloading trade bill files.
 type TradeBillQuest struct {
 	//【账单日期】 账单日期，格式yyyy-MM-DD，仅支持三个月内的账单下载申请。
 	BillDate string `json:"bill_date"`
@@ -54,7 +54,7 @@ type BillResp struct {
 	DownloadUrl string `json:"download_url"`
 }
 
-// FundsBillQuest 申请资金账单
+// FundsBillQuest is the query parameter set for downloading fund flow bill files.
 type FundsBillQuest struct {
 	//【账单日期】 账单日期，格式yyyy-MM-DD，仅支持三个月内的账单下载申请。
 	BillDate string `json:"bill_date"`

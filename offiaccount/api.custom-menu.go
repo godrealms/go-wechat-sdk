@@ -1,7 +1,6 @@
 package offiaccount
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 )
@@ -15,7 +14,7 @@ func (c *Client) CreateCustomMenu(body *CreateMenuButton) error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -60,7 +59,7 @@ func (c *Client) DeleteMenu() error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -80,7 +79,7 @@ func (c *Client) AddConditionalMenu(body *ConditionalMenu) (*AddConditionalMenuR
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -95,7 +94,7 @@ func (c *Client) DeleteConditionalMenu(menuId string) (*Resp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -110,7 +109,7 @@ func (c *Client) TryMatchMenu(userId string) (*QueryCustomMenu, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }

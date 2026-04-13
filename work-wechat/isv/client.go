@@ -1,3 +1,6 @@
+// Package isv provides a client for the WeCom (企业微信) third-party ISV API.
+// Create a Client with NewClient to manage suite tokens and handle
+// authorized-enterprise API calls on behalf of third-party applications.
 package isv
 
 import (
@@ -26,7 +29,7 @@ func newDefaultHTTPClient() *http.Client {
 	return &http.Client{Timeout: defaultHTTPTimout}
 }
 
-// Config 是 ISV Client 的运行时配置。
+// Config holds the WeCom ISV suite credentials.
 type Config struct {
 	SuiteID        string // 第三方应用 suite_id
 	SuiteSecret    string // 第三方应用 suite_secret
@@ -36,7 +39,7 @@ type Config struct {
 	EncodingAESKey string // 回调 AES key(43 字符)
 }
 
-// Client 是服务商级别的入口,无状态可共享。
+// Client is the WeCom ISV API client. Safe for concurrent use.
 type Client struct {
 	cfg     Config
 	store   Store
@@ -56,7 +59,7 @@ func WithStore(s Store) Option             { return func(c *Client) { c.store = 
 func WithHTTPClient(h *http.Client) Option { return func(c *Client) { c.http = h } }
 func WithBaseURL(u string) Option          { return func(c *Client) { c.baseURL = u } }
 
-// NewClient 校验配置并构造 Client。
+// NewClient constructs a WeCom ISV client.
 func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	if cfg.SuiteID == "" {
 		return nil, fmt.Errorf("isv: SuiteID required")

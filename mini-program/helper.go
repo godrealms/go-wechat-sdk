@@ -3,7 +3,6 @@ package mini_program
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -44,7 +43,7 @@ func (c *Client) doPost(ctx context.Context, path string, body any, out any) err
 	var base baseResp
 	_ = json.Unmarshal(raw, &base)
 	if base.ErrCode != 0 {
-		return fmt.Errorf("mini_program: %s errcode=%d errmsg=%s", path, base.ErrCode, base.ErrMsg)
+		return &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
 	}
 	if out != nil {
 		return json.Unmarshal(raw, out)
@@ -70,7 +69,7 @@ func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, 
 	if len(respBody) > 0 && respBody[0] == '{' {
 		var resp baseResp
 		if json.Unmarshal(respBody, &resp) == nil && resp.ErrCode != 0 {
-			return nil, fmt.Errorf("mini_program: %s errcode=%d errmsg=%s", path, resp.ErrCode, resp.ErrMsg)
+			return nil, &APIError{ErrCode: resp.ErrCode, ErrMsg: resp.ErrMsg, Path: path}
 		}
 	}
 	return respBody, nil

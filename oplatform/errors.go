@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-// WeixinError 微信业务错误 (errcode != 0).
+// WeixinError wraps a non-zero WeChat errcode from the Open Platform API.
 type WeixinError struct {
 	ErrCode int
 	ErrMsg  string
@@ -17,6 +17,12 @@ func (e *WeixinError) Error() string {
 	}
 	return fmt.Sprintf("oplatform: errcode=%d errmsg=%s", e.ErrCode, e.ErrMsg)
 }
+
+// Code returns the numeric errcode. Implements utils.WechatAPIError.
+func (e *WeixinError) Code() int { return e.ErrCode }
+
+// Message returns the human-readable errmsg. Implements utils.WechatAPIError.
+func (e *WeixinError) Message() string { return e.ErrMsg }
 
 // 常见哨兵错误。
 var (

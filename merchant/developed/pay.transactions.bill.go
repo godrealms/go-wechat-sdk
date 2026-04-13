@@ -1,4 +1,4 @@
-package wechat
+package developed
 
 import (
 	"context"
