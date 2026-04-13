@@ -219,3 +219,122 @@ func TestHTTP_SetBaseURL(t *testing.T) {
 		t.Errorf("SetBaseURL did not update BaseURL")
 	}
 }
+
+func TestHTTP_Patch_Success(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPatch {
+			t.Errorf("expected PATCH, got %s", r.Method)
+		}
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"updated":true}`))
+	}))
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	type Resp struct {
+		Updated bool `json:"updated"`
+	}
+	var result Resp
+	if err := h.Patch(context.Background(), "/resource/1", map[string]string{"field": "value"}, &result); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !result.Updated {
+		t.Error("expected updated=true")
+	}
+}
+
+func TestHTTP_Patch_Non2xxStatus(t *testing.T) {
+	srv := startServer(t, 422, `unprocessable entity`)
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	err := h.Patch(context.Background(), "/invalid", map[string]string{}, &struct{}{})
+	if err == nil {
+		t.Fatal("expected error for 422 status")
+	}
+	if !strings.Contains(err.Error(), "422") {
+		t.Errorf("expected 422 in error, got: %v", err)
+	}
+}
+
+func TestHTTP_Delete_Success(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{}`))
+	}))
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	if err := h.Delete(context.Background(), "/resource/1", &struct{}{}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestHTTP_Delete_Non2xxStatus(t *testing.T) {
+	srv := startServer(t, 404, `not found`)
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	err := h.Delete(context.Background(), "/missing", &struct{}{})
+	if err == nil {
+		t.Fatal("expected error for 404 status")
+	}
+}
+
+func TestHTTP_PostForm_Success(t *testing.T) {
+	var gotContentType string
+	var gotFormValue string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotContentType = r.Header.Get("Content-Type")
+		_ = r.ParseForm()
+		gotFormValue = r.FormValue("grant_type")
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"access_token":"TOKEN"}`))
+	}))
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	form := url.Values{"grant_type": {"client_credentials"}, "appid": {"wx123"}}
+	type Resp struct {
+		AccessToken string `json:"access_token"`
+	}
+	var result Resp
+	if err := h.PostForm(context.Background(), "/token", form, &result); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.AccessToken != "TOKEN" {
+		t.Errorf("expected access_token=TOKEN, got %q", result.AccessToken)
+	}
+	if !strings.Contains(gotContentType, "application/x-www-form-urlencoded") {
+		t.Errorf("expected form content-type, got %q", gotContentType)
+	}
+	if gotFormValue != "client_credentials" {
+		t.Errorf("expected grant_type=client_credentials, got %q", gotFormValue)
+	}
+}
+
+func TestHTTP_PostForm_Non2xxStatus(t *testing.T) {
+	srv := startServer(t, 400, `bad request`)
+	defer srv.Close()
+
+	h := newHTTP(t, srv)
+	err := h.PostForm(context.Background(), "/form", url.Values{"k": {"v"}}, &struct{}{})
+	if err == nil {
+		t.Fatal("expected error for 400 status")
+	}
+}
+
+func TestHTTP_PostForm_NetworkError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	u := srv.URL
+	srv.Close()
+
+	h := NewHTTP(u, WithTimeout(time.Second))
+	err := h.PostForm(context.Background(), "/form", url.Values{}, &struct{}{})
+	if err == nil {
+		t.Fatal("expected network error")
+	}
+}
