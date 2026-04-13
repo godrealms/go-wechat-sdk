@@ -128,3 +128,42 @@ func TestClient_AccessTokenE_UsesInjectedTokenSource(t *testing.T) {
 		t.Errorf("expected 1 call, got %d", fake.calls)
 	}
 }
+
+func TestClient_NewClient_NilConfig(t *testing.T) {
+	// NewClient must not panic on nil config; refreshAccessToken will error lazily
+	c := NewClient(nil, nil)
+	if c == nil {
+		t.Fatal("expected non-nil client")
+	}
+}
+
+func TestClient_NewClient_WithHTTPClient_IgnoresNilHTTP(t *testing.T) {
+	c := NewClient(context.Background(), &Config{AppId: "a"},
+		WithHTTPClient(nil), // nil must be a no-op
+	)
+	if c.Https == nil {
+		t.Error("expected Https to remain non-nil after WithHTTPClient(nil)")
+	}
+}
+
+func TestClient_refreshAccessToken_EmptyToken(t *testing.T) {
+	// Server returns 200 but empty access_token — must error
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"access_token":"","expires_in":7200}`))
+	}))
+	defer srv.Close()
+
+	c := newClientWithBaseURL(srv.URL, &Config{AppId: "a", AppSecret: "b"})
+	_, err := c.AccessTokenE(context.Background())
+	if err == nil {
+		t.Fatal("expected error for empty access_token")
+	}
+}
+
+func TestClient_refreshAccessToken_MissingCredentials(t *testing.T) {
+	c := NewClient(context.Background(), &Config{})
+	_, err := c.AccessTokenE(context.Background())
+	if err == nil {
+		t.Fatal("expected error when AppId and AppSecret are empty")
+	}
+}
