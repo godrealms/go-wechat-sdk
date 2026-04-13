@@ -1,4 +1,4 @@
-package pay
+package developed
 
 import (
 	"context"
@@ -53,7 +53,7 @@ func (c *Client) ParseNotification(ctx context.Context, r *http.Request, result 
 		return notify, nil
 	}
 
-	plaintext, err := decryptNotifyResource(notify.Resource, c.apiV3Key)
+	plaintext, err := decryptNotifyResource(notify.Resource, c.apiV3Key())
 	if err != nil {
 		return nil, fmt.Errorf("pay: decrypt notify resource: %w", err)
 	}

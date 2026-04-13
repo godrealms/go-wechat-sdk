@@ -1,8 +1,11 @@
-package wechat
+package developed
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
+	"net/url"
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
@@ -62,4 +65,40 @@ func (c *Client) WithPublicKey(publicKey *rsa.PublicKey) *Client {
 func (c *Client) WithHttp(http *utils.HTTP) *Client {
 	c.Http = http
 	return c
+}
+
+// doV3 is a helper method for making WeChat Pay API v3 requests.
+// It's a stub implementation to allow the package to compile.
+func (c *Client) doV3(ctx context.Context, method, path string, query url.Values, body, result any) error {
+	return fmt.Errorf("doV3: not implemented")
+}
+
+// postV3 is a helper method for making POST requests to WeChat Pay API v3.
+// It's a stub implementation to allow the package to compile.
+func (c *Client) postV3(ctx context.Context, path string, body, result any) error {
+	return fmt.Errorf("postV3: not implemented")
+}
+
+// getV3 is a helper method for making GET requests to WeChat Pay API v3.
+// It's a stub implementation to allow the package to compile.
+func (c *Client) getV3(ctx context.Context, path string, query url.Values, result any) error {
+	return fmt.Errorf("getV3: not implemented")
+}
+
+// verifyResponseSignature is a helper method for verifying WeChat Pay response signatures.
+// It's a stub implementation to allow the package to compile.
+func (c *Client) verifyResponseSignature(ctx context.Context, header interface{}, body []byte) error {
+	return fmt.Errorf("verifyResponseSignature: not implemented")
+}
+
+// apiV3Key is a getter for the API v3 key.
+// It's a stub implementation to allow the package to compile.
+func (c *Client) apiV3Key() string {
+	return c.APIv3Key
+}
+
+// decryptAES256GCM is a package-level function for decrypting AES-256-GCM encrypted data.
+// It's a stub implementation to allow the package to compile.
+func decryptAES256GCM(apiV3Key, nonce, associatedData, ciphertext string) ([]byte, error) {
+	return nil, fmt.Errorf("decryptAES256GCM: not implemented")
 }
