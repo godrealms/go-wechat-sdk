@@ -3,7 +3,6 @@ package offiaccount
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -93,7 +92,7 @@ func (c *Client) UploadImage(filename, mediaType string) (*UploadImageResponse, 
 
 	// 检查业务错误
 	if uploadResp.ErrCode != 0 {
-		return &uploadResp, fmt.Errorf("wechat api error: %d - %s", uploadResp.ErrCode, uploadResp.ErrMsg)
+		return &uploadResp, &WeixinError{ErrCode: uploadResp.ErrCode, ErrMsg: uploadResp.ErrMsg}
 	}
 
 	return &uploadResp, nil
@@ -108,7 +107,7 @@ func (c *Client) DeleteMassMsg(body *DeleteMassMsgRequest) error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -123,7 +122,7 @@ func (c *Client) getSpeed(speed int) (*SpeedResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -138,7 +137,7 @@ func (c *Client) GetMassMsg(msgId string) (*MassMsgResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -152,7 +151,7 @@ func (c *Client) MassSend(body *MassSendRequest) (*MassSendResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -166,7 +165,7 @@ func (c *Client) Preview(body *MassSendRequest) (*Resp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -180,7 +179,7 @@ func (c *Client) SendAll(body *MassSendByTagRequest) (*MassSendByTagResponse, er
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -195,7 +194,7 @@ func (c *Client) SetSpeed(speed int) (*Resp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -209,7 +208,7 @@ func (c *Client) UploadNewsMsg(body *AddNewsMaterialRequest) (*AddNewsMaterialRe
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }

@@ -2,7 +2,6 @@ package offiaccount
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -75,7 +74,7 @@ func (c *Client) GetCallbackIp() ([]string, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 
 	return result.IpList, nil
@@ -93,7 +92,7 @@ func (c *Client) GetApiDomainIP() ([]string, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result.IpList, nil
 }

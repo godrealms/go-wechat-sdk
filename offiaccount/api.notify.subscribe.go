@@ -1,7 +1,6 @@
 package offiaccount
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -13,7 +12,7 @@ func (c *Client) TemplateSubscribe(form *TemplateSubscribeReq) (err error) {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

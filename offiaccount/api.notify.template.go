@@ -1,7 +1,6 @@
 package offiaccount
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -14,7 +13,7 @@ func (c *Client) SendTemplateMessage(body *SubscribeMessageRequest) (*MassMsgRes
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -32,7 +31,7 @@ func (c *Client) AddTemplate(templateIdShort string, keywordNameList []string) (
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -46,7 +45,7 @@ func (c *Client) QueryBlockTmplMsg(body *QueryBlockTmplMsgReq) (*QueryBlockTmplM
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -61,7 +60,7 @@ func (c *Client) DeleteTemplate(templateId string) (*Resp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -75,7 +74,7 @@ func (c *Client) GetAllTemplates() (*TemplateList, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -89,7 +88,7 @@ func (c *Client) GetIndustry() (*TemplateList, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -107,7 +106,7 @@ func (c *Client) SetIndustry(industryId1, industryId2 string) error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

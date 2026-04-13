@@ -1,7 +1,6 @@
 package offiaccount
 
 import (
-	"errors"
 	"fmt"
 )
 
@@ -17,7 +16,7 @@ func (c *Client) GetApiQuota(cgiPath string) (*ApiQuotaResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -34,7 +33,7 @@ func (c *Client) ClearQuota() error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -52,7 +51,7 @@ func (c *Client) GetRidInfo(rid string) (*RidInfoResp, error) {
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
-		return nil, errors.New(result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -66,7 +65,7 @@ func (c *Client) ClearQuotaByAppSecret() error {
 	if err != nil {
 		return err
 	} else if result.ErrCode != 0 {
-		return errors.New(result.ErrMsg)
+		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
