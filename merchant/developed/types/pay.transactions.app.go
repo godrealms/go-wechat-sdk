@@ -176,7 +176,10 @@ type Transactions struct {
 }
 
 func (a *Transactions) ToString() string {
-	marshal, _ := json.Marshal(a)
+	marshal, err := json.Marshal(a)
+	if err != nil {
+		return "<marshal error: " + err.Error() + ">"
+	}
 	return string(marshal)
 }
 

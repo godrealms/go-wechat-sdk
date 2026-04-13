@@ -7,6 +7,9 @@ type MchID struct {
 }
 
 func (t *MchID) ToString() string {
-	marshal, _ := json.Marshal(t)
+	marshal, err := json.Marshal(t)
+	if err != nil {
+		return "<marshal error: " + err.Error() + ">"
+	}
 	return string(marshal)
 }

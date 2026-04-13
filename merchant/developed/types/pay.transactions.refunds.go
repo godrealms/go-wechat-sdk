@@ -51,7 +51,10 @@ type Refunds struct {
 }
 
 func (r *Refunds) ToString() string {
-	marshal, _ := json.Marshal(r)
+	marshal, err := json.Marshal(r)
+	if err != nil {
+		return "<marshal error: " + err.Error() + ">"
+	}
 	return string(marshal)
 }
 
@@ -153,6 +156,9 @@ type AbnormalRefund struct {
 }
 
 func (r *AbnormalRefund) ToString() string {
-	marshal, _ := json.Marshal(r)
+	marshal, err := json.Marshal(r)
+	if err != nil {
+		return "<marshal error: " + err.Error() + ">"
+	}
 	return string(marshal)
 }
