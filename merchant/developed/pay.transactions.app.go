@@ -19,7 +19,7 @@ func (c *Client) TransactionsApp(ctx context.Context, order *types.Transactions)
 	return resp, nil
 }
 
-// ModifyTransactionsApp 在 TransactionsApp 之后，组装并签名 APP 调起支付参数。
+// ModifyTransactionsApp calls TransactionsApp and assembles the signed APP payment parameters.
 func (c *Client) ModifyTransactionsApp(ctx context.Context, order *types.Transactions) (*types.ModifyAppResponse, error) {
 	resp, err := c.TransactionsApp(ctx, order)
 	if err != nil {

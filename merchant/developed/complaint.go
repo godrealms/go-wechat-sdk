@@ -7,12 +7,12 @@ import (
 	"net/url"
 )
 
-// 消费者投诉接口：https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter10_2_11.shtml
+// Consumer complaint APIs: https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter10_2_11.shtml
 //
-// 本文件提供投诉处理 API 的薄封装。
+// This file provides a thin wrapper around the WeChat Pay complaint management API.
 
-// ListComplaints 查询投诉单列表。
-// beginDate/endDate 格式：yyyy-MM-dd
+// ListComplaints returns a paginated list of consumer complaint orders.
+// beginDate and endDate must be in yyyy-MM-dd format.
 func (c *Client) ListComplaints(ctx context.Context, beginDate, endDate string, offset, limit int) (map[string]any, error) {
 	if beginDate == "" || endDate == "" {
 		return nil, fmt.Errorf("pay: beginDate and endDate are required")
@@ -30,7 +30,7 @@ func (c *Client) ListComplaints(ctx context.Context, beginDate, endDate string, 
 	return result, nil
 }
 
-// GetComplaint 查询投诉单详情。
+// GetComplaint returns the details of a single consumer complaint order.
 func (c *Client) GetComplaint(ctx context.Context, complaintId string) (map[string]any, error) {
 	if complaintId == "" {
 		return nil, fmt.Errorf("pay: complaintId is required")

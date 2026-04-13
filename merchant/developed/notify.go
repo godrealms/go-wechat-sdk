@@ -61,15 +61,15 @@ func decryptNotifyResource(res *types.Resource, apiV3Key string) ([]byte, error)
 	return decryptAES256GCM(apiV3Key, res.Nonce, res.AssociatedData, res.Ciphertext)
 }
 
-// AckNotification 向微信支付回复成功 ACK 响应体。
-// 微信支付要求 HTTP 2xx 且响应体为 {"code":"SUCCESS","message":"成功"}。
+// AckNotification writes a success ACK response body required by WeChat Pay.
+// WeChat Pay expects HTTP 2xx with body {"code":"SUCCESS","message":"成功"}.
 func AckNotification(w http.ResponseWriter) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"code":"SUCCESS","message":"成功"}`))
 }
 
-// FailNotification 向微信支付回复失败 ACK。
+// FailNotification writes a failure ACK response to WeChat Pay with the given message.
 func FailNotification(w http.ResponseWriter, message string) {
 	if message == "" {
 		message = "FAILED"

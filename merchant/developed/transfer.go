@@ -7,10 +7,10 @@ import (
 	"net/url"
 )
 
-// 商家转账到零钱接口：https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter4_3_1.shtml
+// Merchant transfer to Change APIs: https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter4_3_1.shtml
 //
-// 本文件提供商家转账 API 的薄封装，请求体/响应体采用 map[string]any，
-// 与 profit_sharing.go 保持一致。
+// This file provides a thin wrapper around the WeChat Pay merchant transfer API.
+// Request and response bodies use map[string]any, consistent with profit_sharing.go.
 
 // CreateTransferBatch 发起商家转账。
 func (c *Client) CreateTransferBatch(ctx context.Context, body any) (map[string]any, error) {

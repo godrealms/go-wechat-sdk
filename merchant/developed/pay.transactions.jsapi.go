@@ -20,7 +20,7 @@ func (c *Client) TransactionsJsapi(ctx context.Context, order *types.Transaction
 	return resp, nil
 }
 
-// ModifyTransactionsJsapi 在 TransactionsJsapi 之后，组装并签名小程序/JSAPI 调起支付参数。
+// ModifyTransactionsJsapi calls TransactionsJsapi and assembles the signed JSAPI/mini-program payment parameters.
 func (c *Client) ModifyTransactionsJsapi(ctx context.Context, order *types.Transactions) (*types.TransactionsJsapi, error) {
 	resp, err := c.TransactionsJsapi(ctx, order)
 	if err != nil {
