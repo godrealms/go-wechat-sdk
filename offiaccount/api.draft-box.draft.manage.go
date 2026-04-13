@@ -1,16 +1,21 @@
 package offiaccount
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 )
 
 // DraftSwitch 草稿箱开关设置
 // checkOnly: 仅检查状态时传true
-func (c *Client) DraftSwitch(checkOnly bool) (*DraftSwitchResult, error) {
+func (c *Client) DraftSwitch(ctx context.Context, checkOnly bool) (*DraftSwitchResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
 	params := url.Values{}
-	params.Add("access_token", c.GetAccessToken())
+	params.Add("access_token", token)
 	if checkOnly {
 		params.Add("checkonly", "1")
 	}
@@ -18,12 +23,12 @@ func (c *Client) DraftSwitch(checkOnly bool) (*DraftSwitchResult, error) {
 
 	var result DraftSwitchResult
 	if checkOnly {
-		err := c.Https.Get(c.ctx, path, nil, &result)
+		err = c.Https.Get(ctx, path, nil, &result)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		err := c.Https.Post(c.ctx, path, nil, &result)
+		err = c.Https.Post(ctx, path, nil, &result)
 		if err != nil {
 			return nil, err
 		}
@@ -34,9 +39,13 @@ func (c *Client) DraftSwitch(checkOnly bool) (*DraftSwitchResult, error) {
 
 // AddDraft 新增草稿
 // articles: 图文素材集合
-func (c *Client) AddDraft(articles []*DraftArticle) (*AddDraftResult, error) {
+func (c *Client) AddDraft(ctx context.Context, articles []*DraftArticle) (*AddDraftResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/draft/add?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/draft/add?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -45,7 +54,7 @@ func (c *Client) AddDraft(articles []*DraftArticle) (*AddDraftResult, error) {
 
 	// 发送请求
 	var result AddDraftResult
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -55,9 +64,13 @@ func (c *Client) AddDraft(articles []*DraftArticle) (*AddDraftResult, error) {
 
 // GetDraft 获取草稿详情
 // mediaID: 要获取的草稿的media_id
-func (c *Client) GetDraft(mediaID string) (*GetDraftResult, error) {
+func (c *Client) GetDraft(ctx context.Context, mediaID string) (*GetDraftResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/draft/get?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/draft/get?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -66,7 +79,7 @@ func (c *Client) GetDraft(mediaID string) (*GetDraftResult, error) {
 
 	// 发送请求
 	var result GetDraftResult
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +89,13 @@ func (c *Client) GetDraft(mediaID string) (*GetDraftResult, error) {
 
 // DeleteDraft 删除草稿
 // mediaID: 要删除的草稿的media_id
-func (c *Client) DeleteDraft(mediaID string) (*Resp, error) {
+func (c *Client) DeleteDraft(ctx context.Context, mediaID string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/draft/delete?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/draft/delete?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -87,7 +104,7 @@ func (c *Client) DeleteDraft(mediaID string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -97,13 +114,17 @@ func (c *Client) DeleteDraft(mediaID string) (*Resp, error) {
 
 // UpdateDraft 更新草稿
 // req: 更新草稿请求参数
-func (c *Client) UpdateDraft(req *UpdateDraftRequest) (*Resp, error) {
+func (c *Client) UpdateDraft(ctx context.Context, req *UpdateDraftRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/draft/update?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/draft/update?access_token=%s", token)
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err = c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -112,13 +133,17 @@ func (c *Client) UpdateDraft(req *UpdateDraftRequest) (*Resp, error) {
 }
 
 // GetDraftCount 获取草稿总数
-func (c *Client) GetDraftCount() (*DraftCountResult, error) {
+func (c *Client) GetDraftCount(ctx context.Context) (*DraftCountResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/draft/count?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/draft/count?access_token=%s", token)
 
 	// 发送请求
 	var result DraftCountResult
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -128,13 +153,17 @@ func (c *Client) GetDraftCount() (*DraftCountResult, error) {
 
 // BatchGetDraft 批量获取草稿
 // req: 批量获取草稿请求参数
-func (c *Client) BatchGetDraft(req *BatchGetDraftRequest) (*BatchGetDraftResult, error) {
+func (c *Client) BatchGetDraft(ctx context.Context, req *BatchGetDraftRequest) (*BatchGetDraftResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/draft/batchget?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/draft/batchget?access_token=%s", token)
 
 	// 发送请求
 	var result BatchGetDraftResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+	err = c.Https.Post(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}

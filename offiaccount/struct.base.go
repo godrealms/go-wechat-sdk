@@ -927,8 +927,9 @@ type IpList struct {
 }
 
 type AccessToken struct {
+	Resp
 	AccessToken string `json:"access_token"` // access_token
-	ExpiresIn   int64  `json:"expires_in"`   // access_token的过期时间
+	ExpiresIn   int64  `json:"expires_in"`   // access_token的过期time
 }
 
 type RidInfoResp struct {

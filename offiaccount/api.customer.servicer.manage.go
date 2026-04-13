@@ -2,6 +2,7 @@ package offiaccount
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,11 +15,11 @@ import (
 // kfAccount: 完整客服账号，格式为：账号前缀@公众号微信号
 // filename: 头像文件名
 // reader: 头像文件内容读取器
-func (c *Client) UploadKFHeadImg(kfAccount string, filename string, reader io.Reader) (*Resp, error) {
+func (c *Client) UploadKFHeadImg(ctx context.Context, kfAccount string, filename string, reader io.Reader) (*Resp, error) {
 	// 获取access_token
-	token := c.GetAccessToken()
-	if token == "" {
-		return nil, fmt.Errorf("get access token failed")
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 构造请求URL
@@ -54,7 +55,7 @@ func (c *Client) UploadKFHeadImg(kfAccount string, filename string, reader io.Re
 	fullURL := c.Https.BaseURL + path
 
 	// 创建HTTP请求
-	httpReq, err := http.NewRequest("POST", fullURL, &requestBody)
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
 	if err != nil {
 		return nil, fmt.Errorf("the http request was created failed: %v", err)
 	}
@@ -94,9 +95,13 @@ func (c *Client) UploadKFHeadImg(kfAccount string, filename string, reader io.Re
 // AddKFAccount 添加客服账号
 // kfAccount: 完整客服账号，格式为：账号前缀@公众号微信号
 // nickname: 客服昵称，最长16个字
-func (c *Client) AddKFAccount(kfAccount, nickname string) (*Resp, error) {
+func (c *Client) AddKFAccount(ctx context.Context, kfAccount, nickname string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfaccount/add?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/customservice/kfaccount/add?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -106,7 +111,7 @@ func (c *Client) AddKFAccount(kfAccount, nickname string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -117,9 +122,13 @@ func (c *Client) AddKFAccount(kfAccount, nickname string) (*Resp, error) {
 // UpdateKFAccount 修改客服账号
 // kfAccount: 完整客服账号，格式为：账号前缀@公众号微信号
 // nickname: 客服昵称，最长16个字
-func (c *Client) UpdateKFAccount(kfAccount, nickname string) (*Resp, error) {
+func (c *Client) UpdateKFAccount(ctx context.Context, kfAccount, nickname string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfaccount/update?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/customservice/kfaccount/update?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -129,7 +138,7 @@ func (c *Client) UpdateKFAccount(kfAccount, nickname string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -138,9 +147,13 @@ func (c *Client) UpdateKFAccount(kfAccount, nickname string) (*Resp, error) {
 }
 
 // DelKFAccount 删除客服账号
-func (c *Client) DelKFAccount(kfAccount string) (*Resp, error) {
+func (c *Client) DelKFAccount(ctx context.Context, kfAccount string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/customservice/kfaccount/del?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/customservice/kfaccount/del?access_token=%s", token)
 
 	// 构造请求体
 	body := map[string]interface{}{
@@ -149,7 +162,7 @@ func (c *Client) DelKFAccount(kfAccount string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -160,11 +173,11 @@ func (c *Client) DelKFAccount(kfAccount string) (*Resp, error) {
 // InviteKFWorker 邀请绑定客服账号
 // kfAccount: 完整客服帐号，格式为：帐号前缀@公众号微信号
 // inviteWX: 接收绑定邀请的客服微信号
-func (c *Client) InviteKFWorker(kfAccount, inviteWX string) (*Resp, error) {
+func (c *Client) InviteKFWorker(ctx context.Context, kfAccount, inviteWX string) (*Resp, error) {
 	// 获取access_token
-	token := c.GetAccessToken()
-	if token == "" {
-		return nil, fmt.Errorf("get access token failed")
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	// 构造请求URL
@@ -178,7 +191,7 @@ func (c *Client) InviteKFWorker(kfAccount, inviteWX string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, body, &result)
+	err = c.Https.Post(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -187,13 +200,17 @@ func (c *Client) InviteKFWorker(kfAccount, inviteWX string) (*Resp, error) {
 }
 
 // GetOnlineKFList 获取在线客服列表
-func (c *Client) GetOnlineKFList() (*KFOnlineListResp, error) {
+func (c *Client) GetOnlineKFList(ctx context.Context) (*KFOnlineListResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/customservice/getonlinekflist?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/customservice/getonlinekflist?access_token=%s", token)
 
 	// 发送请求
 	var result KFOnlineListResp
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -202,13 +219,17 @@ func (c *Client) GetOnlineKFList() (*KFOnlineListResp, error) {
 }
 
 // GetKFList 获取所有客服账号
-func (c *Client) GetKFList() (*KFListResp, error) {
+func (c *Client) GetKFList(ctx context.Context) (*KFListResp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := fmt.Sprintf("/cgi-bin/customservice/getkflist?access_token=%s", c.GetAccessToken())
+	path := fmt.Sprintf("/cgi-bin/customservice/getkflist?access_token=%s", token)
 
 	// 发送请求
 	var result KFListResp
-	err := c.Https.Get(c.ctx, path, nil, &result)
+	err = c.Https.Get(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}

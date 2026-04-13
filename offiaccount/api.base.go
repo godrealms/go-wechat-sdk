@@ -8,10 +8,37 @@ import (
 	"time"
 )
 
-// GetAccessToken 获取接口调用凭据
-// 获取全局唯一后台接口调用凭据，token有效期为7200s，开发者需要进行妥善保存。
+// GetAccessToken retrieves the interface call credential (access token).
+// The global unique backend interface call credential is valid for 7200s; developers must store it safely.
+//
+// Deprecated: GetAccessToken silently drops token errors. Use AccessTokenE instead.
 func (c *Client) GetAccessToken() string {
 	return c.getAccessToken()
+}
+
+// AccessTokenE retrieves the interface call credential (access token), returning any error.
+func (c *Client) AccessTokenE(ctx context.Context) (string, error) {
+	c.tokenMutex.RLock()
+	if c.accessToken != nil && c.accessToken.ExpiresIn > time.Now().Unix() {
+		token := c.accessToken.AccessToken
+		c.tokenMutex.RUnlock()
+		return token, nil
+	}
+	c.tokenMutex.RUnlock()
+
+	c.tokenMutex.Lock()
+	defer c.tokenMutex.Unlock()
+
+	if c.accessToken != nil && c.accessToken.ExpiresIn > time.Now().Unix() {
+		return c.accessToken.AccessToken, nil
+	}
+
+	token, err := c.refreshAccessToken()
+	if err != nil {
+		return "", err
+	}
+	c.accessToken = token
+	return c.accessToken.AccessToken, nil
 }
 
 // GetStableAccessToken 获取稳定 AccessToken
@@ -34,6 +61,9 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 	if err != nil {
 		return nil, err
 	}
+	if result.ErrCode != 0 {
+		return nil, fmt.Errorf("wechat error %d: %s", result.ErrCode, result.ErrMsg)
+	}
 	// 提前10秒过期，避免临界点问题
 	result.ExpiresIn = result.ExpiresIn + time.Now().Unix() - 10
 	c.tokenMutex.Lock()
@@ -42,14 +72,19 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 	return result, nil
 }
 
-// CallbackCheck 网络通信检测
-// 为了帮助开发者排查回调连接失败的问题，提供这个网络检测的API。它可以对开发者URL做域名解析，然后对所有IP进行一次ping操作，得到丢包率和耗时。
+// CallbackCheck performs network communication detection.
+// To help developers diagnose callback connection failures, this API performs domain resolution
+// and a ping operation on all IPs, returning packet loss rates and latency.
 //
-//	action: 检测动作：dns(域名解析)/ping(ping检测)/all(全部)
-//	check_operator:	检测运营商：CHINANET(电信)/UNICOM(联通)/CAP(腾讯)/DEFAULT(自动)
-func (c *Client) CallbackCheck(action, checkOperator string) (*CallbackCheckResponse, error) {
+//	action: detection action: dns (domain resolution) / ping (ping check) / all (both)
+//	checkOperator: network operator: CHINANET (Telecom) / UNICOM (Unicom) / CAP (Tencent) / DEFAULT (auto)
+func (c *Client) CallbackCheck(ctx context.Context, action, checkOperator string) (*CallbackCheckResponse, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	query := url.Values{
-		"access_token": {c.getAccessToken()},
+		"access_token": {token},
 	}
 	body := map[string]interface{}{
 		"action":         action,
@@ -57,22 +92,26 @@ func (c *Client) CallbackCheck(action, checkOperator string) (*CallbackCheckResp
 	}
 	result := &CallbackCheckResponse{}
 	path := fmt.Sprintf("/cgi-bin/callback/check?%s", query.Encode())
-	err := c.Https.Post(context.Background(), path, body, result)
+	err = c.Https.Post(ctx, path, body, result)
 	if err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-// GetCallbackIp 获取微信推送服务器IP
-// 该接口用于获取微信推送服务器 ip 地址（向开发者服务器推送信息的微信服务器来源地址）
-// 如果开发者基于安全等考虑，需要获知微信服务器的IP地址列表，以便进行相关限制，可以通过该接口获得微信服务器IP地址列表或者IP网段信息。
-func (c *Client) GetCallbackIp() ([]string, error) {
+// GetCallbackIp retrieves the WeChat push server IP addresses.
+// Returns the list of WeChat server IP addresses or IP segments used to push information
+// to the developer's server.
+func (c *Client) GetCallbackIp(ctx context.Context) ([]string, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	query := url.Values{
-		"access_token": {c.getAccessToken()},
+		"access_token": {token},
 	}
 	var result = &IpList{}
-	err := c.Https.Get(context.Background(), "/cgi-bin/getcallbackip", query, result)
+	err = c.Https.Get(ctx, "/cgi-bin/getcallbackip", query, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
@@ -82,15 +121,18 @@ func (c *Client) GetCallbackIp() ([]string, error) {
 	return result.IpList, nil
 }
 
-// GetApiDomainIP 获取微信API服务器IP
-// 该接口用于获取微信 api 服务器 ip 地址（开发者服务器主动访问 api.weixin.qq.com 的远端地址）
-// 如果开发者基于安全等考虑，需要获知微信服务器的IP地址列表，以便进行相关限制，可以通过该接口获得微信服务器IP地址列表或者IP网段信息。
-func (c *Client) GetApiDomainIP() ([]string, error) {
+// GetApiDomainIP retrieves the WeChat API server IP addresses.
+// Returns the list of remote IP addresses that the developer's server connects to at api.weixin.qq.com.
+func (c *Client) GetApiDomainIP(ctx context.Context) ([]string, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	query := url.Values{
-		"access_token": {c.getAccessToken()},
+		"access_token": {token},
 	}
 	var result = &IpList{}
-	err := c.Https.Get(context.Background(), "/cgi-bin/get_api_domain_ip", query, result)
+	err = c.Https.Get(ctx, "/cgi-bin/get_api_domain_ip", query, result)
 	if err != nil {
 		return nil, err
 	} else if result.ErrCode != 0 {
