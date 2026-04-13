@@ -2,8 +2,7 @@ package channels
 
 import "context"
 
-// ---------- 商品管理 ----------
-
+// ProductInfo contains the metadata of a single Channels e-commerce product.
 type ProductInfo struct {
 	ProductID  string   `json:"product_id,omitempty"`
 	Title      string   `json:"title"`
@@ -13,39 +12,50 @@ type ProductInfo struct {
 	CreateTime int64    `json:"create_time,omitempty"`
 }
 
+// AddProductReq holds the product information for creating a new Channels product.
 type AddProductReq struct {
 	Product ProductInfo `json:"product"`
 }
+
+// AddProductResp is the response returned by AddProduct.
 type AddProductResp struct {
 	ProductID string `json:"product_id"`
 }
 
+// UpdateProductReq holds the product information for updating an existing Channels product.
 type UpdateProductReq struct {
 	Product ProductInfo `json:"product"`
 }
 
+// GetProductReq holds the product ID for querying a single Channels product.
 type GetProductReq struct {
 	ProductID string `json:"product_id"`
 }
+
+// GetProductResp is the response returned by GetProduct.
 type GetProductResp struct {
 	Product ProductInfo `json:"product"`
 }
 
+// ListProductReq holds the filter and pagination parameters for listing Channels products.
 type ListProductReq struct {
 	Status *int `json:"status,omitempty"`
 	Offset *int `json:"offset,omitempty"`
 	Limit  *int `json:"limit,omitempty"`
 }
+
+// ListProductResp is the response returned by ListProduct.
 type ListProductResp struct {
 	Products []ProductInfo `json:"products"`
 	Total    int           `json:"total"`
 }
 
+// DeleteProductReq holds the product ID for deleting a Channels product.
 type DeleteProductReq struct {
 	ProductID string `json:"product_id"`
 }
 
-// AddProduct 添加商品
+// AddProduct creates a new Channels e-commerce product and returns its assigned product ID.
 func (c *Client) AddProduct(ctx context.Context, req *AddProductReq) (*AddProductResp, error) {
 	var resp AddProductResp
 	if err := c.doPost(ctx, "/channels/ec/product/add", req, &resp); err != nil {
@@ -54,12 +64,12 @@ func (c *Client) AddProduct(ctx context.Context, req *AddProductReq) (*AddProduc
 	return &resp, nil
 }
 
-// UpdateProduct 更新商品
+// UpdateProduct updates the details of an existing Channels e-commerce product.
 func (c *Client) UpdateProduct(ctx context.Context, req *UpdateProductReq) error {
 	return c.doPost(ctx, "/channels/ec/product/update", req, nil)
 }
 
-// GetProduct 获取商品详情
+// GetProduct retrieves the details of the specified Channels e-commerce product.
 func (c *Client) GetProduct(ctx context.Context, req *GetProductReq) (*GetProductResp, error) {
 	var resp GetProductResp
 	if err := c.doPost(ctx, "/channels/ec/product/get", req, &resp); err != nil {
@@ -68,7 +78,7 @@ func (c *Client) GetProduct(ctx context.Context, req *GetProductReq) (*GetProduc
 	return &resp, nil
 }
 
-// ListProduct 获取商品列表
+// ListProduct retrieves a paginated list of Channels e-commerce products.
 func (c *Client) ListProduct(ctx context.Context, req *ListProductReq) (*ListProductResp, error) {
 	var resp ListProductResp
 	if err := c.doPost(ctx, "/channels/ec/product/list", req, &resp); err != nil {
@@ -77,7 +87,7 @@ func (c *Client) ListProduct(ctx context.Context, req *ListProductReq) (*ListPro
 	return &resp, nil
 }
 
-// DeleteProduct 删除商品
+// DeleteProduct removes the specified Channels e-commerce product.
 func (c *Client) DeleteProduct(ctx context.Context, req *DeleteProductReq) error {
 	return c.doPost(ctx, "/channels/ec/product/delete", req, nil)
 }

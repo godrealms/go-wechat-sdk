@@ -3,10 +3,39 @@ package channels
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func TestGetFinderLiveDataList_ErrcodeError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/cgi-bin/token":
+			_, _ = w.Write([]byte(`{"access_token":"TEST_TOKEN","expires_in":7200}`))
+		default:
+			_, _ = w.Write([]byte(`{"errcode":40001,"errmsg":"invalid token"}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv.URL)
+	_, err := c.GetFinderLiveDataList(context.Background(), &GetFinderLiveDataListReq{
+		StartDate: "2024-01-01",
+		EndDate:   "2024-01-31",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.Code() != 40001 {
+		t.Errorf("expected Code() == 40001, got %d", apiErr.Code())
+	}
+}
 
 func TestGetFinderLiveDataList(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

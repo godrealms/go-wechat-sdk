@@ -2,11 +2,14 @@ package mini_game
 
 import "context"
 
+// GetGameAdDataReq holds the request parameters for fetching game advertisement data.
 type GetGameAdDataReq struct {
 	StartDate string `json:"start_date"`
 	EndDate   string `json:"end_date"`
 	AdUnitID  string `json:"ad_unit_id,omitempty"`
 }
+
+// GameAdData contains the advertising metrics for a single ad unit on a given date.
 type GameAdData struct {
 	Date       string `json:"date"`
 	AdUnitID   string `json:"ad_unit_id"`
@@ -15,6 +18,8 @@ type GameAdData struct {
 	ClickCount int64  `json:"click_count"`
 	Income     int64  `json:"income"`
 }
+
+// GetGameAdDataResp is the response returned by GetGameAdData.
 type GetGameAdDataResp struct {
 	Items []GameAdData `json:"items"`
 }

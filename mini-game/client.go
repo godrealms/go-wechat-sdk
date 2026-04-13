@@ -36,21 +36,21 @@ type Client struct {
 	tokenSource TokenSource
 }
 
-// TokenSource 是 access_token 的可注入来源。
-// 当 Client 配置了 TokenSource 时，AccessToken() 会直接委托给它，
-// 不再调用 /cgi-bin/token。典型场景：开放平台代调用。
+// TokenSource is an injectable source of access tokens. When a Client is configured with a
+// TokenSource, AccessToken() delegates to it instead of calling /cgi-bin/token directly.
+// A typical use case is Open Platform proxy calls.
 type TokenSource interface {
 	AccessToken(ctx context.Context) (string, error)
 }
 
-// Option 构造可选项。
+// Option is a functional option for configuring a Client.
 type Option func(*Client)
 
-// WithHTTP 用自定义 HTTP 客户端（主要用于测试）。
+// WithHTTP replaces the default HTTP client, primarily used for testing.
 func WithHTTP(h *utils.HTTP) Option { return func(c *Client) { c.http = h } }
 
-// WithTokenSource 注入外部 access_token 来源（例如开放平台代调用）。
-// 设置后 AccessToken() 不再调用 /cgi-bin/token。
+// WithTokenSource injects an external access-token source (e.g. for Open Platform proxy calls).
+// When set, AccessToken() will no longer call /cgi-bin/token.
 func WithTokenSource(ts TokenSource) Option {
 	return func(c *Client) { c.tokenSource = ts }
 }
@@ -73,10 +73,10 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	return c, nil
 }
 
-// HTTP 返回底层 HTTP 客户端，便于扩展自定义接口。
+// HTTP returns the underlying HTTP client, useful for calling custom WeChat API endpoints.
 func (c *Client) HTTP() *utils.HTTP { return c.http }
 
-// Code2SessionResp 小游戏登录凭证校验响应。
+// Code2SessionResp holds the response from the WeChat login credential validation endpoint.
 type Code2SessionResp struct {
 	OpenId     string `json:"openid"`
 	SessionKey string `json:"session_key"`
@@ -102,7 +102,7 @@ func (c *Client) Code2Session(ctx context.Context, jsCode string) (*Code2Session
 		return nil, err
 	}
 	if out.ErrCode != 0 {
-		return nil, fmt.Errorf("mini_game: code2session errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return nil, &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/sns/jscode2session"}
 	}
 	return out, nil
 }

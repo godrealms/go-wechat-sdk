@@ -3,10 +3,39 @@ package mini_game
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func TestSetUserStorage_ErrcodeError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/cgi-bin/token":
+			_, _ = w.Write([]byte(`{"access_token":"TEST_TOKEN","expires_in":7200}`))
+		default:
+			_, _ = w.Write([]byte(`{"errcode":40001,"errmsg":"invalid token"}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	err := c.SetUserStorage(context.Background(), &SetUserStorageReq{
+		OpenID: "oUSER1", KVList: []KVData{{Key: "score", Value: "100"}},
+		SigMethod: "hmac_sha256", Signature: "sig",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.Code() != 40001 {
+		t.Errorf("expected Code() == 40001, got %d", apiErr.Code())
+	}
+}
 
 func TestSetUserStorage(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

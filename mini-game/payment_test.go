@@ -3,10 +3,38 @@ package mini_game
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
+
+func TestCreateOrder_ErrcodeError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/cgi-bin/token":
+			_, _ = w.Write([]byte(`{"access_token":"TEST_TOKEN","expires_in":7200}`))
+		default:
+			_, _ = w.Write([]byte(`{"errcode":40001,"errmsg":"invalid token"}`))
+		}
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	_, err := c.CreateOrder(context.Background(), &CreateOrderReq{
+		OpenID: "oUSER1", ProductID: "prod_001", Quantity: 1,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.Code() != 40001 {
+		t.Errorf("expected Code() == 40001, got %d", apiErr.Code())
+	}
+}
 
 func TestCreateOrder(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

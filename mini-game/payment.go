@@ -2,6 +2,7 @@ package mini_game
 
 import "context"
 
+// CreateOrderReq holds the parameters for creating a Mini Game virtual currency order.
 type CreateOrderReq struct {
 	OpenID    string `json:"openid"`
 	Env       int    `json:"env"`
@@ -9,15 +10,20 @@ type CreateOrderReq struct {
 	ProductID string `json:"product_id"`
 	Quantity  int    `json:"quantity"`
 }
+
+// CreateOrderResp is the response returned by CreateOrder.
 type CreateOrderResp struct {
 	OrderID string `json:"order_id"`
 	Balance int64  `json:"balance"`
 }
 
+// QueryOrderReq holds the parameters for querying an existing Mini Game order.
 type QueryOrderReq struct {
 	OrderID string `json:"order_id"`
 	OpenID  string `json:"openid"`
 }
+
+// QueryOrderResp is the response returned by QueryOrder.
 type QueryOrderResp struct {
 	OrderID    string `json:"order_id"`
 	Status     int    `json:"status"`
@@ -25,6 +31,7 @@ type QueryOrderResp struct {
 	CreateTime int64  `json:"create_time"`
 }
 
+// CreateOrder creates a new Mini Game virtual currency purchase order.
 func (c *Client) CreateOrder(ctx context.Context, req *CreateOrderReq) (*CreateOrderResp, error) {
 	var resp CreateOrderResp
 	if err := c.doPost(ctx, "/wxa/game/createorder", req, &resp); err != nil {
@@ -33,6 +40,7 @@ func (c *Client) CreateOrder(ctx context.Context, req *CreateOrderReq) (*CreateO
 	return &resp, nil
 }
 
+// QueryOrder retrieves the status and details of an existing Mini Game order.
 func (c *Client) QueryOrder(ctx context.Context, req *QueryOrderReq) (*QueryOrderResp, error) {
 	var resp QueryOrderResp
 	if err := c.doPost(ctx, "/wxa/game/queryorder", req, &resp); err != nil {
