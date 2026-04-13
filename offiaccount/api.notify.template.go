@@ -45,8 +45,12 @@ func (c *Client) AddTemplate(ctx context.Context, templateIdShort string, keywor
 	return result, nil
 }
 
-// QueryBlockTmplMsg 查询拦截的模板消息
-// 本接口用于查询被拦截的模板消息
+// QueryBlockTmplMsg 查询被拦截的模板消息。
+//
+// 注意：此接口路径 /wxa/sec/queryblocktmplmsg 实际属于小程序（wxa）安全模块，
+// 不属于公众号 API。保留在这里只是为了向后兼容；新代码应使用小程序 SDK。
+//
+// Deprecated: 此接口属于小程序安全模块而非公众号。
 func (c *Client) QueryBlockTmplMsg(ctx context.Context, body *QueryBlockTmplMsgReq) (*QueryBlockTmplMsgResp, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
@@ -102,12 +106,13 @@ func (c *Client) GetAllTemplates(ctx context.Context) (*TemplateList, error) {
 
 // GetIndustry 获取行业信息
 // 本接口可获取账号设置的行业信息。
+// 文档：https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Template_Message_Interface.html
 func (c *Client) GetIndustry(ctx context.Context) (*TemplateList, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
-	path := fmt.Sprintf("/cgi-bin/template/get_all_private_template?access_token=%s", token)
+	path := fmt.Sprintf("/cgi-bin/template/get_industry?access_token=%s", token)
 	result := &TemplateList{}
 	err = c.Https.Get(ctx, path, nil, result)
 	if err != nil {

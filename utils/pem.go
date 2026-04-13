@@ -6,7 +6,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 )
 
@@ -21,29 +21,38 @@ func LoadCertificate(certificateStr string) (certificate *x509.Certificate, err 
 	}
 	certificate, err = x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("parse certificate err:%s", err.Error())
+		return nil, fmt.Errorf("parse certificate err: %s", err.Error())
 	}
 	return certificate, nil
 }
 
-// LoadPrivateKey 通过私钥的文本内容加载私钥
+// LoadPrivateKey 通过私钥的文本内容加载私钥。
+// 同时支持 PKCS#8 ("PRIVATE KEY") 与 PKCS#1 ("RSA PRIVATE KEY") 两种格式。
 func LoadPrivateKey(privateKeyStr string) (privateKey *rsa.PrivateKey, err error) {
 	block, _ := pem.Decode([]byte(privateKeyStr))
 	if block == nil {
 		return nil, fmt.Errorf("decode private key err")
 	}
-	if block.Type != "PRIVATE KEY" {
-		return nil, fmt.Errorf("the kind of PEM should be PRVATE KEY")
+	switch block.Type {
+	case "PRIVATE KEY":
+		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parse pkcs8 private key err: %s", err.Error())
+		}
+		k, ok := key.(*rsa.PrivateKey)
+		if !ok {
+			return nil, fmt.Errorf("not a RSA private key")
+		}
+		return k, nil
+	case "RSA PRIVATE KEY":
+		k, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			return nil, fmt.Errorf("parse pkcs1 private key err: %s", err.Error())
+		}
+		return k, nil
+	default:
+		return nil, fmt.Errorf("the kind of PEM should be PRIVATE KEY or RSA PRIVATE KEY, got %q", block.Type)
 	}
-	key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		return nil, fmt.Errorf("parse private key err:%s", err.Error())
-	}
-	privateKey, ok := key.(*rsa.PrivateKey)
-	if !ok {
-		return nil, fmt.Errorf("not a RSA private key")
-	}
-	return privateKey, nil
 }
 
 // LoadPublicKey 通过公钥的文本内容加载公钥
@@ -57,38 +66,38 @@ func LoadPublicKey(publicKeyStr string) (publicKey *rsa.PublicKey, err error) {
 	}
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("parse public key err:%s", err.Error())
+		return nil, fmt.Errorf("parse public key err: %s", err.Error())
 	}
-	publicKey, ok := key.(*rsa.PublicKey)
+	pub, ok := key.(*rsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("%s is not rsa public key", publicKeyStr)
+		return nil, fmt.Errorf("not a RSA public key")
 	}
-	return publicKey, nil
+	return pub, nil
 }
 
 // LoadCertificateWithPath  通过证书的文件路径加载证书
 func LoadCertificateWithPath(path string) (certificate *x509.Certificate, err error) {
-	certificateBytes, err := ioutil.ReadFile(path)
+	certificateBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read certificate pem file err:%s", err.Error())
+		return nil, fmt.Errorf("read certificate pem file err: %s", err.Error())
 	}
 	return LoadCertificate(string(certificateBytes))
 }
 
-// LoadPrivateKeyWithPath 通过私钥的文件路径内容加载私钥
+// LoadPrivateKeyWithPath 通过私钥的文件路径加载私钥
 func LoadPrivateKeyWithPath(path string) (privateKey *rsa.PrivateKey, err error) {
-	privateKeyBytes, err := ioutil.ReadFile(path)
+	privateKeyBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read private pem file err:%s", err.Error())
+		return nil, fmt.Errorf("read private pem file err: %s", err.Error())
 	}
 	return LoadPrivateKey(string(privateKeyBytes))
 }
 
 // LoadPublicKeyWithPath 通过公钥的文件路径加载公钥
 func LoadPublicKeyWithPath(path string) (publicKey *rsa.PublicKey, err error) {
-	publicKeyBytes, err := ioutil.ReadFile(path)
+	publicKeyBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read certificate pem file err:%s", err.Error())
+		return nil, fmt.Errorf("read public key pem file err: %s", err.Error())
 	}
 	return LoadPublicKey(string(publicKeyBytes))
 }

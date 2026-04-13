@@ -15,7 +15,10 @@ func (c *Client) GetAccessToken() string {
 	return c.getAccessToken()
 }
 
-// GetStableAccessToken 获取稳定 AccessToken
+// GetStableAccessToken returns a stable access_token that is not invalidated by concurrent calls
+// to the regular token endpoint. Pass forceRefresh=true to rotate the token immediately.
+//
+// 获取稳定 AccessToken
 // 获取全局后台接口调用凭据，有效期最长为7200s，开发者需要进行妥善保存；
 // 有两种调用模式:
 //  1. 普通模式，access_token 有效期内重复调用该接口不会更新 access_token，绝大部分场景下使用该模式；
@@ -31,16 +34,15 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 		"force_refresh": forceRefresh,
 	}
 	result := &AccessToken{}
-	err := c.Https.Post(context.Background(), "/cgi-bin/stable_token", body, result)
-	if err != nil {
+	if err := c.Https.Post(context.Background(), "/cgi-bin/stable_token", body, result); err != nil {
 		return nil, err
 	}
 	if result.ErrCode != 0 {
-		return nil, fmt.Errorf("wechat error %d: %s", result.ErrCode, result.ErrMsg)
+		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	c.tokenMutex.Lock()
 	c.accessToken = result.AccessToken
-	c.expiresAt = time.Now().Add(time.Duration(result.ExpiresIn-10) * time.Second)
+	c.expiresAt = time.Now().Add(time.Duration(result.ExpiresIn-60) * time.Second)
 	c.tokenMutex.Unlock()
 	return result, nil
 }

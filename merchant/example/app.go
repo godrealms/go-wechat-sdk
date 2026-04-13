@@ -1,40 +1,48 @@
+//go:build ignore
+
 package main
 
 import (
-	wechat "github.com/godrealms/go-wechat-sdk/merchant/developed"
+	"context"
+	"log"
+
+	pay "github.com/godrealms/go-wechat-sdk/merchant/developed"
 	"github.com/godrealms/go-wechat-sdk/merchant/developed/types"
 	"github.com/godrealms/go-wechat-sdk/utils"
-	"log"
 )
 
 func main() {
-	certificate, err := utils.LoadCertificateWithPath("certificate.pem") // 通过证书的文件路径加载证书
-	//certificate, err := utils.LoadCertificate("certificate")// 通过证书的文本内容加载证书
+	certificate, err := utils.LoadCertificateWithPath("certificate.pem")
 	if err != nil {
-		log.Fatalf("load certificate err:%s\n", err.Error())
+		log.Fatalf("load certificate err: %s", err.Error())
 	}
-	//privateKey, err := utils.LoadPrivateKey("privateKey")             // 通过私钥的文本内容加载私钥
-	privateKey, err := utils.LoadPrivateKeyWithPath("privateKey.pem") // 通过私钥的文件路径内容加载私钥
+	privateKey, err := utils.LoadPrivateKeyWithPath("privateKey.pem")
 	if err != nil {
-		log.Fatalf("load private key err:%s\n", err.Error())
-	}
-	//publicKey, err := utils.LoadPublicKey("publicKey")             // 通过私钥的文本内容加载私钥
-	publicKey, err := utils.LoadPublicKeyWithPath("publicKey.pem") // 通过私钥的文件路径内容加载私钥
-	if err != nil {
-		log.Fatalf("load private key err:%s\n", err.Error())
+		log.Fatalf("load private key err: %s", err.Error())
 	}
 
-	client := wechat.NewWechatClient().
-		WithAppid("wx1234567890").
-		WithAPIv3Key("1234567890").
-		WithCertificate(certificate).
-		WithPrivateKey(privateKey).
-		WithPublicKey(publicKey)
-
-	//response, err := client.Transactions(&types.Transactions{}) // APP下单
-	response, err := client.ModifyTransactionsApp(&types.Transactions{}) // APP下单并获取调起参数
+	client, err := pay.NewClient(pay.Config{
+		Appid:             "wx1234567890",
+		Mchid:             "1900000001",
+		CertificateNumber: "5157F09EFDC096DE15EBE81A47057A7232F1B8E1",
+		APIv3Key:          "your_apiv3_key_32_bytes_long_xxx",
+		PrivateKey:        privateKey,
+		Certificate:       certificate,
+	})
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
-	log.Println(response)
+
+	ctx := context.Background()
+
+	// （可选）启动时主动拉取一次平台证书，后续响应验签速度更快
+	if _, err := client.FetchPlatformCertificates(ctx); err != nil {
+		log.Printf("fetch platform certs failed: %v", err)
+	}
+
+	resp, err := client.ModifyTransactionsApp(ctx, &types.Transactions{})
+	if err != nil {
+		log.Fatalf("modify transactions app failed: %v", err)
+	}
+	log.Println(resp)
 }

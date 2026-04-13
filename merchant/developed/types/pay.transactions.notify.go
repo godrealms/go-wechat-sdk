@@ -79,6 +79,10 @@ type Notify struct {
 // nonce: 随机串
 // body: 请求体
 // signature: 签名
+//
+// Deprecated: 该方法只用于早期手动验签场景，且解析的是 PKIX 公钥而非
+// 微信支付平台证书，无法自动跟随平台证书轮换。请改用
+// pay.Client.ParseNotification，它会自动用本地缓存或拉取的平台证书校验签名。
 func (n *Notify) VerifySignature(timestamp, nonce, signature, body, publicKey string) bool {
 	// 构造验签串
 	message := fmt.Sprintf("%s\n%s\n%s\n", timestamp, nonce, body)

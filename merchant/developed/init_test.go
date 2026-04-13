@@ -1,7 +1,8 @@
-package developed_test
+package pay_test
 
 import (
-	"encoding/json"
+	"crypto/rand"
+	"crypto/rsa"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,28 +11,28 @@ import (
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
-// newClientWithFakeServer creates a test client with a fake HTTP server.
-// It returns the client, the server URL, and the server itself.
+// newClientWithFakeServer creates a test client backed by a fake HTTP server.
 // The caller is responsible for calling srv.Close().
 func newClientWithFakeServer(t *testing.T) (*developed.Client, string, *httptest.Server) {
+	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Default response - return success
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		response := map[string]interface{}{
-			"code": 0,
-			"msg":  "ok",
-		}
-		_ = json.NewEncoder(w).Encode(response)
+		_, _ = w.Write([]byte(`{"code":0,"msg":"ok"}`))
 	}))
 
-	client := &developed.Client{
-		Appid:             "test-appid",
-		Mchid:             "test-mchid",
-		CertificateNumber: "test-cert-number",
-		APIv3Key:          "test-api-v3-key",
-		Http:              utils.NewHTTP(server.URL),
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		t.Fatalf("failed to generate RSA key: %v", err)
 	}
 
-	return client, server.URL, server
+	c := developed.NewWechatClient().
+		WithHttp(utils.NewHTTP(server.URL)).
+		WithAppid("test-appid").
+		WithMchid("test-mchid").
+		WithCertificateNumber("test-cert-number").
+		WithAPIv3Key("01234567890123456789012345678901").
+		WithPrivateKey(key)
+
+	return c, server.URL, server
 }

@@ -1,4 +1,4 @@
-package developed
+package pay
 
 import (
 	"context"
@@ -68,7 +68,7 @@ func TestTransactionsApp_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.TransactionsApp(testOrder())
+	result, err := c.TransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -87,7 +87,7 @@ func TestTransactionsApp_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, err := c.TransactionsApp(testOrder())
+	_, err := c.TransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestTransactionsApp_SendsCorrectJSON(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, err := c.TransactionsApp(testOrder())
+	_, err := c.TransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -122,7 +122,7 @@ func TestTransactionsApp_NetworkError(t *testing.T) {
 	key := generateTestKey(t)
 	h := utils.NewHTTP(u, utils.WithTimeout(time.Second))
 	c := NewWechatClient().WithPrivateKey(key).WithHttp(h)
-	_, err := c.TransactionsApp(testOrder())
+	_, err := c.TransactionsApp(context.Background(), testOrder())
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -135,7 +135,7 @@ func TestTransactionsJsapi_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.TransactionsJsapi(testOrder())
+	result, err := c.TransactionsJsapi(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -154,7 +154,7 @@ func TestTransactionsJsapi_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, err := c.TransactionsJsapi(testOrder())
+	_, err := c.TransactionsJsapi(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -170,7 +170,7 @@ func TestTransactionsNative_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.TransactionsNative(testOrder())
+	result, err := c.TransactionsNative(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -189,7 +189,7 @@ func TestTransactionsNative_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, err := c.TransactionsNative(testOrder())
+	_, err := c.TransactionsNative(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestTransactionsH5_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.TransactionsH5(testOrder())
+	result, err := c.TransactionsH5(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -224,7 +224,7 @@ func TestTransactionsH5_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, err := c.TransactionsH5(testOrder())
+	_, err := c.TransactionsH5(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -237,11 +237,11 @@ func TestTransactionsH5_SetsAuthorizationHeader(t *testing.T) {
 
 func TestNewWechatClient_DefaultBaseURL(t *testing.T) {
 	c := NewWechatClient()
-	if c.Http == nil {
-		t.Fatal("expected non-nil Http")
+	if c.HTTP() == nil {
+		t.Fatal("expected non-nil HTTP client")
 	}
-	if !strings.Contains(c.Http.BaseURL, "api.mch.weixin.qq.com") {
-		t.Errorf("expected default base URL to contain api.mch.weixin.qq.com, got %q", c.Http.BaseURL)
+	if !strings.Contains(c.HTTP().BaseURL, "api.mch.weixin.qq.com") {
+		t.Errorf("expected default base URL to contain api.mch.weixin.qq.com, got %q", c.HTTP().BaseURL)
 	}
 }
 
@@ -253,16 +253,16 @@ func TestWechatClient_BuilderChain(t *testing.T) {
 		WithCertificateNumber("cert_no").
 		WithAPIv3Key("key32byteslongkey32byteslongkey!").
 		WithPrivateKey(key)
-	if c.Appid != "appid" {
-		t.Errorf("expected appid, got %q", c.Appid)
+	if c.Appid() != "appid" {
+		t.Errorf("expected appid, got %q", c.Appid())
 	}
-	if c.Mchid != "mchid" {
-		t.Errorf("expected mchid, got %q", c.Mchid)
+	if c.Mchid() != "mchid" {
+		t.Errorf("expected mchid, got %q", c.Mchid())
 	}
-	if c.CertificateNumber != "cert_no" {
-		t.Errorf("expected cert_no, got %q", c.CertificateNumber)
+	if c.CertificateNumber() != "cert_no" {
+		t.Errorf("expected cert_no, got %q", c.CertificateNumber())
 	}
-	if c.privateKey != key {
+	if c.PrivateKeyVal() != key {
 		t.Error("expected private key to be set")
 	}
 }
@@ -270,11 +270,11 @@ func TestWechatClient_BuilderChain(t *testing.T) {
 func TestWechatClient_WithHttp(t *testing.T) {
 	h := utils.NewHTTP("https://custom.example.com")
 	c := NewWechatClient().WithHttp(h)
-	if c.Http != h {
-		t.Error("expected Http to be the injected instance")
+	if c.HTTP() != h {
+		t.Error("expected HTTP() to be the injected instance")
 	}
-	if c.Http.BaseURL != "https://custom.example.com" {
-		t.Errorf("expected custom base URL, got %q", c.Http.BaseURL)
+	if c.HTTP().BaseURL != "https://custom.example.com" {
+		t.Errorf("expected custom base URL, got %q", c.HTTP().BaseURL)
 	}
 }
 
@@ -285,7 +285,7 @@ func TestModifyTransactionsApp_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.ModifyTransactionsApp(testOrder())
+	result, err := c.ModifyTransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -307,7 +307,7 @@ func TestModifyTransactionsJsapi_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.ModifyTransactionsJsapi(testOrder())
+	result, err := c.ModifyTransactionsJsapi(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -327,7 +327,7 @@ func TestQueryTransactionId_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.QueryTransactionId("4200001234")
+	result, err := c.QueryTransactionId(context.Background(), "4200001234")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -346,7 +346,7 @@ func TestQueryTransactionId_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, _ = c.QueryTransactionId("txn123")
+	_, _ = c.QueryTransactionId(context.Background(), "txn123")
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -359,7 +359,7 @@ func TestQueryOutTradeNo_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.QueryOutTradeNo("ORD001")
+	result, err := c.QueryOutTradeNo(context.Background(), "ORD001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -378,7 +378,7 @@ func TestQueryOutTradeNo_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, _ = c.QueryOutTradeNo("ORD001")
+	_, _ = c.QueryOutTradeNo(context.Background(), "ORD001")
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -391,7 +391,7 @@ func TestTransactionsClose_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	err := c.TransactionsClose("ORD001")
+	err := c.TransactionsClose(context.Background(), "ORD001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -407,7 +407,7 @@ func TestTransactionsClose_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_ = c.TransactionsClose("ORD001")
+	_ = c.TransactionsClose(context.Background(), "ORD001")
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -425,7 +425,7 @@ func TestRefunds_Success(t *testing.T) {
 		OutRefundNo: "REFNO001",
 		Amount:      &types.Amount{Total: 100, Currency: "CNY"},
 	}
-	result, err := c.Refunds(refund)
+	result, err := c.Refunds(context.Background(), refund)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -449,7 +449,7 @@ func TestRefunds_SetsAuthorizationHeader(t *testing.T) {
 		OutRefundNo: "REFNO001",
 		Amount:      &types.Amount{Total: 100, Currency: "CNY"},
 	}
-	_, _ = c.Refunds(refund)
+	_, _ = c.Refunds(context.Background(), refund)
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -462,7 +462,7 @@ func TestQueryRefunds_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	result, err := c.QueryRefunds("REFNO001")
+	result, err := c.QueryRefunds(context.Background(), "REFNO001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -481,7 +481,7 @@ func TestQueryRefunds_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, _ = c.QueryRefunds("REFNO001")
+	_, _ = c.QueryRefunds(context.Background(), "REFNO001")
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -497,7 +497,7 @@ func TestApplyAbnormalRefund_Success(t *testing.T) {
 	abnormal := &types.AbnormalRefund{
 		OutRefundNo: "REFNO002",
 	}
-	result, err := c.ApplyAbnormalRefund("REF001", abnormal)
+	result, err := c.ApplyAbnormalRefund(context.Background(), "REF001", abnormal)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -514,7 +514,7 @@ func TestTradeBill_Success(t *testing.T) {
 
 	c := newTestMerchantClient(t, srv)
 	quest := &types.TradeBillQuest{BillDate: "2024-01-01"}
-	result, err := c.TradeBill(quest)
+	result, err := c.TradeBill(context.Background(), quest)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -533,7 +533,7 @@ func TestTradeBill_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, _ = c.TradeBill(&types.TradeBillQuest{BillDate: "2024-01-01"})
+	_, _ = c.TradeBill(context.Background(), &types.TradeBillQuest{BillDate: "2024-01-01"})
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -547,7 +547,7 @@ func TestFundFlowBill_Success(t *testing.T) {
 
 	c := newTestMerchantClient(t, srv)
 	quest := &types.FundsBillQuest{BillDate: "2024-01-01"}
-	result, err := c.FundFlowBill(quest)
+	result, err := c.FundFlowBill(context.Background(), quest)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -566,7 +566,7 @@ func TestFundFlowBill_SetsAuthorizationHeader(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestMerchantClient(t, srv)
-	_, _ = c.FundFlowBill(&types.FundsBillQuest{BillDate: "2024-01-01"})
+	_, _ = c.FundFlowBill(context.Background(), &types.FundsBillQuest{BillDate: "2024-01-01"})
 	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
 		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
 	}
@@ -602,13 +602,16 @@ func TestParseNotification_NilBody(t *testing.T) {
 	}
 }
 
-func TestParseNotification_SignatureError(t *testing.T) {
+func TestParseNotification_NoSigHeaders(t *testing.T) {
 	c := NewWechatClient()
 	req := httptest.NewRequest("POST", "/notify", strings.NewReader(`{"id":"evt001"}`))
-	_, err := c.ParseNotification(nil, req, nil)
-	// verifyResponseSignature is a stub that always errors, so we expect an error
-	if err == nil {
-		t.Error("expected error due to signature verification stub")
+	// When signature headers are absent, verifyResponseSignature skips verification and returns nil.
+	notify, err := c.ParseNotification(context.Background(), req, nil)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if notify == nil {
+		t.Error("expected non-nil notify")
 	}
 }
 
@@ -650,13 +653,16 @@ func TestFailNotification_EmptyMessage(t *testing.T) {
 
 // --- ParseRefundNotify test ---
 
-func TestParseRefundNotify_SignatureError(t *testing.T) {
+func TestParseRefundNotify_NoSigHeaders(t *testing.T) {
 	c := NewWechatClient()
 	req := httptest.NewRequest("POST", "/notify", strings.NewReader(`{"id":"evt001"}`))
-	_, _, err := c.ParseRefundNotify(nil, req)
-	// verifyResponseSignature is a stub that always errors
-	if err == nil {
-		t.Error("expected error due to signature verification stub")
+	// When signature headers are absent, verifyResponseSignature skips verification and returns nil.
+	notify, _, err := c.ParseRefundNotify(context.Background(), req)
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if notify == nil {
+		t.Error("expected non-nil notify")
 	}
 }
 

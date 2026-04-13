@@ -1,4 +1,4 @@
-package developed_test
+package pay_test
 
 import (
 	"errors"
