@@ -50,6 +50,9 @@ func (cc *CorpClient) doUpload(ctx context.Context, path string, extra url.Value
 	if err != nil {
 		return fmt.Errorf("isv: read body: %w", err)
 	}
+	if resp.StatusCode/100 != 2 {
+		return fmt.Errorf("isv: upload http %d: %s", resp.StatusCode, string(body))
+	}
 	return decodeRaw(body, out)
 }
 

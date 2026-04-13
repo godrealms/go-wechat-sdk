@@ -2,7 +2,7 @@ package isv
 
 import "context"
 
-// GetApprovalTemplate 获取审批模板详情。
+// GetApprovalTemplate retrieves the details of an approval template by its template ID.
 func (cc *CorpClient) GetApprovalTemplate(ctx context.Context, templateID string) (*ApprovalTemplateResp, error) {
 	body := &GetApprovalTemplateReq{TemplateID: templateID}
 	var resp ApprovalTemplateResp
@@ -12,7 +12,7 @@ func (cc *CorpClient) GetApprovalTemplate(ctx context.Context, templateID string
 	return &resp, nil
 }
 
-// ApplyEvent 提交审批申请。
+// ApplyEvent submits an approval application.
 func (cc *CorpClient) ApplyEvent(ctx context.Context, req *ApplyEventReq) (*ApplyEventResp, error) {
 	var resp ApplyEventResp
 	if err := cc.doPost(ctx, "/cgi-bin/oa/applyevent", req, &resp); err != nil {
@@ -21,7 +21,7 @@ func (cc *CorpClient) ApplyEvent(ctx context.Context, req *ApplyEventReq) (*Appl
 	return &resp, nil
 }
 
-// GetApprovalDetail 获取审批申请详情。
+// GetApprovalDetail retrieves the details of an approval application by its sp_no.
 func (cc *CorpClient) GetApprovalDetail(ctx context.Context, spNo string) (*ApprovalDetailResp, error) {
 	body := &GetApprovalDetailReq{SpNo: spNo}
 	var resp ApprovalDetailResp
@@ -31,7 +31,7 @@ func (cc *CorpClient) GetApprovalDetail(ctx context.Context, spNo string) (*Appr
 	return &resp, nil
 }
 
-// GetApprovalData 批量获取审批单号。
+// GetApprovalData retrieves a batch of approval record numbers matching the given filters.
 func (cc *CorpClient) GetApprovalData(ctx context.Context, req *GetApprovalDataReq) (*GetApprovalDataResp, error) {
 	var resp GetApprovalDataResp
 	if err := cc.doPost(ctx, "/cgi-bin/oa/getapprovalinfo", req, &resp); err != nil {

@@ -275,10 +275,7 @@ func TestAddCorpTag(t *testing.T) {
 	cc := newTestCorpClient(t, srv.URL)
 	resp, err := cc.AddCorpTag(context.Background(), &AddCorpTagReq{
 		GroupName: "新标签组",
-		Tag: []struct {
-			Name  string `json:"name"`
-			Order int    `json:"order,omitempty"`
-		}{
+		Tag: []CorpTagInput{
 			{Name: "新标签", Order: 1},
 		},
 	})

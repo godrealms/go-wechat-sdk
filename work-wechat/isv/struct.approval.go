@@ -1,64 +1,64 @@
 package isv
 
-// GetApprovalTemplateReq 获取审批模板详情请求。
+// GetApprovalTemplateReq is the request for GetApprovalTemplate.
 type GetApprovalTemplateReq struct {
 	TemplateID string `json:"template_id"`
 }
 
-// ApprovalTemplateResp 审批模板详情响应。
+// ApprovalTemplateResp is the response containing approval template details.
 type ApprovalTemplateResp struct {
 	TemplateNames   []ApprovalText  `json:"template_names"`
 	TemplateContent ApprovalContent `json:"template_content"`
 }
 
-// ApprovalText 多语言文本。
+// ApprovalText holds a piece of multilingual text.
 type ApprovalText struct {
 	Text string `json:"text"`
 	Lang string `json:"lang"`
 }
 
-// ApprovalContent 审批模板内容。
+// ApprovalContent holds the control definitions of an approval template.
 type ApprovalContent struct {
 	Controls []ApprovalControl `json:"controls"`
 }
 
-// ApprovalControl 审批模板控件。
+// ApprovalControl represents a single control in an approval template.
 type ApprovalControl struct {
 	Property ApprovalControlProperty `json:"property"`
 	Config   *ApprovalControlConfig  `json:"config,omitempty"`
 }
 
-// ApprovalControlProperty 控件属性。
+// ApprovalControlProperty holds the basic properties of an approval control.
 type ApprovalControlProperty struct {
 	Control string         `json:"control"`
 	ID      string         `json:"id"`
 	Title   []ApprovalText `json:"title"`
 }
 
-// ApprovalControlConfig 控件配置。
+// ApprovalControlConfig holds optional configuration for an approval control.
 type ApprovalControlConfig struct {
 	Date     *ApprovalDateConfig     `json:"date,omitempty"`
 	Selector *ApprovalSelectorConfig `json:"selector,omitempty"`
 }
 
-// ApprovalDateConfig 日期控件配置。
+// ApprovalDateConfig holds the configuration for a date-type approval control.
 type ApprovalDateConfig struct {
 	Type string `json:"type"`
 }
 
-// ApprovalSelectorConfig 选择控件配置。
+// ApprovalSelectorConfig holds the configuration for a selector-type approval control.
 type ApprovalSelectorConfig struct {
 	Type    string           `json:"type"`
 	Options []ApprovalOption `json:"options"`
 }
 
-// ApprovalOption 选择控件选项。
+// ApprovalOption represents a single option in a selector-type approval control.
 type ApprovalOption struct {
 	Key   string         `json:"key"`
 	Value []ApprovalText `json:"value"`
 }
 
-// ApplyEventReq 提交审批申请请求。
+// ApplyEventReq is the request for ApplyEvent.
 type ApplyEventReq struct {
 	CreatorUserID       string         `json:"creator_userid"`
 	TemplateID          string         `json:"template_id"`
@@ -67,63 +67,63 @@ type ApplyEventReq struct {
 	SummaryList         []ApplySummary `json:"summary_list"`
 }
 
-// ApplyData 审批申请数据。
+// ApplyData holds the control values submitted in an approval application.
 type ApplyData struct {
 	Contents []ApplyContent `json:"contents"`
 }
 
-// ApplyContent 审批申请控件值。
+// ApplyContent holds the value for a single control in an approval application.
 type ApplyContent struct {
 	Control string     `json:"control"`
 	ID      string     `json:"id"`
 	Value   ApplyValue `json:"value"`
 }
 
-// ApplyValue 控件值（各类型共用，按需填充）。
+// ApplyValue holds the control value; fields are populated according to the control type.
 type ApplyValue struct {
 	Text     string              `json:"text,omitempty"`
 	Date     *ApplyDateValue     `json:"date,omitempty"`
 	Selector *ApplySelectorValue `json:"selector,omitempty"`
 }
 
-// ApplyDateValue 日期控件值。
+// ApplyDateValue holds the value for a date-type approval control.
 type ApplyDateValue struct {
 	Type      string `json:"type"`
 	Timestamp string `json:"s_timestamp"`
 }
 
-// ApplySelectorValue 选择控件值。
+// ApplySelectorValue holds the value for a selector-type approval control.
 type ApplySelectorValue struct {
 	Type    string             `json:"type"`
 	Options []ApplySelectorOpt `json:"options"`
 }
 
-// ApplySelectorOpt 选择控件选中项。
+// ApplySelectorOpt identifies a selected option in a selector-type approval control.
 type ApplySelectorOpt struct {
 	Key string `json:"key"`
 }
 
-// ApplySummary 审批摘要。
+// ApplySummary holds the summary information shown on an approval record.
 type ApplySummary struct {
 	SummaryInfo []ApprovalText `json:"summary_info"`
 }
 
-// ApplyEventResp 提交审批申请响应。
+// ApplyEventResp is the response from ApplyEvent.
 type ApplyEventResp struct {
 	SpNo string `json:"sp_no"`
 }
 
-// GetApprovalDetailReq 获取审批申请详情请求。
+// GetApprovalDetailReq is the request for GetApprovalDetail.
 type GetApprovalDetailReq struct {
 	SpNo string `json:"sp_no"`
 }
 
-// ApprovalDetailResp 审批申请详情响应。
+// ApprovalDetailResp is the response containing the full details of an approval record.
 type ApprovalDetailResp struct {
 	Info ApprovalInfoDetail `json:"info"`
 }
 
-// ApprovalInfoDetail 审批单详情。
+// ApprovalInfoDetail contains the full detail of an approval record.
 type ApprovalInfoDetail struct {
 	SpNo       string           `json:"sp_no"`
 	SpName     string           `json:"sp_name"`
@@ -135,20 +135,20 @@ type ApprovalInfoDetail struct {
 	ApplyData  ApplyData        `json:"apply_data"`
 }
 
-// ApprovalApplyer 申请人信息。
+// ApprovalApplyer holds the identity of the applicant.
 type ApprovalApplyer struct {
 	UserID  string `json:"userid"`
 	PartyID string `json:"partyid"`
 }
 
-// ApprovalRecord 审批节点记录。
+// ApprovalRecord represents a single approval node record.
 type ApprovalRecord struct {
 	SpStatus     int              `json:"sp_status"`
 	ApproverAttr int              `json:"approverattr"`
 	Details      []ApprovalDetail `json:"details"`
 }
 
-// ApprovalDetail 审批人详情。
+// ApprovalDetail holds the details of an individual approver action at a node.
 type ApprovalDetail struct {
 	Approver ApprovalApprover `json:"approver"`
 	Speech   string           `json:"speech"`
@@ -156,12 +156,12 @@ type ApprovalDetail struct {
 	SpTime   int64            `json:"sptime"`
 }
 
-// ApprovalApprover 审批人。
+// ApprovalApprover identifies the approver at an approval node.
 type ApprovalApprover struct {
 	UserID string `json:"userid"`
 }
 
-// GetApprovalDataReq 批量获取审批单号请求。
+// GetApprovalDataReq is the request for GetApprovalData.
 type GetApprovalDataReq struct {
 	StartTime int64            `json:"starttime"`
 	EndTime   int64            `json:"endtime"`
@@ -170,13 +170,13 @@ type GetApprovalDataReq struct {
 	Filters   []ApprovalFilter `json:"filters,omitempty"`
 }
 
-// ApprovalFilter 审批单号筛选条件。
+// ApprovalFilter specifies a filter condition for querying approval records.
 type ApprovalFilter struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
 }
 
-// GetApprovalDataResp 批量获取审批单号响应。
+// GetApprovalDataResp is the response from GetApprovalData.
 type GetApprovalDataResp struct {
 	SpNoList      []string `json:"sp_no_list"`
 	NewNextCursor int      `json:"new_next_cursor"`

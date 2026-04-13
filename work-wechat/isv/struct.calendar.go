@@ -1,6 +1,6 @@
 package isv
 
-// Calendar 日历对象。
+// Calendar represents a calendar object.
 type Calendar struct {
 	CalID       string          `json:"cal_id,omitempty"`
 	Organizer   string          `json:"organizer"`
@@ -10,42 +10,42 @@ type Calendar struct {
 	Shares      []CalendarShare `json:"shares,omitempty"`
 }
 
-// CalendarShare 日历共享对象。
+// CalendarShare represents a user with whom a calendar is shared.
 type CalendarShare struct {
 	UserID string `json:"userid"`
 }
 
-// CreateCalendarReq 创建日历请求。
+// CreateCalendarReq is the request for CreateCalendar.
 type CreateCalendarReq struct {
 	Calendar Calendar `json:"calendar"`
 }
 
-// CreateCalendarResp 创建日历响应。
+// CreateCalendarResp is the response from CreateCalendar.
 type CreateCalendarResp struct {
 	CalID string `json:"cal_id"`
 }
 
-// UpdateCalendarReq 更新日历请求。
+// UpdateCalendarReq is the request for UpdateCalendar.
 type UpdateCalendarReq struct {
 	Calendar Calendar `json:"calendar"`
 }
 
-// GetCalendarReq 获取日历详情请求。
+// GetCalendarReq is the request for GetCalendar.
 type GetCalendarReq struct {
 	CalIDList []string `json:"cal_id_list"`
 }
 
-// GetCalendarResp 获取日历详情响应。
+// GetCalendarResp is the response from GetCalendar.
 type GetCalendarResp struct {
 	CalendarList []Calendar `json:"calendar_list"`
 }
 
-// DeleteCalendarReq 删除日历请求。
+// DeleteCalendarReq is the request for DeleteCalendar.
 type DeleteCalendarReq struct {
 	CalID string `json:"cal_id"`
 }
 
-// Schedule 日程对象。
+// Schedule represents a schedule event.
 type Schedule struct {
 	ScheduleID  string             `json:"schedule_id,omitempty"`
 	Organizer   string             `json:"organizer"`
@@ -59,55 +59,55 @@ type Schedule struct {
 	Reminders   *ScheduleReminder  `json:"reminders,omitempty"`
 }
 
-// ScheduleAttendee 日程参与人。
+// ScheduleAttendee represents an attendee of a schedule event.
 type ScheduleAttendee struct {
 	UserID string `json:"userid"`
 }
 
-// ScheduleReminder 日程提醒。
+// ScheduleReminder holds the reminder configuration for a schedule event.
 type ScheduleReminder struct {
-	IsRemind     int `json:"is_remind"`
+	IsRemind     int  `json:"is_remind"`
 	RemindBefore *int `json:"remind_before_event_secs,omitempty"`
 }
 
-// CreateScheduleReq 创建日程请求。
+// CreateScheduleReq is the request for CreateSchedule.
 type CreateScheduleReq struct {
 	Schedule Schedule `json:"schedule"`
 }
 
-// CreateScheduleResp 创建日程响应。
+// CreateScheduleResp is the response from CreateSchedule.
 type CreateScheduleResp struct {
 	ScheduleID string `json:"schedule_id"`
 }
 
-// UpdateScheduleReq 更新日程请求。
+// UpdateScheduleReq is the request for UpdateSchedule.
 type UpdateScheduleReq struct {
 	Schedule Schedule `json:"schedule"`
 }
 
-// GetScheduleReq 获取日程详情请求。
+// GetScheduleReq is the request for GetSchedule.
 type GetScheduleReq struct {
 	ScheduleIDList []string `json:"schedule_id_list"`
 }
 
-// GetScheduleResp 获取日程详情响应。
+// GetScheduleResp is the response from GetSchedule.
 type GetScheduleResp struct {
 	ScheduleList []Schedule `json:"schedule_list"`
 }
 
-// DeleteScheduleReq 删除日程请求。
+// DeleteScheduleReq is the request for DeleteSchedule.
 type DeleteScheduleReq struct {
 	ScheduleID string `json:"schedule_id"`
 }
 
-// GetScheduleByCalendarReq 获取日历下日程列表请求。
+// GetScheduleByCalendarReq is the request for GetScheduleByCalendar.
 type GetScheduleByCalendarReq struct {
 	CalID  string `json:"cal_id"`
 	Offset int    `json:"offset,omitempty"`
 	Limit  int    `json:"limit,omitempty"`
 }
 
-// GetScheduleByCalendarResp 获取日历下日程列表响应。
+// GetScheduleByCalendarResp is the response from GetScheduleByCalendar.
 type GetScheduleByCalendarResp struct {
 	ScheduleList []Schedule `json:"schedule_list"`
 }

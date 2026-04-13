@@ -1,6 +1,6 @@
 package isv
 
-// GetCheckinDataReq 获取打卡记录请求。
+// GetCheckinDataReq is the request for GetCheckinData.
 type GetCheckinDataReq struct {
 	OpenCheckinDataType int      `json:"opencheckindatatype"`
 	StartTime           int64    `json:"starttime"`
@@ -8,7 +8,7 @@ type GetCheckinDataReq struct {
 	UserIDList          []string `json:"useridlist"`
 }
 
-// CheckinData 打卡记录。
+// CheckinData represents a single check-in record.
 type CheckinData struct {
 	UserID         string `json:"userid"`
 	GroupName      string `json:"groupname"`
@@ -20,49 +20,49 @@ type CheckinData struct {
 	Notes          string `json:"notes"`
 }
 
-// GetCheckinDataResp 获取打卡记录响应。
+// GetCheckinDataResp is the response from GetCheckinData.
 type GetCheckinDataResp struct {
 	CheckinData []CheckinData `json:"checkindata"`
 }
 
-// GetCheckinOptionReq 获取打卡规则请求。
+// GetCheckinOptionReq is the request for GetCheckinOption.
 type GetCheckinOptionReq struct {
 	DateTime   int64    `json:"datetime"`
 	UserIDList []string `json:"useridlist"`
 }
 
-// CheckinOption 打卡规则。
+// CheckinOption holds the check-in rule for a single user.
 type CheckinOption struct {
 	UserID string       `json:"userid"`
 	Group  CheckinGroup `json:"group"`
 }
 
-// CheckinGroup 打卡规则组。
+// CheckinGroup holds the check-in rule group information.
 type CheckinGroup struct {
 	GroupID   int    `json:"groupid"`
 	GroupName string `json:"groupname"`
 	GroupType int    `json:"grouptype"`
 }
 
-// GetCheckinOptionResp 获取打卡规则响应。
+// GetCheckinOptionResp is the response from GetCheckinOption.
 type GetCheckinOptionResp struct {
 	Info []CheckinOption `json:"info"`
 }
 
-// GetCheckinDayDataReq 获取打卡日报请求。
+// GetCheckinDayDataReq is the request for GetCheckinDayData.
 type GetCheckinDayDataReq struct {
 	StartTime  int64    `json:"starttime"`
 	EndTime    int64    `json:"endtime"`
 	UserIDList []string `json:"useridlist"`
 }
 
-// CheckinDayData 打卡日报数据。
+// CheckinDayData holds the daily check-in report for a single user.
 type CheckinDayData struct {
 	BaseInfo    CheckinDayBase    `json:"base_info"`
 	SummaryInfo CheckinDaySummary `json:"summary_info"`
 }
 
-// CheckinDayBase 日报基础信息。
+// CheckinDayBase holds the basic identification fields of a daily check-in report entry.
 type CheckinDayBase struct {
 	Date   int64  `json:"date"`
 	Name   string `json:"name"`
@@ -70,39 +70,39 @@ type CheckinDayBase struct {
 	AcctID string `json:"acctid"`
 }
 
-// CheckinDaySummary 日报统计。
+// CheckinDaySummary holds the statistical summary of a daily check-in report.
 type CheckinDaySummary struct {
 	CheckinCount    int `json:"checkin_count"`
 	RegularWorkSec  int `json:"regular_work_sec"`
 	StandardWorkSec int `json:"standard_work_sec"`
 }
 
-// GetCheckinDayDataResp 获取打卡日报响应。
+// GetCheckinDayDataResp is the response from GetCheckinDayData.
 type GetCheckinDayDataResp struct {
 	Datas []CheckinDayData `json:"datas"`
 }
 
-// GetCheckinMonthDataReq 获取打卡月报请求。
+// GetCheckinMonthDataReq is the request for GetCheckinMonthData.
 type GetCheckinMonthDataReq struct {
 	StartTime  int64    `json:"starttime"`
 	EndTime    int64    `json:"endtime"`
 	UserIDList []string `json:"useridlist"`
 }
 
-// CheckinMonthData 打卡月报数据。
+// CheckinMonthData holds the monthly check-in report for a single user.
 type CheckinMonthData struct {
 	BaseInfo    CheckinDayBase      `json:"base_info"`
 	SummaryInfo CheckinMonthSummary `json:"summary_info"`
 }
 
-// CheckinMonthSummary 月报统计。
+// CheckinMonthSummary holds the statistical summary of a monthly check-in report.
 type CheckinMonthSummary struct {
 	WorkDays       int `json:"work_days"`
 	RegularWorkSec int `json:"regular_work_sec"`
 	ExceptDays     int `json:"except_days"`
 }
 
-// GetCheckinMonthDataResp 获取打卡月报响应。
+// GetCheckinMonthDataResp is the response from GetCheckinMonthData.
 type GetCheckinMonthDataResp struct {
 	Datas []CheckinMonthData `json:"datas"`
 }

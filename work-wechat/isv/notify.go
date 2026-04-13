@@ -57,7 +57,8 @@ type componentInner struct {
 	WelcomeCode string `xml:"WelcomeCode,omitempty"`
 }
 
-// decryptNotify reads, verifies, and decrypts a callback request body.
+// decryptNotify reads, verifies the signature of, and decrypts the WeChat
+// notification body from r. It closes r.Body before returning.
 func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
 	defer r.Body.Close()
 	raw, err := io.ReadAll(r.Body)
@@ -84,10 +85,9 @@ func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
 	return plain, nil
 }
 
-// ParseNotify 校验、解密、解析企业微信回调,并返回强类型事件。
-//
-// 对 suite_ticket 事件本函数自动调用 Store.PutSuiteTicket。
-// 对未知 InfoType 返回 *RawEvent,不报错。
+// ParseNotify verifies, decrypts, and parses a WeChat Work ISV callback, returning a
+// strongly typed Event. For suite_ticket events it automatically calls Store.PutSuiteTicket.
+// Unknown InfoType values are returned as *RawEvent without error.
 func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 	ctx := r.Context()
 
