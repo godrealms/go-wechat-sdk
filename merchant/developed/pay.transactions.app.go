@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// TransactionsApp APP下单
+// TransactionsApp places a new App-payment order and returns the prepay_id needed to invoke the WeChat Pay SDK on the client.
 func (c *Client) TransactionsApp(order *types.Transactions) (*types.TransactionsAppResponse, error) {
 	response := &types.TransactionsAppResponse{}
 	// 处理签名

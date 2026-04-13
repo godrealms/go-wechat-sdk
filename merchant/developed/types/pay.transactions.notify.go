@@ -48,7 +48,7 @@ type Transaction struct {
 	SceneInfo       *SceneInfo         `json:"scene_info"`
 }
 
-// Notify 支付成功回调通知
+// Notify is the decrypted payload of a WeChat Pay callback notification.
 type Notify struct {
 	//【通知ID】回调通知的唯一编号。
 	Id string `json:"id"`

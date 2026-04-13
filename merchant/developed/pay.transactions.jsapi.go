@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// TransactionsJsapi places a new JSAPI-payment order and returns the prepay_id needed to invoke WeChat Pay in a Mini Program or official account page.
 func (c *Client) TransactionsJsapi(order *types.Transactions) (*types.TransactionsJsapiResp, error) {
 	path := "/v3/pay/transactions/jsapi"
 	timestamp := time.Now().Unix()

@@ -14,7 +14,7 @@ var (
 	ErrAuthorizerRevoked     = errors.New("isv: authorizer revoked")
 )
 
-// WeixinError 封装微信业务错误码(errcode != 0)。
+// WeixinError wraps a non-zero WeCom errcode returned by any API endpoint. It implements the utils.WechatAPIError interface.
 type WeixinError struct {
 	ErrCode int    `json:"errcode"`
 	ErrMsg  string `json:"errmsg"`

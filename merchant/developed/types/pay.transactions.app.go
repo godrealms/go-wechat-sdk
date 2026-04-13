@@ -8,8 +8,7 @@ import (
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
-// Amount
-// 【订单金额】订单金额信息
+// Amount describes the monetary value and currency of a transaction.
 type Amount struct {
 	//【总金额】 订单总金额，单位为分，整型。
 	//	示例：1元应填写 100
@@ -125,7 +124,7 @@ type SettleInfo struct {
 	ProfitSharing bool `json:"profit_sharing"`
 }
 
-// Transactions APP下单
+// Transactions is the order request body for a new WeChat Pay transaction.
 type Transactions struct {
 	//【公众账号ID】APPID是商户移动应用唯一标识，在开放平台(移动应用)申请。
 	// 	此处需填写与mchid完成绑定的appid，详见：https://pay.weixin.qq.com/doc/v3/merchant/4013070756。
