@@ -1,5 +1,10 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+)
+
 // NonTaxItem 缴费子项目详情
 type NonTaxItem struct {
 	No       int64  `json:"no"`        // 项目号，如1，2，3
@@ -38,10 +43,14 @@ type QueryFeeResult struct {
 
 // QueryFee 查询应收信息
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxqueryfee.html
-func (c *Client) QueryFee(request *QueryFeeRequest) (*QueryFeeResult, error) {
-	result := &QueryFeeResult{}
-	err := c.Https.Post(c.ctx, "/nontax/queryfee", request, result)
+func (c *Client) QueryFee(ctx context.Context, request *QueryFeeRequest) (*QueryFeeResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &QueryFeeResult{}
+	path := fmt.Sprintf("/nontax/queryfee?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -92,10 +101,14 @@ type UnifiedOrderResult struct {
 
 // UnifiedOrder 缴费支付下单
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxunifiedorder.html
-func (c *Client) UnifiedOrder(request *UnifiedOrderRequest) (*UnifiedOrderResult, error) {
-	result := &UnifiedOrderResult{}
-	err := c.Https.Post(c.ctx, "/nontax/unifiedorder", request, result)
+func (c *Client) UnifiedOrder(ctx context.Context, request *UnifiedOrderRequest) (*UnifiedOrderResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &UnifiedOrderResult{}
+	path := fmt.Sprintf("/nontax/unifiedorder?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -117,10 +130,14 @@ type DownloadBillResult struct {
 
 // DownloadBill 下载缴费对帐单
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxdownloadbill.html
-func (c *Client) DownloadBill(request *DownloadBillRequest) (*DownloadBillResult, error) {
-	result := &DownloadBillResult{}
-	err := c.Https.Post(c.ctx, "/nontax/downloadbill", request, result)
+func (c *Client) DownloadBill(ctx context.Context, request *DownloadBillRequest) (*DownloadBillResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &DownloadBillResult{}
+	path := fmt.Sprintf("/nontax/downloadbill?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -134,10 +151,14 @@ type NotifyInconsistentOrderRequest struct {
 
 // NotifyInconsistentOrder 通知不一致订单
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxnotifyinconsistentorder.html
-func (c *Client) NotifyInconsistentOrder(request *NotifyInconsistentOrderRequest) (*Resp, error) {
-	result := &Resp{}
-	err := c.Https.Post(c.ctx, "/nontax/notifyinconsistentorder", request, result)
+func (c *Client) NotifyInconsistentOrder(ctx context.Context, request *NotifyInconsistentOrderRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &Resp{}
+	path := fmt.Sprintf("/nontax/notifyinconsistentorder?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -152,10 +173,14 @@ type MockNotificationRequest struct {
 
 // MockNotification 模拟支付结果通知
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxmocknotification.html
-func (c *Client) MockNotification(request *MockNotificationRequest) (*Resp, error) {
-	result := &Resp{}
-	err := c.Https.Post(c.ctx, "/nontax/mocknotification", request, result)
+func (c *Client) MockNotification(ctx context.Context, request *MockNotificationRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &Resp{}
+	path := fmt.Sprintf("/nontax/mocknotification?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -170,10 +195,14 @@ type MockQueryFeeRequest struct {
 
 // MockQueryFee 模拟查询应收信息
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxmockqueryfee.html
-func (c *Client) MockQueryFee(request *MockQueryFeeRequest) (*Resp, error) {
-	result := &Resp{}
-	err := c.Https.Post(c.ctx, "/nontax/mockqueryfee", request, result)
+func (c *Client) MockQueryFee(ctx context.Context, request *MockQueryFeeRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &Resp{}
+	path := fmt.Sprintf("/nontax/mockqueryfee?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -209,10 +238,14 @@ type MicroPayResult struct {
 
 // MicroPay 提交刷卡支付
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxmicropay.html
-func (c *Client) MicroPay(request *MicroPayRequest) (*MicroPayResult, error) {
-	result := &MicroPayResult{}
-	err := c.Https.Post(c.ctx, "/nontax/micropay", request, result)
+func (c *Client) MicroPay(ctx context.Context, request *MicroPayRequest) (*MicroPayResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &MicroPayResult{}
+	path := fmt.Sprintf("/nontax/micropay?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -235,10 +268,14 @@ type GetOrderListResult struct {
 
 // GetOrderList 获取缴费订单列表
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxgetorderlist.html
-func (c *Client) GetOrderList(request *GetOrderListRequest) (*GetOrderListResult, error) {
-	result := &GetOrderListResult{}
-	err := c.Https.Post(c.ctx, "/nontax/getorderlist", request, result)
+func (c *Client) GetOrderList(ctx context.Context, request *GetOrderListRequest) (*GetOrderListResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &GetOrderListResult{}
+	path := fmt.Sprintf("/nontax/getorderlist?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -261,10 +298,14 @@ type RefundResult struct {
 
 // Refund 缴费订单退款
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxrefund.html
-func (c *Client) Refund(request *RefundRequest) (*RefundResult, error) {
-	result := &RefundResult{}
-	err := c.Https.Post(c.ctx, "/nontax/refund", request, result)
+func (c *Client) Refund(ctx context.Context, request *RefundRequest) (*RefundResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &RefundResult{}
+	path := fmt.Sprintf("/nontax/refund?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -347,10 +388,14 @@ type GetOrderResult struct {
 
 // GetOrder 获取缴费订单详情
 // https://developers.weixin.qq.com/doc/service/api/nontaxpay/api_nontaxgetorder.html
-func (c *Client) GetOrder(request *GetOrderRequest) (*GetOrderResult, error) {
-	result := &GetOrderResult{}
-	err := c.Https.Post(c.ctx, "/nontax/getorder", request, result)
+func (c *Client) GetOrder(ctx context.Context, request *GetOrderRequest) (*GetOrderResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &GetOrderResult{}
+	path := fmt.Sprintf("/nontax/getorder?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
