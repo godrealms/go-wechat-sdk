@@ -3,6 +3,7 @@ package pay
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -67,6 +68,23 @@ func (c *Client) doV3(
 		ctx, method, urlPath, query, raw, headers,
 	)
 	if err != nil {
+		var httpErr *utils.HTTPError
+		if errors.As(err, &httpErr) && len(httpErr.Body) > 0 {
+			var env struct {
+				Code    string          `json:"code"`
+				Message string          `json:"message"`
+				Detail  json.RawMessage `json:"detail,omitempty"`
+			}
+			if jerr := json.Unmarshal([]byte(httpErr.Body), &env); jerr == nil && env.Code != "" {
+				return &V3Error{
+					HTTPStatus: httpErr.StatusCode,
+					Code:       env.Code,
+					Message:    env.Message,
+					Detail:     env.Detail,
+					Path:       urlPath,
+				}
+			}
+		}
 		return err
 	}
 

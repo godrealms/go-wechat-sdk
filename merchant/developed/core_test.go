@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"io"
 	"math/big"
 	"net/http"
@@ -340,5 +341,30 @@ func TestClient_PEMRoundtrip(t *testing.T) {
 	}
 	if loaded.N.Cmp(priv.N) != 0 {
 		t.Error("loaded key mismatches")
+	}
+}
+
+func TestClient_DoV3_ParsesV3ErrorEnvelope(t *testing.T) {
+	client, fs, srv := newClientWithFakeServer(t)
+	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return http.StatusBadRequest, []byte(`{"code":"PARAM_ERROR","message":"appid invalid"}`)
+	}
+
+	_, err := client.TransactionsJsapi(context.Background(), &types.Transactions{
+		Appid: "wxtest", Mchid: "1900000001",
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var v3 *V3Error
+	if !errors.As(err, &v3) {
+		t.Fatalf("expected *V3Error, got %T: %v", err, err)
+	}
+	if v3.Code != "PARAM_ERROR" {
+		t.Errorf("unexpected code: %s", v3.Code)
+	}
+	if v3.HTTPStatus != http.StatusBadRequest {
+		t.Errorf("unexpected status: %d", v3.HTTPStatus)
 	}
 }
