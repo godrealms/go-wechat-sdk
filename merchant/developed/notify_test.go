@@ -132,3 +132,19 @@ func TestAckNotification(t *testing.T) {
 		t.Errorf("body = %s", w.Body.String())
 	}
 }
+
+func TestParseNotification_RejectsStaleTimestamp(t *testing.T) {
+	c, _ := buildClient(t)
+	body := []byte(`{"id":"x","resource":null}`)
+	req := httptest.NewRequest(http.MethodPost, "/notify", bytes.NewReader(body))
+	staleTs := fmt.Sprintf("%d", time.Now().Unix()-3600) // 1 hour ago
+	req.Header.Set("Wechatpay-Timestamp", staleTs)
+	req.Header.Set("Wechatpay-Nonce", "n")
+	req.Header.Set("Wechatpay-Signature", "s")
+	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.CertificateVal()))
+
+	_, err := c.ParseNotification(context.Background(), req, nil)
+	if err == nil || !strings.Contains(err.Error(), "timestamp out of window") {
+		t.Fatalf("expected stale timestamp rejection, got %v", err)
+	}
+}
