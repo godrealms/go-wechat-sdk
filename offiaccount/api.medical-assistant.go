@@ -1,6 +1,10 @@
 package offiaccount
 
-import "encoding/json"
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+)
 
 // RedirectPage 跳转页面信息
 type RedirectPage struct {
@@ -37,7 +41,11 @@ type SendChannelMsgResult struct {
 // SendChannelMsg 消息推送接口
 // 用于下发就医助手消息，结合通用参数和不同子状态status参数组合实现各类业务消息推送
 // https://developers.weixin.qq.com/doc/service/api/medicalassistant/api_cityservice_sendchannelmsg.html
-func (c *Client) SendChannelMsg(request *SendChannelMsgRequest) (*SendChannelMsgResult, error) {
+func (c *Client) SendChannelMsg(ctx context.Context, request *SendChannelMsgRequest) (*SendChannelMsgResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	result := &SendChannelMsgResult{}
 
 	// 将business_info转换为json.RawMessage以保持原始结构
@@ -51,8 +59,8 @@ func (c *Client) SendChannelMsg(request *SendChannelMsgRequest) (*SendChannelMsg
 		body["business_info"] = json.RawMessage(businessInfoBytes)
 	}
 
-	err := c.Https.Post(c.ctx, "/cityservice/sendchannelmsg", body, result)
-	if err != nil {
+	path := fmt.Sprintf("/cityservice/sendchannelmsg?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, body, result); err != nil {
 		return nil, err
 	}
 	return result, nil
