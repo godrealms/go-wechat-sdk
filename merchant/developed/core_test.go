@@ -152,6 +152,20 @@ func TestClient_NewClient_RequiresFields(t *testing.T) {
 	}
 }
 
+func TestNewClient_RejectsShortAPIv3Key(t *testing.T) {
+	priv, _ := newTestKeyAndCert(t)
+	_, err := NewClient(Config{
+		Appid:             "wxtest",
+		Mchid:             "1900000001",
+		CertificateNumber: "TEST",
+		APIv3Key:          "tooshort",
+		PrivateKey:        priv,
+	})
+	if err == nil || !strings.Contains(err.Error(), "APIv3Key must be 32 bytes") {
+		t.Fatalf("expected length validation error, got %v", err)
+	}
+}
+
 func TestClient_TransactionsJsapi_SignsAndVerifies(t *testing.T) {
 	client, fs, srv := newClientWithFakeServer(t)
 	defer srv.Close()
