@@ -1,7 +1,6 @@
 package mini_program
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"encoding/base64"
@@ -73,6 +72,3 @@ func pkcs7Unpad(data []byte, blockSize int) ([]byte, error) {
 	}
 	return data[:len(data)-pad], nil
 }
-
-// 确保 bytes 被引用，避免未来增删造成未使用告警。
-var _ = bytes.Equal
