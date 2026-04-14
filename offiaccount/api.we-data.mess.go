@@ -1,22 +1,27 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+)
+
 // GetUpstreamMsg 获取消息发送概况数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)，与endDate差值小于7天
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetUpstreamMsg(beginDate, endDate string) (*GetUpstreamMsgResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsg"
+func (c *Client) GetUpstreamMsg(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsg?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -26,20 +31,20 @@ func (c *Client) GetUpstreamMsg(beginDate, endDate string) (*GetUpstreamMsgResul
 // GetUpstreamMsgMonth 获取消息发送月数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)
 // endDate: 结束日期(必须为同一天)
-func (c *Client) GetUpstreamMsgMonth(beginDate, endDate string) (*GetUpstreamMsgResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsgmonth"
+func (c *Client) GetUpstreamMsgMonth(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsgmonth?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -49,20 +54,20 @@ func (c *Client) GetUpstreamMsgMonth(beginDate, endDate string) (*GetUpstreamMsg
 // GetUpstreamMsgDistWeek 获取消息发送分布周数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)，跨度不超过15天
 // endDate: 结束日期
-func (c *Client) GetUpstreamMsgDistWeek(beginDate, endDate string) (*GetUpstreamMsgDistResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsgdistweek"
+func (c *Client) GetUpstreamMsgDistWeek(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgDistResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsgdistweek?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgDistResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -72,20 +77,20 @@ func (c *Client) GetUpstreamMsgDistWeek(beginDate, endDate string) (*GetUpstream
 // GetUpstreamMsgDistMonth 获取消息发送分布月数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)，跨度不超过15天
 // endDate: 结束日期
-func (c *Client) GetUpstreamMsgDistMonth(beginDate, endDate string) (*GetUpstreamMsgDistResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsgdistmonth"
+func (c *Client) GetUpstreamMsgDistMonth(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgDistResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsgdistmonth?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgDistResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -95,20 +100,20 @@ func (c *Client) GetUpstreamMsgDistMonth(beginDate, endDate string) (*GetUpstrea
 // GetUpstreamMsgHour 获取消息发送分时数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)
 // endDate: 结束日期(必须为同一天)
-func (c *Client) GetUpstreamMsgHour(beginDate, endDate string) (*GetUpstreamMsgHourResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsghour"
+func (c *Client) GetUpstreamMsgHour(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgHourResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsghour?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgHourResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -118,20 +123,20 @@ func (c *Client) GetUpstreamMsgHour(beginDate, endDate string) (*GetUpstreamMsgH
 // GetUpstreamMsgWeek 获取消息发送周数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)
 // endDate: 结束日期(必须为同一天)
-func (c *Client) GetUpstreamMsgWeek(beginDate, endDate string) (*GetUpstreamMsgResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsgweek"
+func (c *Client) GetUpstreamMsgWeek(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsgweek?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -141,20 +146,20 @@ func (c *Client) GetUpstreamMsgWeek(beginDate, endDate string) (*GetUpstreamMsgR
 // GetUpstreamMsgDist 获取消息发送分布数据
 // beginDate: 起始日期(格式: yyyy-MM-dd)，跨度不超过15天
 // endDate: 结束日期
-func (c *Client) GetUpstreamMsgDist(beginDate, endDate string) (*GetUpstreamMsgDistResult, error) {
-	// 构造请求URL
-	path := "/datacube/getupstreammsgdist"
+func (c *Client) GetUpstreamMsgDist(ctx context.Context, beginDate, endDate string) (*GetUpstreamMsgDistResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getupstreammsgdist?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUpstreamMsgDistResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
