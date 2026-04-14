@@ -167,3 +167,26 @@ func TestClient_refreshAccessToken_MissingCredentials(t *testing.T) {
 		t.Fatal("expected error when AppId and AppSecret are empty")
 	}
 }
+
+// TestAccessTokenE_HandlesShortExpiresIn guards against the cache-poisoning
+// refresh-storm when upstream returns a very small expires_in. Without the
+// floor, expiresAt would land in the past and every subsequent call would
+// hammer /cgi-bin/token. Same guard as mini-program/channels (audit C7).
+func TestAccessTokenE_HandlesShortExpiresIn(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"access_token":"X","expires_in":10}`))
+	}))
+	defer srv.Close()
+
+	c := newClientWithBaseURL(srv.URL, &Config{AppId: "a", AppSecret: "b"})
+	tok, err := c.AccessTokenE(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tok != "X" {
+		t.Fatalf("got %q", tok)
+	}
+	if !c.expiresAt.After(time.Now()) {
+		t.Errorf("expiresAt is in the past: %v", c.expiresAt)
+	}
+}

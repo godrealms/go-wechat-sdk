@@ -102,7 +102,14 @@ func (c *Client) AccessTokenE(ctx context.Context) (string, error) {
 		return "", err
 	}
 	c.accessToken = token.AccessToken
-	c.expiresAt = time.Now().Add(time.Duration(token.ExpiresIn-60) * time.Second)
+	// Clamp TTL with a 60s floor so a malformed/hostile upstream returning
+	// expires_in<=60 cannot poison the cache into a permanent miss and
+	// trigger a token-refresh storm. Same guard as mini-program/channels (audit C7).
+	ttl := token.ExpiresIn - 60
+	if ttl < 60 {
+		ttl = 60
+	}
+	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
 	return c.accessToken, nil
 }
 
