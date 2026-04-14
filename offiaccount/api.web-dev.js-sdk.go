@@ -1,15 +1,27 @@
 package offiaccount
 
+import (
+	"context"
+	"net/url"
+)
+
 // GetJSApiTicket 获取jsapi_ticket
 // 用于调用 js-sdk 的临时票据，有效期为7200 秒，通过access_token 来获取
-func (c *Client) GetJSApiTicket() (*Ticket, error) {
+func (c *Client) GetJSApiTicket(ctx context.Context) (*Ticket, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/ticket/getticket?type=jsapi"
+	path := "/cgi-bin/ticket/getticket"
+	params := url.Values{
+		"access_token": {token},
+		"type":         {"jsapi"},
+	}
 
 	// 发送请求
 	var result Ticket
-	err := c.Https.Get(c.ctx, path, nil, &result)
-	if err != nil {
+	if err := c.Https.Get(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -18,14 +30,21 @@ func (c *Client) GetJSApiTicket() (*Ticket, error) {
 
 // GetWxCardTicket 获取微信卡券ticket
 // 用于调用微信卡券的临时票据，有效期为7200 秒，通过access_token 来获取
-func (c *Client) GetWxCardTicket() (*Ticket, error) {
+func (c *Client) GetWxCardTicket(ctx context.Context) (*Ticket, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/ticket/getticket?type=wx_card"
+	path := "/cgi-bin/ticket/getticket"
+	params := url.Values{
+		"access_token": {token},
+		"type":         {"wx_card"},
+	}
 
 	// 发送请求
 	var result Ticket
-	err := c.Https.Get(c.ctx, path, nil, &result)
-	if err != nil {
+	if err := c.Https.Get(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
