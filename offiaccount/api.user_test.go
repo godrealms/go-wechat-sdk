@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,6 +23,9 @@ func newUserTestClient(t *testing.T, srv *httptest.Server) *Client {
 func userOkServer(t *testing.T, body string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(body))
@@ -30,7 +34,11 @@ func userOkServer(t *testing.T, body string) *httptest.Server {
 
 func userClosedServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
+	}))
 	srv.Close()
 	return srv
 }

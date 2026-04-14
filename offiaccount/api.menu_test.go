@@ -56,10 +56,17 @@ func TestCreateCustomMenu(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var srv *httptest.Server
 			if tc.name == "network error" {
-				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
+				}))
 				srv.Close()
 			} else {
 				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
 					w.WriteHeader(tc.status)
 					_, _ = w.Write([]byte(tc.body))
 				}))
@@ -94,10 +101,17 @@ func TestGetMenu(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var srv *httptest.Server
 			if tc.name == "network error" {
-				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
+				}))
 				srv.Close()
 			} else {
 				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
 					w.WriteHeader(200)
 					_, _ = w.Write([]byte(tc.body))
 				}))
@@ -136,10 +150,17 @@ func TestDeleteMenu(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var srv *httptest.Server
 			if tc.name == "network error" {
-				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
+				}))
 				srv.Close()
 			} else {
 				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
 					w.WriteHeader(200)
 					_, _ = w.Write([]byte(tc.body))
 				}))
@@ -159,6 +180,9 @@ func TestDeleteMenu(t *testing.T) {
 
 func TestGetCurrentSelfMenuInfo(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"is_menu_open":1,"selfmenu_info":{"button":[]}}`))
 	}))
@@ -189,10 +213,17 @@ func TestAddConditionalMenu(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			var srv *httptest.Server
 			if tc.name == "network error" {
-				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
+				}))
 				srv.Close()
 			} else {
 				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+						t.Errorf("missing access_token in request URL: %s", r.URL.String())
+					}
 					w.WriteHeader(200)
 					_, _ = w.Write([]byte(tc.body))
 				}))
@@ -212,6 +243,9 @@ func TestAddConditionalMenu(t *testing.T) {
 
 func TestDeleteConditionalMenu(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
@@ -226,6 +260,9 @@ func TestDeleteConditionalMenu(t *testing.T) {
 
 func TestTryMatchMenu(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"menu":{"button":[]}}`))
 	}))

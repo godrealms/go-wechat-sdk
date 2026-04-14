@@ -4,11 +4,15 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func TestGetTempMedia_BinaryResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "image/jpeg")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte{0xFF, 0xD8, 0xFF})
@@ -30,6 +34,9 @@ func TestGetTempMedia_BinaryResponse(t *testing.T) {
 
 func TestGetTempMedia_JSONResponse(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"video_url":"https://video.weixin.qq.com/xxx","down_url":"https://video.weixin.qq.com/yyy"}`))
@@ -50,7 +57,11 @@ func TestGetTempMedia_JSONResponse(t *testing.T) {
 }
 
 func TestGetTempMedia_NetworkError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
+	}))
 	srv.Close()
 	c := newMenuTestClient(t, srv)
 	_, _, err := c.GetTempMedia(context.Background(), "media123")
@@ -62,6 +73,9 @@ func TestGetTempMedia_NetworkError(t *testing.T) {
 func TestGetMaterial_News(t *testing.T) {
 	body := `{"news_item":[{"title":"Article 1","author":"Author","content":"Hello"}]}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(body))
@@ -81,7 +95,11 @@ func TestGetMaterial_News(t *testing.T) {
 }
 
 func TestGetMaterial_NetworkError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
+	}))
 	srv.Close()
 	c := newMenuTestClient(t, srv)
 	_, _, _, err := c.GetMaterial(context.Background(), "media123")
@@ -92,6 +110,9 @@ func TestGetMaterial_NetworkError(t *testing.T) {
 
 func TestAddDraft_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"media_id":"draft123"}`))
@@ -109,7 +130,11 @@ func TestAddDraft_Success(t *testing.T) {
 }
 
 func TestAddDraft_NetworkError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
+	}))
 	srv.Close()
 	c := newMenuTestClient(t, srv)
 	_, err := c.AddDraft(context.Background(), []*DraftArticle{})
@@ -121,6 +146,9 @@ func TestAddDraft_NetworkError(t *testing.T) {
 func TestGetDraft_Success(t *testing.T) {
 	body := `{"news_item":[{"title":"Draft 1","author":"Writer"}],"update_time":1700000000}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(body))

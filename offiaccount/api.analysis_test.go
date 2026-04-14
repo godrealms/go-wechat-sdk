@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -22,6 +23,9 @@ func newAnalysisTestClient(t *testing.T, srv *httptest.Server) *Client {
 func TestGetUserSummary_Success(t *testing.T) {
 	body := `{"list":[{"ref_date":"2024-01-01","user_source":0,"new_user":100,"cancel_user":5}]}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		if r.Method != "POST" {
 			t.Errorf("expected POST, got %s", r.Method)
 		}
@@ -42,7 +46,11 @@ func TestGetUserSummary_Success(t *testing.T) {
 }
 
 func TestGetUserSummary_NetworkError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
+	}))
 	srv.Close()
 	c := newAnalysisTestClient(t, srv)
 	_, err := c.GetUserSummary("2024-01-01", "2024-01-07")
@@ -53,6 +61,9 @@ func TestGetUserSummary_NetworkError(t *testing.T) {
 
 func TestGetUserSummary_InvalidJSON(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`not-json`))
 	}))
@@ -68,6 +79,9 @@ func TestGetUserSummary_InvalidJSON(t *testing.T) {
 func TestGetUserCumulate_Success(t *testing.T) {
 	body := `{"list":[{"ref_date":"2024-01-01","cumulate_user":5000}]}`
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(body))
@@ -85,7 +99,11 @@ func TestGetUserCumulate_Success(t *testing.T) {
 }
 
 func TestGetUserCumulate_NetworkError(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
+			t.Errorf("missing access_token in request URL: %s", r.URL.String())
+		}
+	}))
 	srv.Close()
 	c := newAnalysisTestClient(t, srv)
 	_, err := c.GetUserCumulate("2024-01-01", "2024-01-07")
