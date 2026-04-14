@@ -114,3 +114,61 @@ func simpleSHA1(token, ts, nonce string) string {
 	_, _ = io.WriteString(h, strings.Join(parts, ""))
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+// Audit C4: after AES decryption, every failure mode must return the SAME opaque
+// error so we don't leak distinguishable signals (padding oracle defense).
+func TestDecrypt_OpaqueErrorOnAnyTampering(t *testing.T) {
+	key := genEncodingAESKey(t)
+	mc, err := New("tk", key, "wxappid")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Build a valid ciphertext we can mutate.
+	good, err := mc.Encrypt([]byte(`<xml><Content><![CDATA[hello]]></Content></xml>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	rawGood, err := base64.StdEncoding.DecodeString(good)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Variant 1: flip the last byte (which lives in the padding region most of the time)
+	flipped := make([]byte, len(rawGood))
+	copy(flipped, rawGood)
+	flipped[len(flipped)-1] ^= 0xFF
+
+	// Variant 2: encrypted under a different appid — passes pad check, fails appid check
+	mcWrong, err := New("tk", key, "different_appid")
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrongAppid, err := mcWrong.Encrypt([]byte(`<xml/>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Variant 3: truncated by one byte (length not multiple of block size — pre-AES check)
+	truncated := rawGood[:len(rawGood)-1]
+
+	cases := []struct {
+		name   string
+		cipher string
+	}{
+		{"flipped padding", base64.StdEncoding.EncodeToString(flipped)},
+		{"wrong appid", wrongAppid},
+		{"truncated", base64.StdEncoding.EncodeToString(truncated)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := mc.Decrypt(tc.cipher)
+			if err == nil {
+				t.Fatalf("expected error")
+			}
+			if err.Error() != "wxcrypto: decrypt failed" {
+				t.Errorf("expected opaque error, got %q", err.Error())
+			}
+		})
+	}
+}
