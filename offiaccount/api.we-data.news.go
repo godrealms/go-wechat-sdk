@@ -1,22 +1,27 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+)
+
 // GetArticleSummary 获取图文群发每日数据
 // beginDate: 起始日期(YYYY-MM-DD)
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetArticleSummary(beginDate, endDate string) (*GetArticleSummaryResult, error) {
-	// 构造请求URL
-	path := "/datacube/getarticlesummary"
+func (c *Client) GetArticleSummary(ctx context.Context, beginDate, endDate string) (*GetArticleSummaryResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getarticlesummary?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetArticleSummaryResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -26,20 +31,20 @@ func (c *Client) GetArticleSummary(beginDate, endDate string) (*GetArticleSummar
 // GetUserReadHour 获取图文统计分时数据
 // beginDate: 起始日期(YYYY-MM-DD)
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetUserReadHour(beginDate, endDate string) (*GetUserReadHourResult, error) {
-	// 构造请求URL
-	path := "/datacube/getuserreadhour"
+func (c *Client) GetUserReadHour(ctx context.Context, beginDate, endDate string) (*GetUserReadHourResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getuserreadhour?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUserReadHourResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -49,20 +54,20 @@ func (c *Client) GetUserReadHour(beginDate, endDate string) (*GetUserReadHourRes
 // GetUserShareHour 获取图文分享转发分时数据
 // beginDate: 起始日期(YYYY-MM-DD)
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetUserShareHour(beginDate, endDate string) (*GetUserShareHourResult, error) {
-	// 构造请求URL
-	path := "/datacube/getusersharehour"
+func (c *Client) GetUserShareHour(ctx context.Context, beginDate, endDate string) (*GetUserShareHourResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getusersharehour?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUserShareHourResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -72,20 +77,20 @@ func (c *Client) GetUserShareHour(beginDate, endDate string) (*GetUserShareHourR
 // GetUserRead 获取图文统计数据
 // beginDate: 起始日期(YYYY-MM-DD)
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetUserRead(beginDate, endDate string) (*GetUserReadResult, error) {
-	// 构造请求URL
-	path := "/datacube/getuserread"
+func (c *Client) GetUserRead(ctx context.Context, beginDate, endDate string) (*GetUserReadResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getuserread?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUserReadResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -95,20 +100,20 @@ func (c *Client) GetUserRead(beginDate, endDate string) (*GetUserReadResult, err
 // GetArticleTotal 获取图文群发总数据
 // beginDate: 起始日期(YYYY-MM-DD)
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetArticleTotal(beginDate, endDate string) (*GetArticleTotalResult, error) {
-	// 构造请求URL
-	path := "/datacube/getarticletotal"
+func (c *Client) GetArticleTotal(ctx context.Context, beginDate, endDate string) (*GetArticleTotalResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getarticletotal?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetArticleTotalResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -118,20 +123,20 @@ func (c *Client) GetArticleTotal(beginDate, endDate string) (*GetArticleTotalRes
 // GetUserShare 获取图文分享转发数据
 // beginDate: 起始日期(YYYY-MM-DD)
 // endDate: 结束日期(最大值为昨日)
-func (c *Client) GetUserShare(beginDate, endDate string) (*GetUserShareResult, error) {
-	// 构造请求URL
-	path := "/datacube/getusershare"
+func (c *Client) GetUserShare(ctx context.Context, beginDate, endDate string) (*GetUserShareResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/datacube/getusershare?access_token=%s", token)
 
-	// 构造请求体
 	req := &GetDataRequest{
 		BeginDate: beginDate,
 		EndDate:   endDate,
 	}
 
-	// 发送请求
 	var result GetUserShareResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
