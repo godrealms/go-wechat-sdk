@@ -368,3 +368,41 @@ func TestClient_DoV3_ParsesV3ErrorEnvelope(t *testing.T) {
 		t.Errorf("unexpected status: %d", v3.HTTPStatus)
 	}
 }
+
+// The fallback branch in doV3 must preserve the underlying *utils.HTTPError
+// when the response body is not a parseable v3 envelope. Three shapes:
+// empty body, valid JSON with no code field, and outright garbage.
+func TestClient_DoV3_FallsBackWhenNotV3Envelope(t *testing.T) {
+	cases := []struct {
+		name string
+		body []byte
+	}{
+		{"empty body", nil},
+		{"json without code field", []byte(`{"message":"oops"}`)},
+		{"not json at all", []byte(`<html>502 Bad Gateway</html>`)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, fs, srv := newClientWithFakeServer(t)
+			defer srv.Close()
+			fs.respond = func(r *http.Request) (int, []byte) {
+				return http.StatusBadGateway, tc.body
+			}
+
+			_, err := client.TransactionsJsapi(context.Background(), &types.Transactions{
+				Appid: "wxtest", Mchid: "1900000001",
+			})
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			var v3 *V3Error
+			if errors.As(err, &v3) {
+				t.Errorf("expected NOT to unwrap into *V3Error, but got: %+v", v3)
+			}
+			var httpErr *utils.HTTPError
+			if !errors.As(err, &httpErr) {
+				t.Errorf("expected *utils.HTTPError fallback, got %T: %v", err, err)
+			}
+		})
+	}
+}

@@ -31,7 +31,7 @@ type V3Error struct {
 	HTTPStatus int             // HTTP status from the response
 	Code       string          // e.g. "PARAM_ERROR"
 	Message    string          // human-readable
-	Detail     json.RawMessage // optional structured detail (kept raw for forward-compat)
+	Detail     json.RawMessage // optional structured detail (kept raw for forward-compat); nil if envelope had no "detail" key
 	Path       string          // API path that triggered the error
 }
 
@@ -40,8 +40,9 @@ func (e *V3Error) Error() string {
 		e.Path, e.HTTPStatus, e.Code, e.Message)
 }
 
-// Solution returns the WeChat-Pay-documented remediation hint for this code,
-// looking it up in the package's curated errorx tables. Empty if unknown.
+// Solution returns the WeChat-Pay-documented remediation hint for this code.
+// Currently only consults the /pay/transactions/app errorx table — additional
+// per-endpoint tables will be wired up as they are populated. Empty if unknown.
 func (e *V3Error) Solution() string {
 	if e == nil {
 		return ""
