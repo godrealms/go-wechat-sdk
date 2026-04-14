@@ -17,6 +17,15 @@ func NewError(code int, message, solution string) *Error {
 	}
 }
 
+// LookupTransactionsApp returns the documented Solution for a v3 error code from the
+// /pay/transactions/app endpoint, if known.
+func LookupTransactionsApp(code string) (string, bool) {
+	if e, ok := Errors[code]; ok {
+		return e.Solution, true
+	}
+	return "", false
+}
+
 var Errors = map[string]*Error{
 	"PARAM_ERROR":     NewError(400, "参数错误", "请根据错误提示正确传入参数"),
 	"INVALID_REQUEST": NewError(400, "HTTP 请求不符合微信支付 APIv3 接口规则", "请参阅接口规则检查传入的参数"),
