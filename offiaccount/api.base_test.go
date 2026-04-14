@@ -22,9 +22,7 @@ func newBaseTestClient(t *testing.T, srv *httptest.Server) *Client {
 
 func TestGetCallbackIp_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
-			t.Errorf("missing access_token in request URL: %s", r.URL.String())
-		}
+		assertAccessToken(t, r)
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"ip_list":["101.226.103.0/25","101.226.62.0/26"]}`))
 	}))
@@ -42,9 +40,7 @@ func TestGetCallbackIp_Success(t *testing.T) {
 
 func TestGetApiDomainIP_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
-			t.Errorf("missing access_token in request URL: %s", r.URL.String())
-		}
+		assertAccessToken(t, r)
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"ip_list":["203.205.254.0/24","203.205.226.0/24"]}`))
 	}))
@@ -62,9 +58,7 @@ func TestGetApiDomainIP_Success(t *testing.T) {
 
 func TestCreateQRCode_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
-			t.Errorf("missing access_token in request URL: %s", r.URL.String())
-		}
+		assertAccessToken(t, r)
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(`{"ticket":"gQH47joAAAAAAAAAASxodHRwOi8vd2VpeGlu","expire_seconds":604800,"url":"http://weixin.qq.com/q/kZgfwMTm72WWPkovabbI"}`))
 	}))
@@ -89,9 +83,7 @@ func TestCreateQRCode_Success(t *testing.T) {
 
 func TestCreateQRCode_NetworkError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if !strings.Contains(r.URL.RawQuery, "access_token=FAKE_TOKEN") {
-			t.Errorf("missing access_token in request URL: %s", r.URL.String())
-		}
+		assertAccessToken(t, r)
 	}))
 	srv.Close()
 	c := newBaseTestClient(t, srv)
