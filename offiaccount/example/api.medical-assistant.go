@@ -22,7 +22,7 @@ func main() {
 
 	// 发送城市服务消息
 	log.Println("=== 发送城市服务消息 ===")
-	result, err := client.SendChannelMsg(&offiaccount.SendChannelMsgRequest{
+	result, err := client.SendChannelMsg(ctx, &offiaccount.SendChannelMsgRequest{
 		Status:     1501001, // 预约挂号成功通知
 		OpenID:     "USER_OPENID",
 		OrderID:    "ORDER_ID",

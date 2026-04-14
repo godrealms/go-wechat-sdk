@@ -22,7 +22,7 @@ func main() {
 
 	// 获取用户列表
 	log.Println("=== 获取用户列表 ===")
-	users, err := client.GetFans("")
+	users, err := client.GetFans(ctx, "")
 	if err != nil {
 		log.Printf("获取用户列表失败: %v", err)
 	} else {
@@ -51,7 +51,7 @@ func main() {
 			UserList: userList,
 		}
 
-		userInfos, err := client.BatchGetUserInfo(batchReq)
+		userInfos, err := client.BatchGetUserInfo(ctx, batchReq)
 		if err != nil {
 			log.Printf("批量获取用户信息失败: %v", err)
 		} else {
@@ -65,14 +65,14 @@ func main() {
 	// 用户标签管理
 	log.Println("\n=== 用户标签管理 ===")
 	// 创建标签
-	createTagResult, err := client.CreateTag("测试标签")
+	createTagResult, err := client.CreateTag(ctx, "测试标签")
 	if err != nil {
 		log.Printf("创建标签失败: %v", err)
 	} else {
 		log.Printf("标签创建成功，标签ID: %d", createTagResult.Tag.Id)
 
 		// 删除刚刚创建的标签
-		_, err = client.DeleteTag(createTagResult.Tag.Id)
+		_, err = client.DeleteTag(ctx, createTagResult.Tag.Id)
 		if err != nil {
 			log.Printf("删除标签失败: %v", err)
 		} else {

@@ -22,7 +22,7 @@ func main() {
 
 	// 申请二维码
 	log.Println("=== 申请二维码 ===")
-	code, err := client.ApplyCode(&offiaccount.ApplyCodeRequest{
+	code, err := client.ApplyCode(ctx, &offiaccount.ApplyCodeRequest{
 		CodeCount:        10000,
 		IsvApplicationID: "OUT_REQUEST_NO",
 	})
@@ -39,7 +39,7 @@ func main() {
 	log.Println("\n=== 查询二维码申请单 ===")
 	// 注意：需要替换为实际的application_id才能运行此示例
 	/*
-		query, err := client.ApplyCodeQuery(&offiaccount.ApplyCodeQueryRequest{
+		query, err := client.ApplyCodeQuery(ctx, &offiaccount.ApplyCodeQueryRequest{
 			ApplicationID: 123456,
 		})
 		if err != nil {
@@ -57,7 +57,7 @@ func main() {
 	log.Println("\n=== 激活二维码 ===")
 	// 注意：需要替换为实际的参数才能运行此示例
 	/*
-		active, err := client.CodeActive(&offiaccount.CodeActiveRequest{
+		active, err := client.CodeActive(ctx, &offiaccount.CodeActiveRequest{
 			ApplicationID: 123456,
 			ActivityName:  "活动名称",
 			ProductBrand:  "商品品牌",
@@ -81,7 +81,7 @@ func main() {
 	log.Println("\n=== 查询二维码激活状态 ===")
 	// 注意：需要替换为实际的参数才能运行此示例
 	/*
-		activeQuery, err := client.CodeActiveQuery(&offiaccount.CodeActiveQueryRequest{
+		activeQuery, err := client.CodeActiveQuery(ctx, &offiaccount.CodeActiveQueryRequest{
 			ApplicationID: 123456,
 			ActiveCode:    "ACTIVE_CODE",
 		})
@@ -99,7 +99,7 @@ func main() {
 	log.Println("\n=== CODE_TICKET换CODE ===")
 	// 注意：需要替换为实际的ticket才能运行此示例
 	/*
-		ticketCode, err := client.TicketToCode(&offiaccount.TicketToCodeRequest{
+		ticketCode, err := client.TicketToCode(ctx, &offiaccount.TicketToCodeRequest{
 			Ticket: "TICKET",
 		})
 		if err != nil {

@@ -27,7 +27,7 @@ func main() {
 
 	// 示例2: 获取用户列表
 	log.Println("\n=== 获取用户列表 ===")
-	users, err := client.GetFans("")
+	users, err := client.GetFans(ctx, "")
 	if err != nil {
 		log.Printf("获取用户列表失败: %v", err)
 	} else {
@@ -57,7 +57,7 @@ func main() {
 		URL: "http://weixin.qq.com/download",
 	}
 
-	result, err := client.SendTemplateMessage(template)
+	result, err := client.SendTemplateMessage(ctx, template)
 	if err != nil {
 		log.Printf("发送模板消息失败: %v", err)
 	} else if result.ErrCode != 0 {
@@ -68,7 +68,7 @@ func main() {
 
 	// 示例4: 非税支付 - 查询应收信息
 	log.Println("\n=== 非税支付 - 查询应收信息 ===")
-	feeInfo, err := client.QueryFee(&offiaccount.QueryFeeRequest{
+	feeInfo, err := client.QueryFee(ctx, &offiaccount.QueryFeeRequest{
 		AppID:           config.AppId,
 		ServiceID:       123,
 		PaymentNoticeNo: "PAYMENT_NOTICE_NO",
@@ -86,7 +86,7 @@ func main() {
 
 	// 示例5: 一码通 - 申请二维码
 	log.Println("\n=== 一码通 - 申请二维码 ===")
-	code, err := client.ApplyCode(&offiaccount.ApplyCodeRequest{
+	code, err := client.ApplyCode(ctx, &offiaccount.ApplyCodeRequest{
 		CodeCount:        10000,
 		IsvApplicationID: "OUT_REQUEST_NO",
 	})
@@ -100,7 +100,7 @@ func main() {
 
 	// 示例6: 医疗助手 - 发送城市服务消息
 	log.Println("\n=== 医疗助手 - 发送城市服务消息 ===")
-	result2, err := client.SendChannelMsg(&offiaccount.SendChannelMsgRequest{
+	result2, err := client.SendChannelMsg(ctx, &offiaccount.SendChannelMsgRequest{
 		Status:     1501001,       // 预约挂号成功通知
 		OpenID:     "USER_OPENID", // 替换为实际的用户 openid
 		OrderID:    "ORDER_ID",
@@ -123,7 +123,7 @@ func main() {
 
 	// 示例7: 财政电子票据 - 查询授权信息
 	log.Println("\n=== 财政电子票据 - 查询授权信息 ===")
-	authData, err := client.GetFiscalAuthData(&offiaccount.GetFiscalAuthDataRequest{
+	authData, err := client.GetFiscalAuthData(ctx, &offiaccount.GetFiscalAuthDataRequest{
 		OrderID: "ORDER_ID",
 		SPAppID: "SP_APP_ID",
 	})

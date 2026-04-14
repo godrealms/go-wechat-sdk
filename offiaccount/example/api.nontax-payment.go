@@ -24,7 +24,7 @@ func main() {
 	log.Println("=== 查询应收信息 ===")
 	// 注意：需要替换为实际的参数才能运行此示例
 	/*
-		feeInfo, err := client.QueryFee(&offiaccount.QueryFeeRequest{
+		feeInfo, err := client.QueryFee(ctx, &offiaccount.QueryFeeRequest{
 			AppID:           config.AppId,
 			ServiceID:       123,
 			PaymentNoticeNo: "PAYMENT_NOTICE_NO",
@@ -47,7 +47,7 @@ func main() {
 	log.Println("\n=== 缴费支付下单 ===")
 	// 注意：需要替换为实际的参数才能运行此示例
 	/*
-		order, err := client.UnifiedOrder(&offiaccount.UnifiedOrderRequest{
+		order, err := client.UnifiedOrder(ctx, &offiaccount.UnifiedOrderRequest{
 			AppID:           config.AppId,
 			Desc:            "缴费描述",
 			Fee:             100, // 单位：分
@@ -82,7 +82,7 @@ func main() {
 	log.Println("\n=== 下载缴费对账单 ===")
 	// 注意：需要替换为实际的参数才能运行此示例
 	/*
-		bill, err := client.DownloadBill(&offiaccount.DownloadBillRequest{
+		bill, err := client.DownloadBill(ctx, &offiaccount.DownloadBillRequest{
 			AppID:  config.AppId,
 			Date:   "20230101",
 			Type:   "ALL",
@@ -102,7 +102,7 @@ func main() {
 	log.Println("\n=== 获取缴费订单列表 ===")
 	// 注意：需要替换为实际的payment_notice_no才能运行此示例
 	/*
-		orderList, err := client.GetOrderList(&offiaccount.GetOrderListRequest{
+		orderList, err := client.GetOrderList(ctx, &offiaccount.GetOrderListRequest{
 			PaymentNoticeNo: "PAYMENT_NOTICE_NO",
 		})
 		if err != nil {
@@ -120,7 +120,7 @@ func main() {
 	log.Println("\n=== 获取缴费订单详情 ===")
 	// 注意：需要替换为实际的order_id才能运行此示例
 	/*
-		orderDetail, err := client.GetOrder(&offiaccount.GetOrderRequest{
+		orderDetail, err := client.GetOrder(ctx, &offiaccount.GetOrderRequest{
 			OrderID: "ORDER_ID",
 		})
 		if err != nil {

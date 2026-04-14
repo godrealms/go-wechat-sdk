@@ -22,7 +22,7 @@ func main() {
 
 	// 获取用户发票抬头
 	log.Println("=== 获取用户发票抬头 ===")
-	titleURL, err := client.GetUserTitleUrl(&offiaccount.GetUserTitleUrlRequest{
+	titleURL, err := client.GetUserTitleUrl(ctx, &offiaccount.GetUserTitleUrlRequest{
 		UserFill: 1, // 用户自己填写抬头
 	})
 	if err != nil {
@@ -34,7 +34,7 @@ func main() {
 
 	// 获取选择发票抬头链接
 	log.Println("\n=== 获取选择发票抬头链接 ===")
-	selectTitleURL, err := client.GetSelectTitleUrl(&offiaccount.GetSelectTitleUrlRequest{
+	selectTitleURL, err := client.GetSelectTitleUrl(ctx, &offiaccount.GetSelectTitleUrlRequest{
 		Attach:  "附加字段",
 		BizName: "商户名称",
 	})
@@ -49,7 +49,7 @@ func main() {
 	log.Println("\n=== 查询发票信息 ===")
 	// 注意：需要替换为实际的card_id和encrypt_code才能运行此示例
 	/*
-		invoiceInfo, err := client.GetInvoiceInfo(&offiaccount.GetInvoiceInfoRequest{
+		invoiceInfo, err := client.GetInvoiceInfo(ctx, &offiaccount.GetInvoiceInfoRequest{
 			CardID:      "CARD_ID",
 			EncryptCode: "ENCRYPT_CODE",
 		})
@@ -66,7 +66,7 @@ func main() {
 	log.Println("\n=== 更新发票状态 ===")
 	// 注意：需要替换为实际的card_id和code才能运行此示例
 	/*
-		err = client.UpdateInvoiceStatus(&offiaccount.UpdateInvoiceStatusRequest{
+		err = client.UpdateInvoiceStatus(ctx, &offiaccount.UpdateInvoiceStatusRequest{
 			CardID:          "CARD_ID",
 			Code:            "CODE",
 			ReimburseStatus: "INVOICE_REIMBURSE_INIT",
@@ -82,7 +82,7 @@ func main() {
 	log.Println("\n=== 查询财政电子票据授权信息 ===")
 	// 注意：需要替换为实际的order_id和s_pappid才能运行此示例
 	/*
-		authData, err := client.GetFiscalAuthData(&offiaccount.GetFiscalAuthDataRequest{
+		authData, err := client.GetFiscalAuthData(ctx, &offiaccount.GetFiscalAuthDataRequest{
 			OrderID: "ORDER_ID",
 			SPAppID: "SP_APP_ID",
 		})
@@ -97,7 +97,7 @@ func main() {
 
 	// 获取sdk临时票据
 	log.Println("\n=== 获取sdk临时票据 ===")
-	ticket, err := client.GetTicket()
+	ticket, err := client.GetTicket(ctx)
 	if err != nil {
 		log.Printf("获取sdk临时票据失败: %v", err)
 	} else {
