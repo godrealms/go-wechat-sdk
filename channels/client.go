@@ -103,12 +103,16 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("channels: fetch token: %w", err)
 	}
 	if out.ErrCode != 0 {
-		return "", fmt.Errorf("channels: token errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return "", &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
 	}
 	if out.AccessToken == "" {
 		return "", fmt.Errorf("channels: empty access_token")
 	}
 	c.accessToken = out.AccessToken
-	c.expiresAt = time.Now().Add(time.Duration(out.ExpiresIn-60) * time.Second)
+	ttl := out.ExpiresIn - 60
+	if ttl < 60 {
+		ttl = 60 // safety floor: never cache a token for less than 60s.
+	}
+	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
 	return c.accessToken, nil
 }
