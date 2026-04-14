@@ -112,10 +112,18 @@ func (a *AuthorizerClient) refreshLocked(ctx context.Context, refreshToken strin
 	if resp.AuthorizerAccessToken == "" {
 		return "", fmt.Errorf("oplatform: empty authorizer_access_token")
 	}
+	// Clamp TTL with a floor so a malformed/hostile upstream returning
+	// expires_in<=safety_window cannot poison the cache into a permanent
+	// miss and trigger a refresh storm. 120s = 60s read-side safety window
+	// + 60s usable buffer.
+	expiresIn := resp.ExpiresIn
+	if expiresIn < 120 {
+		expiresIn = 120
+	}
 	tokens := AuthorizerTokens{
 		AccessToken:  resp.AuthorizerAccessToken,
 		RefreshToken: resp.AuthorizerRefreshToken,
-		ExpireAt:     time.Now().Add(time.Duration(resp.ExpiresIn) * time.Second),
+		ExpireAt:     time.Now().Add(time.Duration(expiresIn) * time.Second),
 	}
 	if tokens.RefreshToken == "" {
 		tokens.RefreshToken = refreshToken

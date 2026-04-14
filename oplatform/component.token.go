@@ -75,7 +75,12 @@ func (c *Client) fetchComponentTokenLocked(ctx context.Context) (string, error) 
 		return "", fmt.Errorf("oplatform: empty component_access_token")
 	}
 
-	expireAt := time.Now().Add(time.Duration(resp.ExpiresIn) * time.Second)
+	// Clamp TTL with a floor (see authorizer token for rationale).
+	expiresIn := resp.ExpiresIn
+	if expiresIn < 120 {
+		expiresIn = 120
+	}
+	expireAt := time.Now().Add(time.Duration(expiresIn) * time.Second)
 	if err := c.store.SetComponentToken(ctx, resp.ComponentAccessToken, expireAt); err != nil {
 		return "", fmt.Errorf("oplatform: store set component token: %w", err)
 	}
