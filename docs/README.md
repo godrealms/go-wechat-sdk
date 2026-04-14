@@ -23,6 +23,7 @@
 | `xiaowei` — 微信小微 IoT | ✅ | [xiaowei.md](xiaowei.md) |
 | `channels` — 视频号 | ✅ | [channels.md](channels.md) |
 | `work-wechat/isv` — 企业微信 ISV | ✅ | [work-wechat-isv.md](work-wechat-isv.md) |
+| `work-wechat`（自建应用） | ❌ 未实现 | 自建应用客户端尚未实现，请使用 `work-wechat/isv` 或自行封装 |
 | `oplatform` — 开放平台 | ✅ | 第三方平台授权底座；代小程序发布等待实现 |
 
 ## 阅读建议
