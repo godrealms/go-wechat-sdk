@@ -33,7 +33,7 @@ func TestGetUserSummary_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newAnalysisTestClient(t, srv)
-	result, err := c.GetUserSummary("2024-01-01", "2024-01-07")
+	result, err := c.GetUserSummary(context.Background(), "2024-01-01", "2024-01-07")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestGetUserSummary_NetworkError(t *testing.T) {
 	}))
 	srv.Close()
 	c := newAnalysisTestClient(t, srv)
-	_, err := c.GetUserSummary("2024-01-01", "2024-01-07")
+	_, err := c.GetUserSummary(context.Background(), "2024-01-01", "2024-01-07")
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -63,7 +63,7 @@ func TestGetUserSummary_InvalidJSON(t *testing.T) {
 	defer srv.Close()
 
 	c := newAnalysisTestClient(t, srv)
-	_, err := c.GetUserSummary("2024-01-01", "2024-01-07")
+	_, err := c.GetUserSummary(context.Background(), "2024-01-01", "2024-01-07")
 	if err == nil {
 		t.Error("expected unmarshal error for invalid JSON")
 	}
@@ -80,7 +80,7 @@ func TestGetUserCumulate_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newAnalysisTestClient(t, srv)
-	result, err := c.GetUserCumulate("2024-01-01", "2024-01-07")
+	result, err := c.GetUserCumulate(context.Background(), "2024-01-01", "2024-01-07")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestGetUserCumulate_NetworkError(t *testing.T) {
 	}))
 	srv.Close()
 	c := newAnalysisTestClient(t, srv)
-	_, err := c.GetUserCumulate("2024-01-01", "2024-01-07")
+	_, err := c.GetUserCumulate(context.Background(), "2024-01-01", "2024-01-07")
 	if err == nil {
 		t.Error("expected network error")
 	}
