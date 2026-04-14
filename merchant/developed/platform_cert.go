@@ -11,6 +11,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
@@ -120,7 +121,9 @@ func (c *Client) platformCertBySerial(serial string) *x509.Certificate {
 //  2. 拼接 timestamp\nnonce\nbody\n 形成验签串；
 //  3. 用对应序列号的平台证书公钥做 SHA256-RSA 验签。
 //
-// 若头部任一字段缺失则跳过验签（用于兼容某些不返回签名头的错误响应）。
+// If any signature header is missing this returns an error — the previous
+// "silent skip" behavior was a security hole and has been removed.
+// Additionally enforces a ±5 minute window on Wechatpay-Timestamp to mitigate replay.
 // 若本地没有对应序列号的证书，会自动调用 FetchPlatformCertificates 拉取一次再重试。
 func (c *Client) verifyResponseSignature(ctx context.Context, header http.Header, body []byte) error {
 	timestamp := header.Get("Wechatpay-Timestamp")
@@ -128,7 +131,11 @@ func (c *Client) verifyResponseSignature(ctx context.Context, header http.Header
 	signature := header.Get("Wechatpay-Signature")
 	serial := header.Get("Wechatpay-Serial")
 	if timestamp == "" || nonce == "" || signature == "" || serial == "" {
-		return nil
+		return fmt.Errorf("missing wechatpay signature header (ts=%q nonce=%q sig=%q serial=%q)",
+			timestamp, nonce, signature, serial)
+	}
+	if err := checkWechatpayTimestamp(timestamp); err != nil {
+		return err
 	}
 
 	cert := c.platformCertBySerial(serial)
@@ -173,4 +180,21 @@ func decryptAES256GCM(key, nonce, associatedData, ciphertext string) ([]byte, er
 		return nil, errors.New("empty plaintext")
 	}
 	return plain, nil
+}
+
+// checkWechatpayTimestamp validates the Wechatpay-Timestamp header against the local clock.
+// WeChat Pay v3 uses a ±5 minute replay window.
+func checkWechatpayTimestamp(ts string) error {
+	n, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return fmt.Errorf("invalid wechatpay timestamp %q: %w", ts, err)
+	}
+	delta := time.Now().Unix() - n
+	if delta < 0 {
+		delta = -delta
+	}
+	if delta > 300 {
+		return fmt.Errorf("wechatpay timestamp out of window: delta=%ds", delta)
+	}
+	return nil
 }

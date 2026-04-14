@@ -621,13 +621,13 @@ func TestParseNotification_NilBody(t *testing.T) {
 func TestParseNotification_NoSigHeaders(t *testing.T) {
 	c := NewWechatClient()
 	req := httptest.NewRequest("POST", "/notify", strings.NewReader(`{"id":"evt001"}`))
-	// When signature headers are absent, verifyResponseSignature skips verification and returns nil.
-	notify, err := c.ParseNotification(context.Background(), req, nil)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	// Audit C1: missing signature headers must now hard-fail rather than silently pass.
+	_, err := c.ParseNotification(context.Background(), req, nil)
+	if err == nil {
+		t.Fatal("expected error when signature headers are missing")
 	}
-	if notify == nil {
-		t.Error("expected non-nil notify")
+	if !strings.Contains(err.Error(), "missing wechatpay signature header") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
@@ -672,13 +672,13 @@ func TestFailNotification_EmptyMessage(t *testing.T) {
 func TestParseRefundNotify_NoSigHeaders(t *testing.T) {
 	c := NewWechatClient()
 	req := httptest.NewRequest("POST", "/notify", strings.NewReader(`{"id":"evt001"}`))
-	// When signature headers are absent, verifyResponseSignature skips verification and returns nil.
-	notify, _, err := c.ParseRefundNotify(context.Background(), req)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	// Audit C1: missing signature headers must now hard-fail rather than silently pass.
+	_, _, err := c.ParseRefundNotify(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error when signature headers are missing")
 	}
-	if notify == nil {
-		t.Error("expected non-nil notify")
+	if !strings.Contains(err.Error(), "missing wechatpay signature header") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 

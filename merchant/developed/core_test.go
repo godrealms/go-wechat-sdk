@@ -259,6 +259,75 @@ func TestClient_DoV3_RejectsTamperedResponse(t *testing.T) {
 	}
 }
 
+func TestClient_DoV3_RejectsResponseWithMissingSignatureHeaders(t *testing.T) {
+	priv, cert := newTestKeyAndCert(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Deliberately do NOT set any Wechatpay-* headers.
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"prepay_id":"x"}`))
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{
+		Appid:             "wxtest",
+		Mchid:             "1900000001",
+		CertificateNumber: "TEST",
+		APIv3Key:          "0123456789012345678901234567890_",
+		PrivateKey:        priv,
+		HTTP:              utils.NewHTTP(srv.URL),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.AddPlatformCertificate(cert)
+
+	_, err = client.TransactionsJsapi(context.Background(), &types.Transactions{Appid: "wxtest", Mchid: "1900000001"})
+	if err == nil {
+		t.Fatal("expected error when response has no signature headers")
+	}
+	if !strings.Contains(err.Error(), "missing wechatpay signature header") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_DoV3_RejectsStaleWechatpayTimestamp(t *testing.T) {
+	priv, cert := newTestKeyAndCert(t)
+	staleTs := time.Now().Unix() - 3600 // 1 hour ago
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := []byte(`{"prepay_id":"x"}`)
+		nonce := "noncefortest12345678"
+		sig := signResponseWithUtils(t, priv, intToString(staleTs), nonce, string(body))
+		w.Header().Set("Wechatpay-Timestamp", intToString(staleTs))
+		w.Header().Set("Wechatpay-Nonce", nonce)
+		w.Header().Set("Wechatpay-Signature", sig)
+		w.Header().Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*cert))
+		w.WriteHeader(200)
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{
+		Appid:             "wxtest",
+		Mchid:             "1900000001",
+		CertificateNumber: "TEST",
+		APIv3Key:          "0123456789012345678901234567890_",
+		PrivateKey:        priv,
+		HTTP:              utils.NewHTTP(srv.URL),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.AddPlatformCertificate(cert)
+
+	_, err = client.TransactionsJsapi(context.Background(), &types.Transactions{Appid: "wxtest", Mchid: "1900000001"})
+	if err == nil {
+		t.Fatal("expected error when wechatpay timestamp is stale")
+	}
+	if !strings.Contains(err.Error(), "timestamp out of window") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestClient_PEMRoundtrip(t *testing.T) {
 	priv, _ := newTestKeyAndCert(t)
 	pemBytes := pem.EncodeToMemory(&pem.Block{

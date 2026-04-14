@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
@@ -74,7 +75,8 @@ func TestParseNotification_Success(t *testing.T) {
 	})
 
 	// 用 privKey 签名响应头 (与平台证书同一 key)
-	ts := "1700000000"
+	// 使用当前时间以满足 ±5 分钟重放窗口 (audit C5).
+	ts := fmt.Sprintf("%d", time.Now().Unix())
 	respNonce := "abcdefghij"
 	source := fmt.Sprintf("%s\n%s\n%s\n", ts, respNonce, string(notifyBody))
 	sigB64, err := utils.SignSHA256WithRSA(source, privKey)
