@@ -28,6 +28,21 @@ func (c *Client) doV3(
 	body any,
 	result any,
 ) error {
+	return c.doV3WithHeaders(ctx, method, urlPath, query, body, nil, result)
+}
+
+// doV3WithHeaders 与 doV3 相同，但允许调用方追加额外请求头（例如
+// 敏感信息加密接口所需的 Wechatpay-Serial）。SDK 自己管理的 Accept /
+// Authorization / User-Agent / Content-Type 仍然由内部生成并覆盖调用方；
+// 其余头部会被合并写入。
+func (c *Client) doV3WithHeaders(
+	ctx context.Context,
+	method, urlPath string,
+	query url.Values,
+	body any,
+	extraHeaders http.Header,
+	result any,
+) error {
 	if err := c.validateForRequest(); err != nil {
 		return err
 	}
@@ -55,11 +70,18 @@ func (c *Client) doV3(
 		return err
 	}
 
-	headers := http.Header{
-		"Accept":        []string{"application/json"},
-		"Authorization": []string{auth},
-		"User-Agent":    []string{"go-wechat-sdk/1.x"},
+	headers := http.Header{}
+	// 先拷贝调用方自定义头，避免被后续的 SDK 管理头覆盖（对调用方头保持
+	// "次优先级" 的语义）。
+	for k, vs := range extraHeaders {
+		for _, v := range vs {
+			headers.Add(k, v)
+		}
 	}
+	// SDK 管理的头最后写，保证调用方无法覆盖签名等关键头。
+	headers.Set("Accept", "application/json")
+	headers.Set("Authorization", auth)
+	headers.Set("User-Agent", "go-wechat-sdk/1.x")
 	if raw != nil {
 		headers.Set("Content-Type", "application/json")
 	}
@@ -124,4 +146,22 @@ func (c *Client) PostV3Raw(ctx context.Context, urlPath string, body any, result
 // GetV3Raw 暴露给其他包以便复用核心签名/验签逻辑。
 func (c *Client) GetV3Raw(ctx context.Context, urlPath string, query url.Values, result any) error {
 	return c.getV3(ctx, urlPath, query, result)
+}
+
+// DoV3 是一个更灵活的转发入口，允许调用方自定义 HTTP 方法、query、
+// 请求体和额外请求头。签名、验签、平台证书拉取等逻辑仍由 SDK 处理。
+//
+// 典型使用场景：
+//   - 需要 PUT/PATCH 等 PostV3Raw/GetV3Raw 未覆盖的方法；
+//   - 需要通过 Wechatpay-Serial 头告知服务端敏感字段使用的平台证书序列号；
+//   - 需要自定义 Idempotency-Key 等业务头。
+func (c *Client) DoV3(
+	ctx context.Context,
+	method, urlPath string,
+	query url.Values,
+	body any,
+	extraHeaders http.Header,
+	result any,
+) error {
+	return c.doV3WithHeaders(ctx, method, urlPath, query, body, extraHeaders, result)
 }
