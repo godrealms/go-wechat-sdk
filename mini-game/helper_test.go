@@ -1,4 +1,4 @@
-package mini_store
+package mini_game
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func helperFakeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
+func fakeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/cgi-bin/token") {
@@ -23,12 +23,12 @@ func helperFakeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 // TestDoPost_ReturnsTypedAPIError ensures doPost surfaces a typed *APIError
 // when WeChat returns a non-zero errcode, so callers can errors.As() it.
 func TestDoPost_ReturnsTypedAPIError(t *testing.T) {
-	srv := helperFakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"errcode":9101000,"errmsg":"no permission"}`))
+	srv := fakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"errcode":40001,"errmsg":"invalid credential"}`))
 	})
 	defer srv.Close()
 
-	c := newTestClient(t, srv.URL)
+	c := newTestClient(t, srv)
 	err := c.doPost(context.Background(), "/some/path", map[string]any{"k": "v"}, nil)
 	if err == nil {
 		t.Fatal("expected error")
@@ -37,27 +37,21 @@ func TestDoPost_ReturnsTypedAPIError(t *testing.T) {
 	if !errors.As(err, &ae) {
 		t.Fatalf("expected *APIError, got %T: %v", err, err)
 	}
-	if ae.ErrCode != 9101000 {
-		t.Errorf("ErrCode = %d, want 9101000", ae.ErrCode)
-	}
-	if ae.ErrMsg != "no permission" {
-		t.Errorf("ErrMsg = %q, want %q", ae.ErrMsg, "no permission")
-	}
-	if ae.Path != "/some/path" {
-		t.Errorf("Path = %q, want %q", ae.Path, "/some/path")
+	if ae.ErrCode != 40001 || ae.ErrMsg != "invalid credential" || ae.Path != "/some/path" {
+		t.Errorf("unexpected APIError: %+v", ae)
 	}
 }
 
-// TestDoPost_FailsLoudOnNonJSONBody verifies a malformed envelope returns
-// a wrapped error rather than silently treating the body as success.
+// TestDoPost_FailsLoudOnNonJSONBody verifies a malformed envelope returns a
+// wrapped error rather than silently treating the body as success.
 func TestDoPost_FailsLoudOnNonJSONBody(t *testing.T) {
-	srv := helperFakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+	srv := fakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<html><body>502 Bad Gateway</body></html>`))
 	})
 	defer srv.Close()
 
-	c := newTestClient(t, srv.URL)
+	c := newTestClient(t, srv)
 	var out map[string]any
 	err := c.doPost(context.Background(), "/some/path", nil, &out)
 	if err == nil {
@@ -75,20 +69,20 @@ func TestDoPost_FailsLoudOnNonJSONBody(t *testing.T) {
 // TestDoPost_DecodesSuccessIntoOut verifies the success path decodes JSON
 // into the caller's out struct.
 func TestDoPost_DecodesSuccessIntoOut(t *testing.T) {
-	srv := helperFakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"product_id":"p1","title":"Demo"}`))
+	srv := fakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"openid":"o1","unionid":"u1"}`))
 	})
 	defer srv.Close()
 
-	c := newTestClient(t, srv.URL)
+	c := newTestClient(t, srv)
 	var out struct {
-		ProductID string `json:"product_id"`
-		Title     string `json:"title"`
+		OpenID  string `json:"openid"`
+		UnionID string `json:"unionid"`
 	}
 	if err := c.doPost(context.Background(), "/x", nil, &out); err != nil {
 		t.Fatalf("doPost: %v", err)
 	}
-	if out.ProductID != "p1" || out.Title != "Demo" {
+	if out.OpenID != "o1" || out.UnionID != "u1" {
 		t.Errorf("unexpected out: %+v", out)
 	}
 }

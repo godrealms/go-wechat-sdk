@@ -3,6 +3,7 @@ package mini_program
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 )
@@ -13,7 +14,12 @@ type baseResp struct {
 	ErrMsg  string `json:"errmsg"`
 }
 
-// doGet 发送 GET 请求，自动注入 access_token。
+// doGet 发送 GET 请求，自动注入 access_token，始终检查 errcode。
+//
+// 与 c.http.Get 直接调用的区别：那个调用会把响应直接 json.Unmarshal 到 out，
+// 而 WeChat 的错误响应是 `{"errcode":N,"errmsg":"..."}` —— 这种结构对几乎所有
+// 业务 out 类型都"成功 unmarshal"成零值，于是错误被静默吞掉。本函数走
+// DoRequestWithRawResponse + 自己反序列化，强制走一次 errcode 检查。
 func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out any) error {
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
@@ -23,35 +29,67 @@ func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out a
 	for k, vs := range extra {
 		q[k] = vs
 	}
-	return c.http.Get(ctx, path, q, out)
+	_, _, respBody, err := c.http.DoRequestWithRawResponse(
+		ctx, http.MethodGet, path, q, nil, nil,
+	)
+	if err != nil {
+		return err
+	}
+	return decodeEnvelope(path, respBody, out)
 }
 
 // doPost 发送 POST JSON，自动注入 access_token，始终检查 errcode。
+//
+// 出现非零 errcode 时返回 *APIError；当响应不是合法 JSON envelope 时返回
+// 带原因的错误，避免"静默 unmarshal"把损坏响应当成功。
+//
+// 实现注：刻意不走 c.http.Post，而是用 DoRequestWithRawResponse + 自己
+// 反序列化，让所有 JSON 解码错误都在本文件统一格式化。
 func (c *Client) doPost(ctx context.Context, path string, body any, out any) error {
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
 		return err
 	}
 	q := url.Values{"access_token": {tok}}
-	fullPath := path + "?" + q.Encode()
 
-	// 始终先解码到 json.RawMessage，确保 errcode 检查不被跳过。
-	var raw json.RawMessage
-	if err := c.http.Post(ctx, fullPath, body, &raw); err != nil {
+	raw, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("mini-program: %s: marshal request: %w", path, err)
+	}
+	_, _, respBody, err := c.http.DoRequestWithRawResponse(
+		ctx, http.MethodPost, path, q, raw, nil,
+	)
+	if err != nil {
 		return err
 	}
+	return decodeEnvelope(path, respBody, out)
+}
+
+// decodeEnvelope is the shared error-aware unmarshal step used by both
+// doGet and doPost. It surfaces a typed *APIError for non-zero errcodes
+// and a wrapped error for malformed JSON envelopes.
+func decodeEnvelope(path string, respBody []byte, out any) error {
 	var base baseResp
-	_ = json.Unmarshal(raw, &base)
+	if err := json.Unmarshal(respBody, &base); err != nil {
+		return fmt.Errorf("mini-program: %s: decode envelope: %w (body snippet: %s)",
+			path, err, snippet(respBody))
+	}
 	if base.ErrCode != 0 {
 		return &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
 	}
 	if out != nil {
-		return json.Unmarshal(raw, out)
+		if err := json.Unmarshal(respBody, out); err != nil {
+			return fmt.Errorf("mini-program: %s: decode result: %w", path, err)
+		}
 	}
 	return nil
 }
 
 // doPostRaw 发送 POST JSON，返回原始字节（用于二进制响应如图片）。
+//
+// 微信对二进制接口（QR 码、图片）返回二进制 body；如果服务端报错，会改回
+// JSON envelope `{"errcode":N,...}`。我们用首字节判别 JSON 而非 unmarshal
+// 整个 body，避免把恰好以 '{' 起头的二进制数据当成 JSON 解析失败。
 func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, error) {
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
@@ -73,4 +111,14 @@ func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, 
 		}
 	}
 	return respBody, nil
+}
+
+// snippet returns at most the first 200 bytes of body as a string, for use
+// in error messages.
+func snippet(b []byte) string {
+	const max = 200
+	if len(b) <= max {
+		return string(b)
+	}
+	return string(b[:max]) + "...(truncated)"
 }
