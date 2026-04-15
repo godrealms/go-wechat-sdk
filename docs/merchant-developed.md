@@ -51,9 +51,25 @@ func (c *Client) HTTP() *utils.HTTP
 ```go
 func (c *Client) PostV3Raw(ctx context.Context, urlPath string, body any, result any) error
 func (c *Client) GetV3Raw(ctx context.Context, urlPath string, query url.Values, result any) error
+func (c *Client) DoV3(
+    ctx context.Context,
+    method, urlPath string,
+    query url.Values,
+    body any,
+    extraHeaders http.Header,
+    result any,
+) error
 ```
 
-这两个方法暴露核心的 `doV3` 能力。`merchant/service` 就是用它来实现服务商模式的。普通业务代码**不需要**直接用，调用具体 API 方法即可。
+三个方法都暴露核心的 `doV3` 能力，`merchant/service` 就是用它们来实现服务商模式的：
+
+- `PostV3Raw` / `GetV3Raw` 是最常用的两种方法的快捷封装；
+- `DoV3` 是最通用的转发入口，支持任意 HTTP 方法以及**自定义请求头**。典型使用场景：
+  - 需要 `PUT`/`PATCH`（例如修改结算账户）；
+  - 需要通过 `Wechatpay-Serial` 头告诉服务端本次敏感字段是用哪一张平台证书加密的（进件、分账接收方加密姓名等）；
+  - 需要塞 `Idempotency-Key` 等业务头。
+
+调用方追加的头部会和 SDK 管理的头合并写入请求，但 `Accept` / `Authorization` / `User-Agent` / `Content-Type` 由 SDK 最终覆盖——调用方**无法**污染签名相关的关键头。
 
 ## 2. 下单接口
 
@@ -223,7 +239,7 @@ http.HandleFunc("/wxpay/notify", func(w http.ResponseWriter, r *http.Request) {
 
 > 关键：只有在 `AckNotification` 之前业务处理完成（且幂等），才算安全闭环。返回 5xx 会让微信重推。
 
-## 7. 平台证书管理
+## 7. 平台证书管理 & 敏感字段加密
 
 大多数时候不用手动调，`ParseNotification` 会按需拉取。但可以在启动阶段主动预热：
 
@@ -231,6 +247,34 @@ http.HandleFunc("/wxpay/notify", func(w http.ResponseWriter, r *http.Request) {
 func (c *Client) FetchPlatformCertificates(ctx context.Context) ([]*x509.Certificate, error)
 func (c *Client) AddPlatformCertificate(cert *x509.Certificate)
 ```
+
+### 敏感字段加密
+
+微信支付大量接口（子商户进件、分账接收方姓名、退款申请人姓名等）要求对敏感字段做 RSA-OAEP(SHA256) 加密后再上送，同时请求头 `Wechatpay-Serial` 必须带上加密所用平台证书的序列号。SDK 提供两步到位的封装：
+
+```go
+// 从缓存取一张（或主动拉一次）可用的平台证书，同时返回它的序列号。
+func (c *Client) PlatformCertForEncrypt(ctx context.Context) (*x509.Certificate, string, error)
+
+// 用给定证书的公钥做 RSA-OAEP(SHA256) + base64。
+func EncryptSensitiveField(cert *x509.Certificate, plaintext string) (string, error)
+```
+
+典型用法：
+
+```go
+cert, serial, err := client.PlatformCertForEncrypt(ctx)
+if err != nil { return err }
+encName, _ := pay.EncryptSensitiveField(cert, "张三")
+
+headers := http.Header{"Wechatpay-Serial": []string{serial}}
+_ = client.DoV3(ctx, http.MethodPost, "/v3/some-endpoint", nil, map[string]any{
+    "name": encName,
+    // ...
+}, headers, &resp)
+```
+
+`merchant/service` 包把这一整套流程再封装一层（`EncryptSensitive` 一步返回密文+序列号）——服务商模式的用户应该优先使用那一层，见 [merchant-service.md](./merchant-service.md)。
 
 ### 使用案例
 
