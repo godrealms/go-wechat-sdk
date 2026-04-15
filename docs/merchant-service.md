@@ -353,16 +353,221 @@ _, err := client.ProfitSharingDeleteReceiver(ctx, map[string]any{
 })
 ```
 
-## 8. 局限
+## 8. 子商户结算账户查询 / 修改
 
-本包已经覆盖了服务商最常用的几类接口。下列能力当前仍需走 `Inner().DoV3` 手动调用：
+进件完成后，需要查看或更改子商户的收款结算账户时使用。
 
-- 子商户结算账户查询（`GET /v3/applyment4sub/sub_merchants/{sub_mchid}/settlement`）
-- 子商户结算账户修改（`PUT /v3/applyment4sub/sub_merchants/{sub_mchid}/modify-settlement`）
-- 分账动态接口的其它 partner 变体
+```go
+// 查询
+func (c *Client) SettlementQuery(ctx context.Context, subMchid string) (*SettlementInfo, error)
 
-这些接口的签名/验签、平台证书拉取、敏感字段加密全都可以复用 `Inner()` 已经提供的基础设施——具体到 `DoV3(method, path, query, body, headers, result)` + `PlatformCertForEncrypt`/`EncryptSensitiveField`。
+// 修改（account_number 需为调用方已经用平台证书加密过的密文，serial 为加密所用证书序列号）
+func (c *Client) SettlementModify(
+    ctx context.Context,
+    subMchid string,
+    req *SettlementModifyRequest,
+    platformSerial string,
+) error
 
-## 9. 并发语义
+// 修改（高层封装，接受明文 account_number，SDK 自动加密并填 Wechatpay-Serial 头）
+func (c *Client) SettlementModifyEncrypted(
+    ctx context.Context,
+    subMchid string,
+    req *SettlementModifyRequest,
+    plaintextAccountNumber string,
+) error
+```
+
+类型：
+
+```go
+type SettlementInfo struct {
+    AccountType      string `json:"account_type"`                 // ACCOUNT_TYPE_BUSINESS / ACCOUNT_TYPE_PRIVATE
+    AccountBank      string `json:"account_bank"`                 // "工商银行"
+    BankAddressCode  string `json:"bank_address_code,omitempty"`  // 行政区划代码
+    BankBranchID     string `json:"bank_branch_id,omitempty"`     // 联行号
+    BankName         string `json:"bank_name,omitempty"`          // 支行全称
+    AccountNumber    string `json:"account_number"`               // 查询返回：平台证书加密后的密文
+    VerifyResult     string `json:"verify_result,omitempty"`      // 最近一次打款验证结果
+    VerifyFailReason string `json:"verify_fail_reason,omitempty"` // 失败原因
+}
+
+type SettlementModifyRequest struct {
+    ModifyBalance   bool   `json:"modify_balance"`              // 是否同时修改出款账户
+    AccountType     string `json:"account_type"`
+    AccountBank     string `json:"account_bank"`
+    BankAddressCode string `json:"bank_address_code,omitempty"`
+    BankName        string `json:"bank_name,omitempty"`
+    BankBranchID    string `json:"bank_branch_id,omitempty"`
+    AccountNumber   string `json:"account_number"`              // 平台证书加密后的密文
+}
+```
+
+`subMchid` 为空时均使用 `Config.SubMchid`。修改接口成功时服务端返回 200 + 空响应体，SDK 会当作成功处理。
+
+> **注意**：`SettlementQuery` 返回的 `AccountNumber` 是**平台证书加密后的密文**；调用方拿到之后需要**用商户 API 证书私钥**做 RSA-OAEP(SHA256) 解密才能得到明文。SDK 故意**不做自动解密**，避免把敏感明文长期保留在进程内存中。
+
+### 使用案例：查询并解密结算账号
+
+```go
+info, err := client.SettlementQuery(ctx, "") // 使用默认 sub_mchid
+if err != nil { return err }
+log.Printf("bank=%s type=%s verify=%s", info.AccountBank, info.AccountType, info.VerifyResult)
+
+// 调用方用自己保存的商户 API 私钥解密 account_number（SDK 不替你做）
+plain, err := utils.DecryptOAEP(info.AccountNumber, myMerchantPrivateKey)
+if err != nil { return err }
+defer zero(plain) // 用完及时清零
+```
+
+### 使用案例：修改结算账号（明文 → SDK 自动加密）
+
+```go
+err := client.SettlementModifyEncrypted(ctx, "", &service.SettlementModifyRequest{
+    ModifyBalance:   true,
+    AccountType:     "ACCOUNT_TYPE_BUSINESS",
+    AccountBank:     "工商银行",
+    BankAddressCode: "110000",
+    BankName:        "工商银行股份有限公司上海市分行营业部",
+    BankBranchID:    "402713354941",
+    // 不填 AccountNumber —— 由下面的 plaintext 参数接管
+}, "6222021234567890123")
+```
+
+### 使用案例：自己加密后调用（想复用同一张平台证书多字段加密）
+
+```go
+cipher, serial, err := client.EncryptSensitive(ctx, "6222021234567890123")
+if err != nil { return err }
+
+err = client.SettlementModify(ctx, "", &service.SettlementModifyRequest{
+    AccountType:   "ACCOUNT_TYPE_BUSINESS",
+    AccountBank:   "工商银行",
+    AccountNumber: cipher, // 已是密文
+}, serial)
+```
+
+## 9. 服务商侧分账 — 动态接口（partner 变体）
+
+第 7 节覆盖了**管理类**的三个静态接口（add/delete receiver、查询最大分账比例）。本节补齐与**具体订单 / 回退单 / 剩余金额 / 账单**相关的动态接口。
+
+这组接口与直连商户共享同一组 REST 路径；服务商版的差异只在：请求体 / query 里必须带 `sub_mchid`（POST 类还要带 `appid`）。SDK 会自动填充，调用方显式提供的字段优先。
+
+```go
+// 发起分账
+func (c *Client) ProfitSharingOrder(ctx context.Context, body map[string]any) (map[string]any, error)
+
+// 发起分账 + 携带 Wechatpay-Serial 头（当 receivers 中有加密过的 name 时必填）
+func (c *Client) ProfitSharingOrderWithSerial(ctx context.Context, body map[string]any, platformSerial string) (map[string]any, error)
+
+// 查询分账结果
+func (c *Client) ProfitSharingQueryOrder(ctx context.Context, subMchid, outOrderNo, transactionId string) (map[string]any, error)
+
+// 请求分账回退
+func (c *Client) ProfitSharingReturn(ctx context.Context, body map[string]any) (map[string]any, error)
+
+// 查询分账回退
+func (c *Client) ProfitSharingQueryReturn(ctx context.Context, subMchid, outReturnNo, outOrderNo string) (map[string]any, error)
+
+// 解冻剩余金额
+func (c *Client) ProfitSharingUnfreeze(ctx context.Context, body map[string]any) (map[string]any, error)
+
+// 查询某笔交易的剩余待分金额
+func (c *Client) ProfitSharingMerchantAmounts(ctx context.Context, subMchid, transactionId string) (map[string]any, error)
+
+// 申请分账账单（按日）
+func (c *Client) ProfitSharingBills(ctx context.Context, billDate, subMchid, tarType string) (map[string]any, error)
+```
+
+所有 `subMchid` 参数为空时使用 `Config.SubMchid`。POST 类方法的 body 中 `appid`/`sub_mchid` 缺省时会自动填为默认值，调用方显式写了则保留。
+
+### 使用案例：发起一次分账（同步解冻）
+
+```go
+resp, err := client.ProfitSharingOrder(ctx, map[string]any{
+    "transaction_id": "4208450740201411110007820472",
+    "out_order_no":   "P" + utils.RandomString(16),
+    "receivers": []map[string]any{
+        {
+            "type":        "MERCHANT_ID",
+            "account":     "1900000109",
+            "amount":      100,
+            "description": "分给供应商",
+        },
+    },
+    "unfreeze_unsplit": true,
+})
+if err != nil { return err }
+log.Printf("order_id = %v state = %v", resp["order_id"], resp["state"])
+```
+
+### 使用案例：发起分账 + 加密的个人 openid 接收方
+
+```go
+encName, serial, err := client.EncryptSensitive(ctx, "张三")
+if err != nil { return err }
+
+_, err = client.ProfitSharingOrderWithSerial(ctx, map[string]any{
+    "transaction_id": txId,
+    "out_order_no":   "P" + utils.RandomString(16),
+    "receivers": []map[string]any{
+        {
+            "type":        "PERSONAL_OPENID",
+            "account":     "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o",
+            "name":        encName, // 已加密
+            "amount":      50,
+            "description": "分给分销员",
+        },
+    },
+    "unfreeze_unsplit": false,
+}, serial)
+```
+
+### 使用案例：查询分账结果 / 回退 / 剩余金额
+
+```go
+// 查询分账结果
+orderResp, err := client.ProfitSharingQueryOrder(ctx, "", "P20150806125346", "4208450740201411110007820472")
+
+// 请求回退
+_, err = client.ProfitSharingReturn(ctx, map[string]any{
+    "order_id":      orderResp["order_id"],
+    "out_return_no": "R" + utils.RandomString(16),
+    "return_mchid":  "1900000109",
+    "amount":        30,
+    "description":   "协商退款",
+})
+
+// 查询回退
+_, err = client.ProfitSharingQueryReturn(ctx, "", "R20150806125346", "P20150806125346")
+
+// 查询某笔交易的剩余待分金额
+amounts, err := client.ProfitSharingMerchantAmounts(ctx, "", "4208450740201411110007820472")
+log.Printf("unsplit_amount = %v", amounts["unsplit_amount"])
+
+// 解冻剩余资金（不再继续分账时调用）
+_, err = client.ProfitSharingUnfreeze(ctx, map[string]any{
+    "transaction_id": "4208450740201411110007820472",
+    "out_order_no":   "U" + utils.RandomString(16),
+    "description":    "剩余资金解冻",
+})
+```
+
+### 使用案例：下载子商户分账账单
+
+```go
+billResp, err := client.ProfitSharingBills(ctx, "2026-04-15", "", "GZIP")
+if err != nil { return err }
+log.Printf("download_url = %v", billResp["download_url"])
+// 下一步：用 Inner() 的 HTTP 通道下载账单文件（账单下载接口不走 V3 验签）
+```
+
+## 10. 局限
+
+本包现在已经覆盖了服务商模式最常用的接口集合（下单、进件、结算、分账）。剩余仍需要走 `Inner().DoV3` 手动调用的场景，典型是那些**发布节奏较慢、字段定义仍在变化**的管理类接口（例如商家券、代金券发放、电子发票等——它们目前在直连商户侧的封装也不稳定）。
+
+遇到这类接口时：签名 / 验签 / 平台证书拉取 / 敏感字段加密全都可以复用 `Inner()` 已经提供的基础设施——具体到 `DoV3(method, path, query, body, headers, result)` + `PlatformCertForEncrypt` / `EncryptSensitiveField`。
+
+## 11. 并发语义
 
 与 `pay.Client` 完全一致——线程安全，可在多 goroutine 共享。所有核心签名/验签逻辑都继承自 `pay.Client`，本包只是做了业务层的字段注入。
