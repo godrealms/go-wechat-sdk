@@ -134,11 +134,21 @@ func (a *AuthorizerClient) refreshLocked(ctx context.Context, refreshToken strin
 	return tokens.AccessToken, nil
 }
 
-func (a *AuthorizerClient) lockFor(appid string) *sync.Mutex {
-	if mu, ok := a.c.authMu.Load(appid); ok {
+// authLockFor returns the per-authorizer-appid refresh mutex, allocating one
+// on first use. It lives on *Client (not *AuthorizerClient) so that flows
+// which mutate the authorizer record without going through AuthorizerClient
+// — like QueryAuth's initial SetAuthorizer — can acquire the same lock that
+// refreshLocked holds. This is the single source of truth for
+// "who's allowed to write authorizer[appid] right now".
+func (c *Client) authLockFor(appid string) *sync.Mutex {
+	if mu, ok := c.authMu.Load(appid); ok {
 		return mu.(*sync.Mutex)
 	}
 	mu := &sync.Mutex{}
-	actual, _ := a.c.authMu.LoadOrStore(appid, mu)
+	actual, _ := c.authMu.LoadOrStore(appid, mu)
 	return actual.(*sync.Mutex)
+}
+
+func (a *AuthorizerClient) lockFor(appid string) *sync.Mutex {
+	return a.c.authLockFor(appid)
 }

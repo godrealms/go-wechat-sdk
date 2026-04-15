@@ -231,6 +231,76 @@ func TestAuthorizerClient_AccessToken_StoreNotFound_ReturnsRevoked(t *testing.T)
 	}
 }
 
+// TestQueryAuth_SerializesWithRefreshLocked is a concurrency regression guard
+// for audit Batch 3. QueryAuth must acquire the same per-appid mutex that
+// AuthorizerClient.refreshLocked holds, so that an in-flight refresh cannot
+// clobber a freshly-obtained QueryAuth record (or vice versa).
+//
+// The test holds the per-appid mutex before calling QueryAuth and asserts
+// that QueryAuth blocks waiting on the mutex — proving the write is inside
+// the critical section. Pre-fix, QueryAuth stored unconditionally outside
+// any lock and this assertion would fail.
+func TestQueryAuth_SerializesWithRefreshLocked(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_query_auth", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{
+  "authorization_info": {
+    "authorizer_appid": "wxLocked",
+    "authorizer_access_token": "NEW_AT",
+    "expires_in": 7200,
+    "authorizer_refresh_token": "NEW_RT"
+  }
+}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	// Pre-hold the per-appid mutex for the appid QueryAuth will return.
+	mu := c.authLockFor("wxLocked")
+	mu.Lock()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := c.QueryAuth(context.Background(), "AUTHCODE")
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		mu.Unlock()
+		t.Fatalf("QueryAuth returned while mutex was held (err=%v) — the store write is NOT inside the per-appid critical section", err)
+	case <-time.After(200 * time.Millisecond):
+		// expected: blocked on mutex
+	}
+
+	mu.Unlock()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("QueryAuth failed after mutex released: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("QueryAuth did not complete after mutex was released")
+	}
+
+	// Verify fresh tokens landed in the store.
+	got, err := store.GetAuthorizer(context.Background(), "wxLocked")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.AccessToken != "NEW_AT" || got.RefreshToken != "NEW_RT" {
+		t.Errorf("store mismatch: %+v", got)
+	}
+}
+
 func TestClient_RefreshAll(t *testing.T) {
 	var refreshCalls int32
 	mux := http.NewServeMux()

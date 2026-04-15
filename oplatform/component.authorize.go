@@ -9,6 +9,14 @@ import (
 
 // QueryAuth 用 authorization_code 换取 authorizer 的 access_token / refresh_token。
 // 成功后自动写入 Store（key = authorizer_appid）。
+//
+// Concurrency note (audit Batch 3): the SetAuthorizer write is serialized
+// through the per-appid mutex that AuthorizerClient.refreshLocked also
+// holds, so a QueryAuth landing concurrently with an in-flight refresh for
+// the same authorizer_appid cannot tear the stored record. The HTTP call
+// itself is intentionally kept outside the lock — callers waiting on the
+// mutex shouldn't be blocked by network round-trips to WeChat from an
+// unrelated operation.
 func (c *Client) QueryAuth(ctx context.Context, authCode string) (*AuthorizationInfo, error) {
 	ctx = touchContext(ctx)
 	if authCode == "" {
@@ -45,6 +53,11 @@ func (c *Client) QueryAuth(ctx context.Context, authCode string) (*Authorization
 		RefreshToken: info.AuthorizerRefreshToken,
 		ExpireAt:     time.Now().Add(time.Duration(expiresIn) * time.Second),
 	}
+	// Serialize the store write with refreshLocked for the same appid so that
+	// an in-flight refresh cannot clobber our fresh tokens (or vice versa).
+	mu := c.authLockFor(info.AuthorizerAppID)
+	mu.Lock()
+	defer mu.Unlock()
 	if err := c.store.SetAuthorizer(ctx, info.AuthorizerAppID, tokens); err != nil {
 		return nil, fmt.Errorf("oplatform: store set authorizer: %w", err)
 	}
