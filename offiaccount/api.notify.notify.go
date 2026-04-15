@@ -15,11 +15,8 @@ func (c *Client) DelWxAnewTemplate(ctx context.Context, priTmplId string) error 
 	}
 	path := fmt.Sprintf("/wxaapi/newtmpl/deltemplate?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, map[string]interface{}{"priTmplId": priTmplId}, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, map[string]interface{}{"priTmplId": priTmplId}, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -33,11 +30,8 @@ func (c *Client) GetCategory(ctx context.Context) (*CategoryResp, error) {
 	}
 	path := fmt.Sprintf("/wxaapi/newtmpl/getcategory?access_token=%s", token)
 	result := &CategoryResp{}
-	err = c.Https.Get(ctx, path, nil, result)
-	if err != nil {
+	if err = c.doGet(ctx, path, nil, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -55,11 +49,8 @@ func (c *Client) GetPubNewTemplateKeyWords(ctx context.Context, tid string) (*Te
 		"tid":          []string{tid},
 	}
 	result := &TemplateKeyWordsResp{}
-	err = c.Https.Get(ctx, path, query, result)
-	if err != nil {
+	if err = c.doGet(ctx, path, query, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -82,11 +73,8 @@ func (c *Client) GetPubNewTemplateTitles(ctx context.Context, ids string, start,
 		"limit":        []string{fmt.Sprintf("%d", limit)},
 	}
 	result := &TemplateTitlesResp{}
-	err = c.Https.Get(ctx, path, query, result)
-	if err != nil {
+	if err = c.doGet(ctx, path, query, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -102,11 +90,8 @@ func (c *Client) GetWxaPubNewTemplate(ctx context.Context) (*PubNewTemplateResp,
 		"access_token": []string{token},
 	}
 	result := &PubNewTemplateResp{}
-	err = c.Https.Get(ctx, path, query, result)
-	if err != nil {
+	if err = c.doGet(ctx, path, query, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -124,11 +109,8 @@ func (c *Client) AddWxaNewTemplate(ctx context.Context, tid string, kidList []in
 	path := fmt.Sprintf("/wxaapi/newtmpl/addtemplate?access_token=%s", token)
 	result := &AddWxaNewTemplateResp{}
 	body := map[string]interface{}{"tid": tid, "kidList": kidList, "sceneDesc": sceneDesc}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -141,11 +123,8 @@ func (c *Client) SendNewSubscribeMsg(ctx context.Context, body *SubscribeMsg) er
 	}
 	path := fmt.Sprintf("/cgi-bin/message/subscribe/bizsend?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

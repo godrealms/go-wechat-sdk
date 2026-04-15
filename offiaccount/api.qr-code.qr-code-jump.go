@@ -15,7 +15,7 @@ func (c *Client) GetQRCodeJump(ctx context.Context, req *GetQRCodeJumpRequest) (
 	path := fmt.Sprintf("/cgi-bin/wxopen/qrcodejumpget?access_token=%s", token)
 
 	var result GetQRCodeJumpResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -32,7 +32,7 @@ func (c *Client) AddQRCodeJump(ctx context.Context, req *AddQRCodeJumpRequest) (
 	path := fmt.Sprintf("/cgi-bin/wxopen/qrcodejumpadd?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -53,7 +53,7 @@ func (c *Client) PublishQRCodeJump(ctx context.Context, prefix string) (*Resp, e
 	}
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func (c *Client) DeleteQRCodeJump(ctx context.Context, req *DeleteQRCodeJumpRequ
 	path := fmt.Sprintf("/cgi-bin/wxopen/qrcodejumpdelete?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

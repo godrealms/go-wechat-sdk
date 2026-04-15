@@ -99,15 +99,18 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mini_store: fetch token: %w", err)
 	}
 	if out.ErrCode != 0 {
-		return "", fmt.Errorf("mini_store: token errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return "", &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
 	}
 	if out.AccessToken == "" {
 		return "", fmt.Errorf("mini_store: empty access_token")
 	}
-	c.accessToken = out.AccessToken
-	if out.ExpiresIn <= 60 {
-		out.ExpiresIn = 120
+	// Clamp TTL: floor at 60s so a hostile/malformed upstream cannot cause a
+	// refresh storm by returning a small expires_in.
+	ttl := out.ExpiresIn - 60
+	if ttl < 60 {
+		ttl = 60
 	}
-	c.expiresAt = time.Now().Add(time.Duration(out.ExpiresIn-60) * time.Second)
+	c.accessToken = out.AccessToken
+	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
 	return c.accessToken, nil
 }

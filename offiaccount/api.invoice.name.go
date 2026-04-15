@@ -15,7 +15,7 @@ func (c *Client) GetUserTitleUrl(ctx context.Context, req *GetUserTitleUrlReques
 	path := fmt.Sprintf("/card/invoice/biz/getusertitleurl?access_token=%s", token)
 
 	var result GetUserTitleUrlResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -32,7 +32,7 @@ func (c *Client) GetSelectTitleUrl(ctx context.Context, req *GetSelectTitleUrlRe
 	path := fmt.Sprintf("/card/invoice/biz/getselecttitleurl?access_token=%s", token)
 
 	var result GetSelectTitleUrlResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (c *Client) ScanTitle(ctx context.Context, req *ScanTitleRequest) (*ScanTit
 	path := fmt.Sprintf("/card/invoice/scantitle?access_token=%s", token)
 
 	var result ScanTitleResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

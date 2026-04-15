@@ -17,11 +17,8 @@ func (c *Client) GetApiQuota(ctx context.Context, cgiPath string) (*ApiQuotaResp
 		"cgi_path": cgiPath,
 	}
 	result := &ApiQuotaResp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -38,11 +35,8 @@ func (c *Client) ClearQuota(ctx context.Context) error {
 		"appid": c.Config.AppId,
 	}
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -59,12 +53,9 @@ func (c *Client) GetRidInfo(ctx context.Context, rid string) (*RidInfoResp, erro
 	body := map[string]interface{}{
 		"rid": rid,
 	}
-	var result = &RidInfoResp{}
-	err = c.Https.Post(ctx, path, body, &result)
-	if err != nil {
+	result := &RidInfoResp{}
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -74,11 +65,8 @@ func (c *Client) GetRidInfo(ctx context.Context, rid string) (*RidInfoResp, erro
 func (c *Client) ClearQuotaByAppSecret(ctx context.Context) error {
 	path := fmt.Sprintf("/cgi-bin/clear_quota/v2?appid=%s&appsecret=%s", c.Config.AppId, c.Config.AppSecret)
 	result := &Resp{}
-	err := c.Https.Post(ctx, path, nil, result)
-	if err != nil {
+	if err := c.doPost(ctx, path, nil, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

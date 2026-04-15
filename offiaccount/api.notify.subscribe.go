@@ -13,11 +13,8 @@ func (c *Client) TemplateSubscribe(ctx context.Context, form *TemplateSubscribeR
 	}
 	path := fmt.Sprintf("/cgi-bin/message/template/subscribe?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, form, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, form, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

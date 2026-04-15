@@ -24,7 +24,7 @@ func (c *Client) GetInterfaceSummary(ctx context.Context, beginDate, endDate str
 
 	// 发送请求
 	var result GetInterfaceSummaryResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (c *Client) GetInterfaceSummaryHour(ctx context.Context, beginDate, endDate
 
 	// 发送请求
 	var result GetInterfaceSummaryHourResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

@@ -15,7 +15,7 @@ func (c *Client) GetSnsAccessToken(ctx context.Context, code string) (*SnsAccess
 
 	// 发送请求
 	var result SnsAccessToken
-	if err := c.Https.Get(ctx, path, nil, &result); err != nil {
+	if err := c.doGet(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
 
@@ -31,7 +31,7 @@ func (c *Client) RefreshSnsAccessToken(ctx context.Context, refreshToken string)
 
 	// 发送请求
 	var result SnsAccessToken
-	if err := c.Https.Get(ctx, path, nil, &result); err != nil {
+	if err := c.doGet(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
 
@@ -54,7 +54,7 @@ func (c *Client) GetSnsUserInfo(ctx context.Context, accessToken, openID, lang s
 
 	// 发送请求
 	var result SnsUserInfo
-	if err := c.Https.Get(ctx, path, nil, &result); err != nil {
+	if err := c.doGet(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
 
@@ -71,7 +71,7 @@ func (c *Client) CheckSnsAccessToken(ctx context.Context, accessToken, openID st
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Get(ctx, path, nil, &result); err != nil {
+	if err := c.doGet(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
 

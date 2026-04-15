@@ -15,7 +15,7 @@ func (c *Client) GetInvoiceInfo(ctx context.Context, req *GetInvoiceInfoRequest)
 	path := fmt.Sprintf("/card/invoice/reimburse/getinvoiceinfo?access_token=%s", token)
 
 	var result GetInvoiceInfoResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -32,7 +32,7 @@ func (c *Client) UpdateInvoiceReimburseStatus(ctx context.Context, req *UpdateIn
 	path := fmt.Sprintf("/card/invoice/reimburse/updateinvoicestatus?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (c *Client) UpdateInvoiceReimburseStatusBatch(ctx context.Context, req *Upd
 	path := fmt.Sprintf("/card/invoice/reimburse/updatestatusbatch?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -66,7 +66,7 @@ func (c *Client) GetInvoiceBatch(ctx context.Context, req *GetInvoiceBatchReques
 	path := fmt.Sprintf("/card/invoice/reimburse/getinvoicebatch?access_token=%s", token)
 
 	var result GetInvoiceBatchResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

@@ -121,6 +121,56 @@ func TestRefreshSuiteToken_Explicit(t *testing.T) {
 	}
 }
 
+// TestClampTokenTTL exercises the floor that prevents refresh storms when an
+// upstream returns a tiny or zero expires_in.
+func TestClampTokenTTL(t *testing.T) {
+	cases := []struct {
+		name string
+		in   int
+		min  time.Duration // lower bound for the effective TTL
+	}{
+		{"zero", 0, 2 * safetyMargin},
+		{"below min", 60, 2 * safetyMargin},
+		{"exactly 3x safetyMargin", int((3 * safetyMargin).Seconds()), 2 * safetyMargin},
+		{"normal 7200", 7200, time.Duration(7200)*time.Second - safetyMargin},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := clampTokenTTL(tc.in)
+			if got < tc.min {
+				t.Errorf("clampTokenTTL(%d) = %v, want >= %v", tc.in, got, tc.min)
+			}
+		})
+	}
+}
+
+// TestGetSuiteAccessToken_ClampsTinyExpires verifies that a malformed upstream
+// response with a tiny expires_in does not immediately re-expire the cache.
+func TestGetSuiteAccessToken_ClampsTinyExpires(t *testing.T) {
+	var hits int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"suite_access_token": "STOK",
+			"expires_in":         10, // hostile: would normally compute to -290s
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestISVClient(t, srv.URL)
+	ctx := context.Background()
+	if _, err := c.GetSuiteAccessToken(ctx); err != nil {
+		t.Fatal(err)
+	}
+	// second call should hit the cache because clampTokenTTL floors the TTL.
+	if _, err := c.GetSuiteAccessToken(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if atomic.LoadInt32(&hits) != 1 {
+		t.Errorf("expected 1 HTTP hit with TTL clamp, got %d", hits)
+	}
+}
+
 func TestGetSuiteAccessToken_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{

@@ -21,7 +21,7 @@ func (c *Client) GetArticleSummary(ctx context.Context, beginDate, endDate strin
 	}
 
 	var result GetArticleSummaryResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (c *Client) GetUserReadHour(ctx context.Context, beginDate, endDate string)
 	}
 
 	var result GetUserReadHourResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func (c *Client) GetUserShareHour(ctx context.Context, beginDate, endDate string
 	}
 
 	var result GetUserShareHourResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +90,7 @@ func (c *Client) GetUserRead(ctx context.Context, beginDate, endDate string) (*G
 	}
 
 	var result GetUserReadResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +113,7 @@ func (c *Client) GetArticleTotal(ctx context.Context, beginDate, endDate string)
 	}
 
 	var result GetArticleTotalResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -136,7 +136,7 @@ func (c *Client) GetUserShare(ctx context.Context, beginDate, endDate string) (*
 	}
 
 	var result GetUserShareResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

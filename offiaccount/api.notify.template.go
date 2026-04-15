@@ -14,11 +14,8 @@ func (c *Client) SendTemplateMessage(ctx context.Context, body *SubscribeMessage
 	}
 	path := fmt.Sprintf("/cgi-bin/message/template/send?access_token=%s", token)
 	result := &MassMsgResp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -36,11 +33,8 @@ func (c *Client) AddTemplate(ctx context.Context, templateIdShort string, keywor
 	}
 	path := fmt.Sprintf("/cgi-bin/template/api_add_template?access_token=%s", token)
 	result := &AddTemplateResponse{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -58,11 +52,8 @@ func (c *Client) QueryBlockTmplMsg(ctx context.Context, body *QueryBlockTmplMsgR
 	}
 	path := fmt.Sprintf("/wxa/sec/queryblocktmplmsg?access_token=%s", token)
 	result := &QueryBlockTmplMsgResp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -77,11 +68,8 @@ func (c *Client) DeleteTemplate(ctx context.Context, templateId string) (*Resp, 
 	body := map[string]interface{}{"template_id": templateId}
 	path := fmt.Sprintf("/cgi-bin/template/del_private_template?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -95,30 +83,24 @@ func (c *Client) GetAllTemplates(ctx context.Context) (*TemplateList, error) {
 	}
 	path := fmt.Sprintf("/cgi-bin/template/get_all_private_template?access_token=%s", token)
 	result := &TemplateList{}
-	err = c.Https.Get(ctx, path, nil, result)
-	if err != nil {
+	if err = c.doGet(ctx, path, nil, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
 
 // GetIndustry 获取行业信息
-// 本接口可获取账号设置的行业信息。
+// 本接口可获取账号设置的行业信息，返回 primary_industry / secondary_industry。
 // 文档：https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Template_Message_Interface.html
-func (c *Client) GetIndustry(ctx context.Context) (*TemplateList, error) {
+func (c *Client) GetIndustry(ctx context.Context) (*IndustryResp, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
 	path := fmt.Sprintf("/cgi-bin/template/get_industry?access_token=%s", token)
-	result := &TemplateList{}
-	err = c.Https.Get(ctx, path, nil, result)
-	if err != nil {
+	result := &IndustryResp{}
+	if err = c.doGet(ctx, path, nil, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -136,11 +118,8 @@ func (c *Client) SetIndustry(ctx context.Context, industryId1, industryId2 strin
 	}
 	path := fmt.Sprintf("/cgi-bin/template/api_set_industry?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }

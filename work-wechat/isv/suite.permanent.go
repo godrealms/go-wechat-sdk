@@ -19,7 +19,7 @@ func (c *Client) GetPermanentCode(ctx context.Context, authCode string) (*Perman
 	if resp.AuthCorpInfo.CorpID == "" || resp.PermanentCode == "" || resp.AccessToken == "" {
 		return nil, errors.New("isv: get_permanent_code response missing required fields (auth_corp_info.corpid / permanent_code / access_token)")
 	}
-	expiresAt := time.Now().Add(time.Duration(resp.ExpiresIn)*time.Second - safetyMargin)
+	expiresAt := time.Now().Add(clampTokenTTL(resp.ExpiresIn))
 	tokens := &AuthorizerTokens{
 		CorpID:            resp.AuthCorpInfo.CorpID,
 		PermanentCode:     resp.PermanentCode,

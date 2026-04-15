@@ -25,7 +25,7 @@ func (c *Client) GetUserInfo(ctx context.Context, openid string, lang string) (*
 
 	// 发送请求
 	var result UserInfo
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (c *Client) BatchGetUserInfo(ctx context.Context, req *BatchGetUserInfoRequ
 
 	// 发送请求
 	var result BatchGetUserInfoResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -70,7 +70,7 @@ func (c *Client) UpdateRemark(ctx context.Context, openid string, remark string)
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -94,7 +94,7 @@ func (c *Client) GetFans(ctx context.Context, nextOpenid string) (*GetFansResult
 
 	// 发送请求
 	var result GetFansResult
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func (c *Client) GetBlacklist(ctx context.Context, beginOpenid string) (*GetBlac
 
 	// 发送请求
 	var result GetBlacklistResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -142,7 +142,7 @@ func (c *Client) BatchBlacklist(ctx context.Context, openidList []string) (*Resp
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -166,7 +166,7 @@ func (c *Client) BatchUnblacklist(ctx context.Context, openidList []string) (*Re
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

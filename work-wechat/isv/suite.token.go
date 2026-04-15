@@ -11,6 +11,23 @@ import (
 // safetyMargin 是 token 过期前的安全窗口,避免临界时刻使用即将过期的 token。
 const safetyMargin = 5 * time.Minute
 
+// clampTokenTTL floors the raw `expires_in` returned by WeChat before we
+// subtract safetyMargin. WeChat normally returns 7200s; a hostile or malformed
+// upstream could return a small or negative value, which after subtracting
+// safetyMargin would place expiresAt in the past or inside the safetyMargin
+// window, causing a refresh storm on every call. We floor raw to
+// 3*safetyMargin so the effective TTL (raw - safetyMargin) is at least
+// 2*safetyMargin — strictly greater than safetyMargin, the threshold at which
+// readValidSuiteToken/readValidCorpToken treats a token as stale.
+func clampTokenTTL(expiresInSeconds int) time.Duration {
+	raw := time.Duration(expiresInSeconds) * time.Second
+	min := 3 * safetyMargin
+	if raw < min {
+		raw = min
+	}
+	return raw - safetyMargin
+}
+
 // GetSuiteAccessToken 返回 suite_access_token。
 // 策略:lazy + 双检锁。Store 命中且未到安全窗口直接返回;否则加锁再查一次,仍过期则刷新。
 func (c *Client) GetSuiteAccessToken(ctx context.Context) (string, error) {
@@ -76,7 +93,7 @@ func (c *Client) fetchSuiteTokenLocked(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	expiresAt := time.Now().Add(time.Duration(resp.ExpiresIn)*time.Second - safetyMargin)
+	expiresAt := time.Now().Add(clampTokenTTL(resp.ExpiresIn))
 	if err := c.store.PutSuiteToken(ctx, c.cfg.SuiteID, resp.SuiteAccessToken, expiresAt); err != nil {
 		return "", fmt.Errorf("isv: persist suite_token: %w", err)
 	}

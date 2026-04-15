@@ -129,6 +129,7 @@ type SecondaryIndustry struct {
 }
 
 type IndustryResp struct {
+	Resp
 	// 账号设置的主营行业
 	PrimaryIndustry *PrimaryIndustry `json:"primary_industry"`
 	// 账号设置的副营行业

@@ -63,7 +63,7 @@ func (c *Client) fetchProviderTokenLocked(ctx context.Context) (string, error) {
 	if err := c.doPostRaw(ctx, "/cgi-bin/service/get_provider_token", url.Values{}, body, &resp); err != nil {
 		return "", err
 	}
-	expiresAt := time.Now().Add(time.Duration(resp.ExpiresIn)*time.Second - safetyMargin)
+	expiresAt := time.Now().Add(clampTokenTTL(resp.ExpiresIn))
 	if err := c.store.PutProviderToken(ctx, c.cfg.SuiteID, resp.ProviderAccessToken, expiresAt); err != nil {
 		return "", fmt.Errorf("isv: persist provider_token: %w", err)
 	}

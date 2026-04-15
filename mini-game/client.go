@@ -142,12 +142,19 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("mini_game: fetch token: %w", err)
 	}
 	if out.ErrCode != 0 {
-		return "", fmt.Errorf("mini_game: token errcode=%d errmsg=%s", out.ErrCode, out.ErrMsg)
+		return "", &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
 	}
 	if out.AccessToken == "" {
 		return "", fmt.Errorf("mini_game: empty access_token")
 	}
+	// Clamp TTL: WeChat normally returns 7200s; a hostile or malformed upstream
+	// could return a small or zero value which would leave expiresAt in the
+	// past and cause a refresh storm. Floor at 60s.
+	ttl := out.ExpiresIn - 60
+	if ttl < 60 {
+		ttl = 60
+	}
 	c.accessToken = out.AccessToken
-	c.expiresAt = time.Now().Add(time.Duration(out.ExpiresIn-60) * time.Second)
+	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
 	return c.accessToken, nil
 }

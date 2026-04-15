@@ -2,6 +2,7 @@ package mini_game
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -107,8 +108,40 @@ func TestAccessToken_Errcode(t *testing.T) {
 	defer srv.Close()
 
 	c := newTestClient(t, srv)
-	if _, err := c.AccessToken(context.Background()); err == nil {
-		t.Error("expected error for errcode response")
+	_, err := c.AccessToken(context.Background())
+	if err == nil {
+		t.Fatal("expected error for errcode response")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.ErrCode != 40013 {
+		t.Errorf("ErrCode = %d, want 40013", apiErr.ErrCode)
+	}
+}
+
+// TestAccessToken_TTLClamp verifies that a tiny/zero expires_in is floored so
+// the cache doesn't collapse into a refresh storm.
+func TestAccessToken_TTLClamp(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(`{"access_token":"TOK","expires_in":0}`))
+	}))
+	defer srv.Close()
+
+	c := newTestClient(t, srv)
+	if _, err := c.AccessToken(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	// Second call within ~a second should hit the cache, not the server,
+	// because the floor keeps expiresAt well in the future.
+	if _, err := c.AccessToken(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Errorf("expected 1 fetch with TTL clamp, got %d", calls)
 	}
 }
 

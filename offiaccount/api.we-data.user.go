@@ -24,7 +24,7 @@ func (c *Client) GetUserSummary(ctx context.Context, beginDate, endDate string) 
 
 	// 发送请求
 	var result GetUserSummaryResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (c *Client) GetUserCumulate(ctx context.Context, beginDate, endDate string)
 
 	// 发送请求
 	var result GetUserCumulateResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

@@ -16,7 +16,7 @@ func (c *Client) GetWxaStoreCateList(ctx context.Context) (*GetWxaStoreCateListR
 	params := url.Values{"access_token": {token}}
 
 	var result GetWxaStoreCateListResult
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -33,7 +33,7 @@ func (c *Client) ApplyWxaStore(ctx context.Context, req *ApplyWxaStoreRequest) (
 	path := fmt.Sprintf("/wxa/apply_merchant?access_token=%s", token)
 
 	var result ApplyWxaStoreResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -50,7 +50,7 @@ func (c *Client) GetWxaStoreAuditInfo(ctx context.Context) (*GetWxaStoreAuditInf
 	params := url.Values{"access_token": {token}}
 
 	var result GetWxaStoreAuditInfoResult
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func (c *Client) ModifyWxaStore(ctx context.Context, req *ModifyWxaStoreRequest)
 	path := fmt.Sprintf("/wxa/modify_merchant?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -84,7 +84,7 @@ func (c *Client) GetDistrictList(ctx context.Context) (*GetDistrictListResult, e
 	params := url.Values{"access_token": {token}}
 
 	var result GetDistrictListResult
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -101,7 +101,7 @@ func (c *Client) SearchMapPoi(ctx context.Context, req *SearchMapPoiRequest) (*S
 	path := fmt.Sprintf("/wxa/search_map_poi?access_token=%s", token)
 
 	var result SearchMapPoiResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -118,7 +118,7 @@ func (c *Client) AddStore(ctx context.Context, req *AddStoreRequest) (*AddStoreR
 	path := fmt.Sprintf("/wxa/add_store?access_token=%s", token)
 
 	var result AddStoreResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -135,7 +135,7 @@ func (c *Client) GetStoreInfo(ctx context.Context, req *GetStoreInfoRequest) (*G
 	path := fmt.Sprintf("/wxa/get_store_info?access_token=%s", token)
 
 	var result GetStoreInfoResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -152,7 +152,7 @@ func (c *Client) GetStoreList(ctx context.Context, req *GetStoreListRequest) (*G
 	path := fmt.Sprintf("/wxa/get_store_list?access_token=%s", token)
 
 	var result GetStoreListResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -169,7 +169,7 @@ func (c *Client) DelStore(ctx context.Context, req *DelStoreRequest) (*Resp, err
 	path := fmt.Sprintf("/wxa/del_store?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -186,7 +186,7 @@ func (c *Client) UpdateStore(ctx context.Context, req *UpdateStoreRequest) (*Upd
 	path := fmt.Sprintf("/wxa/update_store?access_token=%s", token)
 
 	var result UpdateStoreResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -203,7 +203,7 @@ func (c *Client) CreateMapPoi(ctx context.Context, req *CreateMapPoiRequest) (*C
 	path := fmt.Sprintf("/wxa/create_map_poi?access_token=%s", token)
 
 	var result CreateMapPoiResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

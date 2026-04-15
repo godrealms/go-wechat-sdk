@@ -100,11 +100,11 @@ func (c *Client) Mchid() string { return c.mchid }
 // HTTP returns the underlying HTTP client for advanced use.
 func (c *Client) HTTP() *utils.HTTP { return c.http }
 
-// PrivateKeyVal returns the RSA private key used to sign requests.
-func (c *Client) PrivateKeyVal() *rsa.PrivateKey { return c.privateKey }
+// PrivateKey returns the RSA private key used to sign requests.
+func (c *Client) PrivateKey() *rsa.PrivateKey { return c.privateKey }
 
-// CertificateVal returns the merchant's local certificate.
-func (c *Client) CertificateVal() *x509.Certificate { return c.certificate }
+// Certificate returns the merchant's local certificate.
+func (c *Client) Certificate() *x509.Certificate { return c.certificate }
 
 // CertificateNumber returns the configured certificate serial number.
 func (c *Client) CertificateNumber() string { return c.certificateNumber }

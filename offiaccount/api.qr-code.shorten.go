@@ -21,7 +21,7 @@ func (c *Client) GenShortKey(ctx context.Context, longData string, expireSeconds
 	}
 
 	var result GenShortKeyResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -42,7 +42,7 @@ func (c *Client) FetchShorten(ctx context.Context, shortKey string) (*FetchShort
 	}
 
 	var result FetchShortenResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

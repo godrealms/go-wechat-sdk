@@ -22,8 +22,7 @@ type Article struct {
 
 // AddNewsMaterialResponse 新增临时图文素材响应结构体
 type AddNewsMaterialResponse struct {
-	ErrCode   int    `json:"errcode"`    // 错误码
-	ErrMsg    string `json:"errmsg"`     // 错误信息
+	Resp
 	Type      string `json:"type"`       // 媒体文件类型，分别有图片（image）、语音（voice）、视频（video）和缩略图（thumb），图文消息为news
 	MediaID   string `json:"media_id"`   // 媒体文件上传后，获取标识
 	CreatedAt int64  `json:"created_at"` // 媒体文件上传时间戳

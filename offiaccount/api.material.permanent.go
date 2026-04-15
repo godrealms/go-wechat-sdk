@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +14,13 @@ import (
 
 // GetMaterial 获取永久素材
 // mediaID: 要获取的素材的media_id
+//
+// 返回值根据素材类型不同：
+//   - 图文素材：第一个返回值非 nil
+//   - 视频素材：第二个返回值非 nil
+//   - 图片 / 语音 / 其他二进制素材：第三个返回值是原始字节
+//
+// 如果服务端返回 errcode 非 0，直接返回 *WeixinError。
 func (c *Client) GetMaterial(ctx context.Context, mediaID string) (*GetMaterialNewsResult, *GetMaterialVideoResult, []byte, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
@@ -30,7 +36,10 @@ func (c *Client) GetMaterial(ctx context.Context, mediaID string) (*GetMaterialN
 
 	// 直接发送POST请求获取响应数据
 	fullURL := c.Https.BaseURL + path
-	jsonBody, _ := json.Marshal(body)
+	jsonBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("marshal request body failed: %w", err)
+	}
 
 	// 创建请求
 	req, err := http.NewRequestWithContext(ctx, "POST", fullURL, bytes.NewReader(jsonBody))
@@ -59,19 +68,28 @@ func (c *Client) GetMaterial(ctx context.Context, mediaID string) (*GetMaterialN
 		return nil, nil, nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
 	}
 
-	// 尝试解析为图文素材
-	var newsResult GetMaterialNewsResult
-	if err = json.Unmarshal(respBody, &newsResult); err == nil && len(newsResult.NewsItem) > 0 {
-		return &newsResult, nil, nil, nil
+	// 先探测 errcode：对于非图文/视频素材，微信可能返回图片/语音原始二进制，
+	// 但当出错时一定是 JSON {errcode, errmsg}。只有在看起来是 JSON 时才尝试解析。
+	if len(respBody) > 0 && respBody[0] == '{' {
+		var probe Resp
+		if err = json.Unmarshal(respBody, &probe); err == nil && probe.ErrCode != 0 {
+			return nil, nil, nil, &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}
+		}
+
+		// 尝试解析为图文素材
+		var newsResult GetMaterialNewsResult
+		if err = json.Unmarshal(respBody, &newsResult); err == nil && len(newsResult.NewsItem) > 0 {
+			return &newsResult, nil, nil, nil
+		}
+
+		// 尝试解析为视频素材
+		var videoResult GetMaterialVideoResult
+		if err = json.Unmarshal(respBody, &videoResult); err == nil && videoResult.Title != "" {
+			return nil, &videoResult, nil, nil
+		}
 	}
 
-	// 尝试解析为视频素材
-	var videoResult GetMaterialVideoResult
-	if err = json.Unmarshal(respBody, &videoResult); err == nil && videoResult.Title != "" {
-		return nil, &videoResult, nil, nil
-	}
-
-	// 如果都不是，则返回原始数据，由调用方处理
+	// 图片 / 语音 / 缩略图等二进制素材：返回原始数据
 	return nil, nil, respBody, nil
 }
 
@@ -86,7 +104,7 @@ func (c *Client) GetMaterialCount(ctx context.Context) (*MaterialCount, error) {
 
 	// 发送请求
 	var result MaterialCount
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +124,7 @@ func (c *Client) BatchGetMaterial(ctx context.Context, req *BatchGetMaterialRequ
 
 	// 发送请求
 	var result BatchGetMaterialResult
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -118,77 +136,22 @@ func (c *Client) BatchGetMaterial(ctx context.Context, req *BatchGetMaterialRequ
 // filename: 图片文件名
 // reader: 图片文件内容读取器
 func (c *Client) UploadImg(ctx context.Context, filename string, reader io.Reader) (*UploadImgResult, error) {
-	// 获取access_token
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 构造请求URL
-	params := url.Values{}
-	params.Add("access_token", token)
-	path := fmt.Sprintf("/cgi-bin/media/uploadimg?%s", params.Encode())
-
-	// 创建multipart表单
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// 添加文件字段
-	part, err := writer.CreateFormFile("media", filename)
+	data, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a file field: %v", err)
+		return nil, fmt.Errorf("read image failed: %w", err)
 	}
 
-	// 复制文件内容
-	_, err = io.Copy(part, reader)
-	if err != nil {
-		return nil, fmt.Errorf("copying file contents failed: %v", err)
-	}
+	path := fmt.Sprintf("/cgi-bin/media/uploadimg?access_token=%s", token)
 
-	// 关闭writer
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("closing writer failed: %v", err)
-	}
-
-	// 构建完整URL
-	fullURL := c.Https.BaseURL + path
-
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("the http request was created failed: %v", err)
-	}
-
-	// 设置Content-Type
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sending http request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response failed: %v", err)
-	}
-
-	// 检查响应状态码
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	// 解析响应
 	var result UploadImgResult
-	if len(respBody) > 0 {
-		if err = json.Unmarshal(respBody, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-		}
+	if err = c.doPostMultipartFile(ctx, path, "media", filename, data, &result); err != nil {
+		return nil, err
 	}
-
 	return &result, nil
 }
 
@@ -216,87 +179,33 @@ func (c *Client) UploadImageByPath(ctx context.Context, filepath string) (*Uploa
 // reader: 媒体文件内容读取器
 // description: 视频素材描述信息（仅视频素材需要）
 func (c *Client) AddMaterial(ctx context.Context, materialType MaterialType, filename string, reader io.Reader, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
-	// 获取access_token
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 构造请求URL
-	params := url.Values{}
-	params.Add("access_token", token)
-	params.Add("type", string(materialType))
-	path := fmt.Sprintf("/cgi-bin/material/add_material?%s", params.Encode())
-
-	// 创建multipart表单
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// 添加文件字段
-	part, err := writer.CreateFormFile("media", filename)
+	data, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a file field: %v", err)
+		return nil, fmt.Errorf("read media failed: %w", err)
 	}
 
-	// 复制文件内容
-	_, err = io.Copy(part, reader)
-	if err != nil {
-		return nil, fmt.Errorf("copying file contents failed: %v", err)
-	}
+	path := fmt.Sprintf("/cgi-bin/material/add_material?access_token=%s&type=%s",
+		token, url.QueryEscape(string(materialType)))
 
-	// 如果是视频素材，添加描述信息
+	// 视频素材需要附带 description 字段
+	var extra map[string]string
 	if materialType == MaterialTypeVideo && description != nil {
 		descriptionData, err := json.Marshal(description)
 		if err != nil {
-			return nil, fmt.Errorf("marshal description failed: %v", err)
+			return nil, fmt.Errorf("marshal description failed: %w", err)
 		}
-		_ = writer.WriteField("description", string(descriptionData))
+		extra = map[string]string{"description": string(descriptionData)}
 	}
 
-	// 关闭writer
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("closing writer failed: %v", err)
-	}
-
-	// 构建完整URL
-	fullURL := c.Https.BaseURL + path
-
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("the http request was created failed: %v", err)
-	}
-
-	// 设置Content-Type
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sending http request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response failed: %v", err)
-	}
-
-	// 检查响应状态码
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	// 解析响应
 	var result AddMaterialResult
-	if len(respBody) > 0 {
-		if err = json.Unmarshal(respBody, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-		}
+	if err = c.doPostMultipart(ctx, path, "media", filename, data, extra, &result); err != nil {
+		return nil, err
 	}
-
 	return &result, nil
 }
 
@@ -337,7 +246,7 @@ func (c *Client) DelMaterial(ctx context.Context, mediaID string) (*Resp, error)
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}

@@ -24,7 +24,7 @@ func (c *Client) CreateKFSession(ctx context.Context, kfAccount, openID string) 
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (c *Client) CloseKFSession(ctx context.Context, kfAccount, openID string) (
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,7 @@ func (c *Client) GetKFCustomerSession(ctx context.Context, openID string) (*KFCu
 
 	// 发送请求
 	var result KFCustomerSessionInfo
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (c *Client) GetKFSessionList(ctx context.Context, kfAccount string) (*KFSes
 
 	// 发送请求
 	var result KFSessionListResp
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +110,7 @@ func (c *Client) GetWaitCaseList(ctx context.Context) (*WaitCaseListResp, error)
 
 	// 发送请求
 	var result WaitCaseListResp
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}

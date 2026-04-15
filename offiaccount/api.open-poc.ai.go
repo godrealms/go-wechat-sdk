@@ -19,9 +19,11 @@ func (c *Client) TranslateContent(ctx context.Context, lfrom, lto, content strin
 	path := fmt.Sprintf("/cgi-bin/media/voice/translatecontent?access_token=%s&lfrom=%s&lto=%s",
 		token, url.QueryEscape(lfrom), url.QueryEscape(lto))
 
-	// 发送请求
+	// 发送请求：官方要求 application/json，body 为 {"content":"..."}。
+	// 参见 https://developers.weixin.qq.com/doc/service/api/openpoc/ai/api_translatecontent.html
 	var result TranslateContentResult
-	if err := c.Https.Post(ctx, path, []byte(content), &result); err != nil {
+	body := map[string]string{"content": content}
+	if err := c.doPost(ctx, path, body, &result); err != nil {
 		return nil, err
 	}
 
@@ -42,9 +44,10 @@ func (c *Client) AddVoiceToRecoForText(ctx context.Context, format, voiceID, lan
 	path := fmt.Sprintf("/cgi-bin/media/voice/addvoicetorecofortext?access_token=%s&format=%s&voice_id=%s&lang=%s",
 		token, url.QueryEscape(format), url.QueryEscape(voiceID), url.QueryEscape(lang))
 
-	// 发送请求
+	// 发送请求：官方要求 multipart/form-data，字段名 "media"（不是 "img"）。
+	// 参见 https://developers.weixin.qq.com/doc/service/api/openpoc/ai/api_addvoicetorecofortext.html
 	var result Resp
-	if err := c.Https.Post(ctx, path, media, &result); err != nil {
+	if err := c.doPostMultipartFile(ctx, path, "media", voiceID, media, &result); err != nil {
 		return nil, err
 	}
 
@@ -65,7 +68,7 @@ func (c *Client) QueryRecoResultForText(ctx context.Context, voiceID, lang strin
 
 	// 发送请求
 	var result QueryRecoResultForTextResult
-	if err := c.Https.Post(ctx, path, nil, &result); err != nil {
+	if err := c.doPost(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
 

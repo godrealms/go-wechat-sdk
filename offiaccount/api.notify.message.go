@@ -1,106 +1,44 @@
 package offiaccount
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"path/filepath"
 )
 
 // UploadImage 上传图文消息图片
+//
+// 历史实现自己拼 multipart/http 请求并绕过了统一的 errcode 检查，这里统一走
+// doPostMultipart，和 UploadImg / AddMaterial 保持一致。
 func (c *Client) UploadImage(ctx context.Context, filename, mediaType string) (*UploadImageResponse, error) {
-	// 检查文件是否存在
 	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		return nil, fmt.Errorf("the file does not exist: %s", filename)
 	}
-
-	// 打开文件
-	file, err := os.Open(filename)
+	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("failed to open the file: %v", err)
-	}
-	defer file.Close()
-
-	// 创建multipart表单
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// 添加type字段
-	if mediaType == "" {
-		mediaType = "image"
-	}
-	err = writer.WriteField("type", mediaType)
-	if err != nil {
-		return nil, fmt.Errorf("writing type field failed: %v", err)
+		return nil, fmt.Errorf("read file failed: %w", err)
 	}
 
-	// 添加文件字段
-	fileName := filepath.Base(filename)
-	part, err := writer.CreateFormFile("media", fileName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a file field: %v", err)
-	}
-
-	// 复制文件内容
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return nil, fmt.Errorf("copying file contents failed: %v", err)
-	}
-
-	// 关闭writer
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("closing writer failed: %v", err)
-	}
-
-	// 获取access_token
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
+	path := fmt.Sprintf("/cgi-bin/media/uploadimg?access_token=%s", token)
 
-	// 构建请求URL
-	uploadURL := fmt.Sprintf("%s/cgi-bin/media/uploadimg?access_token=%s", c.Https.BaseURL, token)
-
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", uploadURL, &requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("the http request was created failed: %v", err)
+	// 官方 /cgi-bin/media/uploadimg 接口实际不识别 type 字段（该字段属于
+	// /cgi-bin/media/upload），保留原签名但 mediaType 为空时用 "image" 兜底，
+	// 作为 multipart 的附加字段写入——和历史行为保持兼容。
+	if mediaType == "" {
+		mediaType = "image"
 	}
+	extra := map[string]string{"type": mediaType}
 
-	// 设置Content-Type
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sending http request failed: %v", err)
+	var result UploadImageResponse
+	if err = c.doPostMultipart(ctx, path, "media", filepath.Base(filename), data, extra, &result); err != nil {
+		return nil, err
 	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response failed: %v", err)
-	}
-	// 解析响应
-	var uploadResp UploadImageResponse
-	err = json.Unmarshal(respBody, &uploadResp)
-	if err != nil {
-		return nil, fmt.Errorf("the parsing response failed: %v", err)
-	}
-
-	// 检查业务错误
-	if uploadResp.ErrCode != 0 {
-		return &uploadResp, &WeixinError{ErrCode: uploadResp.ErrCode, ErrMsg: uploadResp.ErrMsg}
-	}
-
-	return &uploadResp, nil
+	return &result, nil
 }
 
 // DeleteMassMsg 删除群发消息
@@ -112,37 +50,31 @@ func (c *Client) DeleteMassMsg(ctx context.Context, body *DeleteMassMsgRequest) 
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/delete?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
 
 // GetSpeed 获取群发速度
-// 本接口用于获取消息的群发速度
-func (c *Client) getSpeed(ctx context.Context, speed int) (*SpeedResp, error) {
+// 本接口用于获取消息的群发速度。官方接口不需要任何请求参数，传空 body。
+// https://developers.weixin.qq.com/doc/service/api/notify/mass/api_getspeed.html
+func (c *Client) GetSpeed(ctx context.Context) (*SpeedResp, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/speed/get?access_token=%s", token)
-	body := map[string]interface{}{"speed": speed}
 	result := &SpeedResp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, map[string]interface{}{}, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
 
 // GetMassMsg 查询群发消息发送状态
-// 本接口用于查询群发消息发送状态。
-func (c *Client) GetMassMsg(ctx context.Context, msgId string) (*MassMsgResp, error) {
+// 本接口用于查询群发消息发送状态。官方 msg_id 为数字。
+func (c *Client) GetMassMsg(ctx context.Context, msgId int64) (*MassMsgResp, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
@@ -150,11 +82,8 @@ func (c *Client) GetMassMsg(ctx context.Context, msgId string) (*MassMsgResp, er
 	path := fmt.Sprintf("/cgi-bin/message/mass/get?access_token=%s", token)
 	body := map[string]interface{}{"msg_id": msgId}
 	result := &MassMsgResp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -168,11 +97,8 @@ func (c *Client) MassSend(ctx context.Context, body *MassSendRequest) (*MassSend
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/send?access_token=%s", token)
 	result := &MassSendResp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -186,11 +112,8 @@ func (c *Client) Preview(ctx context.Context, body *MassSendRequest) (*Resp, err
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/preview?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -204,11 +127,8 @@ func (c *Client) SendAll(ctx context.Context, body *MassSendByTagRequest) (*Mass
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/sendall?access_token=%s", token)
 	result := &MassSendByTagResponse{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -223,11 +143,8 @@ func (c *Client) SetSpeed(ctx context.Context, speed int) (*Resp, error) {
 	path := fmt.Sprintf("/cgi-bin/message/mass/speed/set?access_token=%s", token)
 	body := map[string]interface{}{"speed": speed}
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -241,11 +158,8 @@ func (c *Client) UploadNewsMsg(ctx context.Context, body *AddNewsMaterialRequest
 	}
 	path := fmt.Sprintf("/cgi-bin/media/uploadnews?access_token=%s", token)
 	result := &AddNewsMaterialResponse{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }

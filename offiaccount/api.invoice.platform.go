@@ -1,25 +1,23 @@
 package offiaccount
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
-	"net/http"
-	"net/url"
 )
 
 // SetInvoiceUrl 设置商户联系方式（获取开票平台识别码）
 func (c *Client) SetInvoiceUrl(ctx context.Context) (*SetUrlResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/card/invoice/seturl"
+	path := fmt.Sprintf("/card/invoice/seturl?access_token=%s", token)
 
 	// 发送请求
 	var result SetUrlResult
-	err := c.Https.Post(ctx, path, nil, &result)
-	if err != nil {
+	if err = c.doPost(ctx, path, nil, &result); err != nil {
 		return nil, err
 	}
 
@@ -29,13 +27,16 @@ func (c *Client) SetInvoiceUrl(ctx context.Context) (*SetUrlResult, error) {
 // GetPdf 获取pdf文件
 // req: 获取pdf文件请求参数
 func (c *Client) GetPdf(ctx context.Context, req *GetPdfRequest) (*GetPdfResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/card/invoice/platform/getpdf"
+	path := fmt.Sprintf("/card/invoice/platform/getpdf?access_token=%s", token)
 
 	// 发送请求
 	var result GetPdfResult
-	err := c.Https.Post(ctx, path, req, &result)
-	if err != nil {
+	if err = c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -45,13 +46,16 @@ func (c *Client) GetPdf(ctx context.Context, req *GetPdfRequest) (*GetPdfResult,
 // UpdateInvoiceStatus 更新发票状态
 // req: 更新发票状态请求参数
 func (c *Client) UpdateInvoiceStatus(ctx context.Context, req *UpdateInvoiceStatusRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/card/invoice/platform/updatestatus"
+	path := fmt.Sprintf("/card/invoice/platform/updatestatus?access_token=%s", token)
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(ctx, path, req, &result)
-	if err != nil {
+	if err = c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -60,91 +64,42 @@ func (c *Client) UpdateInvoiceStatus(ctx context.Context, req *UpdateInvoiceStat
 
 // SetPdf 设置pdf文件
 // pdf: pdf文件内容
+//
+// 走 doPostMultipartFile，以便自动进行 errcode 检查（历史实现自己拼 HTTP
+// 请求并丢掉了 errcode，属于 audit 发现的同一类问题）。
 func (c *Client) SetPdf(ctx context.Context, filename string, pdf io.Reader) (*SetPdfResult, error) {
-	// 获取access_token
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
+	path := fmt.Sprintf("/card/invoice/platform/setpdf?access_token=%s", token)
 
-	// 构造请求URL
-	params := url.Values{}
-	params.Add("access_token", token)
-	path := fmt.Sprintf("/card/invoice/platform/setpdf?%s", params.Encode())
-
-	// 创建multipart表单
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// 添加文件字段
-	part, err := writer.CreateFormFile("pdf", filename)
+	// 读入内存：helper 需要 []byte，PDF 文件通常在几十 KB ~ 数 MB 量级可接受。
+	data, err := io.ReadAll(pdf)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a file field: %v", err)
+		return nil, fmt.Errorf("read pdf failed: %w", err)
 	}
 
-	// 复制文件内容
-	_, err = io.Copy(part, pdf)
-	if err != nil {
-		return nil, fmt.Errorf("copying file contents failed: %v", err)
-	}
-
-	// 关闭writer
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("closing writer failed: %v", err)
-	}
-
-	// 构建完整URL
-	fullURL := c.Https.BaseURL + path
-
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("the http request was created failed: %v", err)
-	}
-
-	// 设置Content-Type
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sending http request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response failed: %v", err)
-	}
-
-	// 检查响应状态码
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	// 解析响应
 	var result SetPdfResult
-	if len(respBody) > 0 {
-		if err = json.Unmarshal(respBody, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-		}
+	if err = c.doPostMultipartFile(ctx, path, "pdf", filename, data, &result); err != nil {
+		return nil, err
 	}
-
 	return &result, nil
 }
 
 // CreateCard 创建发票卡券模板
 // req: 创建发票卡券模板请求参数
 func (c *Client) CreateCard(ctx context.Context, req *CreateCardRequest) (*CreateCardResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/card/invoice/platform/createcard"
+	path := fmt.Sprintf("/card/invoice/platform/createcard?access_token=%s", token)
 
 	// 发送请求
 	var result CreateCardResult
-	err := c.Https.Post(ctx, path, req, &result)
-	if err != nil {
+	if err = c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -154,13 +109,16 @@ func (c *Client) CreateCard(ctx context.Context, req *CreateCardRequest) (*Creat
 // InsertInvoice 将电子发票卡券插入用户卡包
 // req: 将电子发票卡券插入用户卡包请求参数
 func (c *Client) InsertInvoice(ctx context.Context, req *InsertInvoiceRequest) (*InsertInvoiceResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/card/invoice/insert"
+	path := fmt.Sprintf("/card/invoice/insert?access_token=%s", token)
 
 	// 发送请求
 	var result InsertInvoiceResult
-	err := c.Https.Post(ctx, path, req, &result)
-	if err != nil {
+	if err = c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
