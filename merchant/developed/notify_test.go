@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
 )
@@ -74,7 +75,8 @@ func TestParseNotification_Success(t *testing.T) {
 	})
 
 	// 用 privKey 签名响应头 (与平台证书同一 key)
-	ts := "1700000000"
+	// 使用当前时间以满足 ±5 分钟重放窗口 (audit C5).
+	ts := fmt.Sprintf("%d", time.Now().Unix())
 	respNonce := "abcdefghij"
 	source := fmt.Sprintf("%s\n%s\n%s\n", ts, respNonce, string(notifyBody))
 	sigB64, err := utils.SignSHA256WithRSA(source, privKey)
@@ -128,5 +130,21 @@ func TestAckNotification(t *testing.T) {
 	}
 	if !strings.Contains(w.Body.String(), "SUCCESS") {
 		t.Errorf("body = %s", w.Body.String())
+	}
+}
+
+func TestParseNotification_RejectsStaleTimestamp(t *testing.T) {
+	c, _ := buildClient(t)
+	body := []byte(`{"id":"x","resource":null}`)
+	req := httptest.NewRequest(http.MethodPost, "/notify", bytes.NewReader(body))
+	staleTs := fmt.Sprintf("%d", time.Now().Unix()-3600) // 1 hour ago
+	req.Header.Set("Wechatpay-Timestamp", staleTs)
+	req.Header.Set("Wechatpay-Nonce", "n")
+	req.Header.Set("Wechatpay-Signature", "s")
+	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.CertificateVal()))
+
+	_, err := c.ParseNotification(context.Background(), req, nil)
+	if err == nil || !strings.Contains(err.Error(), "timestamp out of window") {
+		t.Fatalf("expected stale timestamp rejection, got %v", err)
 	}
 }

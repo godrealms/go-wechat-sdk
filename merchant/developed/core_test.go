@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
 	"io"
 	"math/big"
 	"net/http"
@@ -151,6 +152,20 @@ func TestClient_NewClient_RequiresFields(t *testing.T) {
 	}
 }
 
+func TestNewClient_RejectsShortAPIv3Key(t *testing.T) {
+	priv, _ := newTestKeyAndCert(t)
+	_, err := NewClient(Config{
+		Appid:             "wxtest",
+		Mchid:             "1900000001",
+		CertificateNumber: "TEST",
+		APIv3Key:          "tooshort",
+		PrivateKey:        priv,
+	})
+	if err == nil || !strings.Contains(err.Error(), "APIv3Key must be 32 bytes") {
+		t.Fatalf("expected length validation error, got %v", err)
+	}
+}
+
 func TestClient_TransactionsJsapi_SignsAndVerifies(t *testing.T) {
 	client, fs, srv := newClientWithFakeServer(t)
 	defer srv.Close()
@@ -259,6 +274,75 @@ func TestClient_DoV3_RejectsTamperedResponse(t *testing.T) {
 	}
 }
 
+func TestClient_DoV3_RejectsResponseWithMissingSignatureHeaders(t *testing.T) {
+	priv, cert := newTestKeyAndCert(t)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Deliberately do NOT set any Wechatpay-* headers.
+		w.WriteHeader(200)
+		_, _ = w.Write([]byte(`{"prepay_id":"x"}`))
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{
+		Appid:             "wxtest",
+		Mchid:             "1900000001",
+		CertificateNumber: "TEST",
+		APIv3Key:          "0123456789012345678901234567890_",
+		PrivateKey:        priv,
+		HTTP:              utils.NewHTTP(srv.URL),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.AddPlatformCertificate(cert)
+
+	_, err = client.TransactionsJsapi(context.Background(), &types.Transactions{Appid: "wxtest", Mchid: "1900000001"})
+	if err == nil {
+		t.Fatal("expected error when response has no signature headers")
+	}
+	if !strings.Contains(err.Error(), "missing wechatpay signature header") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_DoV3_RejectsStaleWechatpayTimestamp(t *testing.T) {
+	priv, cert := newTestKeyAndCert(t)
+	staleTs := time.Now().Unix() - 3600 // 1 hour ago
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := []byte(`{"prepay_id":"x"}`)
+		nonce := "noncefortest12345678"
+		sig := signResponseWithUtils(t, priv, intToString(staleTs), nonce, string(body))
+		w.Header().Set("Wechatpay-Timestamp", intToString(staleTs))
+		w.Header().Set("Wechatpay-Nonce", nonce)
+		w.Header().Set("Wechatpay-Signature", sig)
+		w.Header().Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*cert))
+		w.WriteHeader(200)
+		_, _ = w.Write(body)
+	}))
+	defer srv.Close()
+
+	client, err := NewClient(Config{
+		Appid:             "wxtest",
+		Mchid:             "1900000001",
+		CertificateNumber: "TEST",
+		APIv3Key:          "0123456789012345678901234567890_",
+		PrivateKey:        priv,
+		HTTP:              utils.NewHTTP(srv.URL),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	client.AddPlatformCertificate(cert)
+
+	_, err = client.TransactionsJsapi(context.Background(), &types.Transactions{Appid: "wxtest", Mchid: "1900000001"})
+	if err == nil {
+		t.Fatal("expected error when wechatpay timestamp is stale")
+	}
+	if !strings.Contains(err.Error(), "timestamp out of window") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
 func TestClient_PEMRoundtrip(t *testing.T) {
 	priv, _ := newTestKeyAndCert(t)
 	pemBytes := pem.EncodeToMemory(&pem.Block{
@@ -271,5 +355,68 @@ func TestClient_PEMRoundtrip(t *testing.T) {
 	}
 	if loaded.N.Cmp(priv.N) != 0 {
 		t.Error("loaded key mismatches")
+	}
+}
+
+func TestClient_DoV3_ParsesV3ErrorEnvelope(t *testing.T) {
+	client, fs, srv := newClientWithFakeServer(t)
+	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return http.StatusBadRequest, []byte(`{"code":"PARAM_ERROR","message":"appid invalid"}`)
+	}
+
+	_, err := client.TransactionsJsapi(context.Background(), &types.Transactions{
+		Appid: "wxtest", Mchid: "1900000001",
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	var v3 *V3Error
+	if !errors.As(err, &v3) {
+		t.Fatalf("expected *V3Error, got %T: %v", err, err)
+	}
+	if v3.Code != "PARAM_ERROR" {
+		t.Errorf("unexpected code: %s", v3.Code)
+	}
+	if v3.HTTPStatus != http.StatusBadRequest {
+		t.Errorf("unexpected status: %d", v3.HTTPStatus)
+	}
+}
+
+// The fallback branch in doV3 must preserve the underlying *utils.HTTPError
+// when the response body is not a parseable v3 envelope. Three shapes:
+// empty body, valid JSON with no code field, and outright garbage.
+func TestClient_DoV3_FallsBackWhenNotV3Envelope(t *testing.T) {
+	cases := []struct {
+		name string
+		body []byte
+	}{
+		{"empty body", nil},
+		{"json without code field", []byte(`{"message":"oops"}`)},
+		{"not json at all", []byte(`<html>502 Bad Gateway</html>`)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			client, fs, srv := newClientWithFakeServer(t)
+			defer srv.Close()
+			fs.respond = func(r *http.Request) (int, []byte) {
+				return http.StatusBadGateway, tc.body
+			}
+
+			_, err := client.TransactionsJsapi(context.Background(), &types.Transactions{
+				Appid: "wxtest", Mchid: "1900000001",
+			})
+			if err == nil {
+				t.Fatal("expected error")
+			}
+			var v3 *V3Error
+			if errors.As(err, &v3) {
+				t.Errorf("expected NOT to unwrap into *V3Error, but got: %+v", v3)
+			}
+			var httpErr *utils.HTTPError
+			if !errors.As(err, &httpErr) {
+				t.Errorf("expected *utils.HTTPError fallback, got %T: %v", err, err)
+			}
+		})
 	}
 }

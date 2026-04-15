@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -74,6 +75,9 @@ func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
 	msgSig := q.Get("msg_signature")
 	timestamp := q.Get("timestamp")
 	nonce := q.Get("nonce")
+	if err := checkISVNotifyTimestamp(timestamp); err != nil {
+		return nil, err
+	}
 	if !c.crypto.VerifySignature(msgSig, timestamp, nonce, env.Encrypt) {
 		return nil, errors.New("isv: invalid msg_signature")
 	}
@@ -225,4 +229,21 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 	default:
 		return &RawEvent{baseEvent: base, InfoType: inner.InfoType, RawXML: string(plain)}, nil
 	}
+}
+
+// checkISVNotifyTimestamp validates a notify timestamp query string against the
+// local clock with a ±5-minute window (WeChat Work ISV replay window).
+func checkISVNotifyTimestamp(ts string) error {
+	n, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return fmt.Errorf("isv: invalid notify timestamp %q: %w", ts, err)
+	}
+	delta := time.Now().Unix() - n
+	if delta < 0 {
+		delta = -delta
+	}
+	if delta > 300 {
+		return fmt.Errorf("isv: notify timestamp out of window: delta=%ds", delta)
+	}
+	return nil
 }

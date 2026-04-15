@@ -28,7 +28,7 @@ func main() {
 		Key:  "V1001_TODAY_MUSIC",
 	}
 
-	err := client.CreateCustomMenu(button1)
+	err := client.CreateCustomMenu(ctx, button1)
 	if err != nil {
 		log.Printf("创建自定义菜单失败: %v", err)
 	} else {
@@ -37,7 +37,7 @@ func main() {
 
 	// 查询自定义菜单
 	log.Println("\n=== 查询自定义菜单 ===")
-	menuInfo, err := client.GetMenu()
+	menuInfo, err := client.GetMenu(ctx)
 	if err != nil {
 		log.Printf("查询自定义菜单失败: %v", err)
 	} else {
@@ -47,7 +47,7 @@ func main() {
 
 	// 查询当前自定义菜单信息
 	log.Println("\n=== 查询当前自定义菜单信息 ===")
-	selfMenuInfo, err := client.GetCurrentSelfMenuInfo()
+	selfMenuInfo, err := client.GetCurrentSelfMenuInfo(ctx)
 	if err != nil {
 		log.Printf("查询当前自定义菜单信息失败: %v", err)
 	} else {
@@ -57,7 +57,7 @@ func main() {
 
 	// 删除自定义菜单
 	log.Println("\n=== 删除自定义菜单 ===")
-	err = client.DeleteMenu()
+	err = client.DeleteMenu(ctx)
 	if err != nil {
 		log.Printf("删除自定义菜单失败: %v", err)
 	} else {

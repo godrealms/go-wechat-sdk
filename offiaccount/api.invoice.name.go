@@ -1,15 +1,21 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+)
+
 // GetUserTitleUrl 获取添加发票链接
 // req: 获取添加发票链接请求参数
-func (c *Client) GetUserTitleUrl(req *GetUserTitleUrlRequest) (*GetUserTitleUrlResult, error) {
-	// 构造请求URL
-	path := "/card/invoice/biz/getusertitleurl"
-
-	// 发送请求
-	var result GetUserTitleUrlResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) GetUserTitleUrl(ctx context.Context, req *GetUserTitleUrlRequest) (*GetUserTitleUrlResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/biz/getusertitleurl?access_token=%s", token)
+
+	var result GetUserTitleUrlResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -18,14 +24,15 @@ func (c *Client) GetUserTitleUrl(req *GetUserTitleUrlRequest) (*GetUserTitleUrlR
 
 // GetSelectTitleUrl 获取选择发票抬头链接
 // req: 获取选择发票抬头链接请求参数
-func (c *Client) GetSelectTitleUrl(req *GetSelectTitleUrlRequest) (*GetSelectTitleUrlResult, error) {
-	// 构造请求URL
-	path := "/card/invoice/biz/getselecttitleurl"
-
-	// 发送请求
-	var result GetSelectTitleUrlResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) GetSelectTitleUrl(ctx context.Context, req *GetSelectTitleUrlRequest) (*GetSelectTitleUrlResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/biz/getselecttitleurl?access_token=%s", token)
+
+	var result GetSelectTitleUrlResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -34,14 +41,15 @@ func (c *Client) GetSelectTitleUrl(req *GetSelectTitleUrlRequest) (*GetSelectTit
 
 // ScanTitle 扫描二维码获取抬头
 // req: 扫描二维码获取抬头请求参数
-func (c *Client) ScanTitle(req *ScanTitleRequest) (*ScanTitleResult, error) {
-	// 构造请求URL
-	path := "/card/invoice/scantitle"
-
-	// 发送请求
-	var result ScanTitleResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) ScanTitle(ctx context.Context, req *ScanTitleRequest) (*ScanTitleResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/scantitle?access_token=%s", token)
+
+	var result ScanTitleResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

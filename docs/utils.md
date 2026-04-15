@@ -109,6 +109,12 @@ func fetchWeather(ctx context.Context, city string) (*weather, error) {
 }
 ```
 
+### Logger 与 PII 风险
+
+`HTTP.Logger` 默认是 `nopLogger`——即 SDK 不会把任何请求/响应内容打印到标准输出，因此**在不启用 `WithLogger` 的情况下并不会泄漏 token 或 openid**。
+
+但是一旦你通过 `WithLogger(...)` 注入自己的 `Logger`，SDK 会把请求 URL 与请求/响应 body 原样 `Debugf` 出去。WeChat Pay V3 的请求 URL 与请求头本身并不承载敏感凭证，但 `refund` / `profitsharing` / `transfer` 等接口的请求/响应 body 会包含加密后的 openid、银行信息等 PII。**接入自定义 logger 前，请先确认你的 logger sink（日志文件、日志中心、第三方采集等）是否满足合规要求**，避免把 PII 写入不受控的存储。
+
 ## 2. 签名 / 验签
 
 ### 函数

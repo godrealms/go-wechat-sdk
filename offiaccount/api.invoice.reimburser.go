@@ -1,15 +1,21 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+)
+
 // GetInvoiceInfo 查询报销发票信息
 // req: 查询报销发票信息请求参数
-func (c *Client) GetInvoiceInfo(req *GetInvoiceInfoRequest) (*GetInvoiceInfoResult, error) {
-	// 构造请求URL
-	path := "/card/invoice/reimburse/getinvoiceinfo"
-
-	// 发送请求
-	var result GetInvoiceInfoResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) GetInvoiceInfo(ctx context.Context, req *GetInvoiceInfoRequest) (*GetInvoiceInfoResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/reimburse/getinvoiceinfo?access_token=%s", token)
+
+	var result GetInvoiceInfoResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -18,14 +24,15 @@ func (c *Client) GetInvoiceInfo(req *GetInvoiceInfoRequest) (*GetInvoiceInfoResu
 
 // UpdateInvoiceReimburseStatus 报销方更新发票状态
 // req: 报销方更新发票状态请求参数
-func (c *Client) UpdateInvoiceReimburseStatus(req *UpdateInvoiceReimburseStatusRequest) (*Resp, error) {
-	// 构造请求URL
-	path := "/card/invoice/reimburse/updateinvoicestatus"
-
-	// 发送请求
-	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) UpdateInvoiceReimburseStatus(ctx context.Context, req *UpdateInvoiceReimburseStatusRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/reimburse/updateinvoicestatus?access_token=%s", token)
+
+	var result Resp
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -34,14 +41,15 @@ func (c *Client) UpdateInvoiceReimburseStatus(req *UpdateInvoiceReimburseStatusR
 
 // UpdateInvoiceReimburseStatusBatch 批量更新报销发票状态
 // req: 批量更新报销发票状态请求参数
-func (c *Client) UpdateInvoiceReimburseStatusBatch(req *UpdateInvoiceReimburseStatusBatchRequest) (*Resp, error) {
-	// 构造请求URL
-	path := "/card/invoice/reimburse/updatestatusbatch"
-
-	// 发送请求
-	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) UpdateInvoiceReimburseStatusBatch(ctx context.Context, req *UpdateInvoiceReimburseStatusBatchRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/reimburse/updatestatusbatch?access_token=%s", token)
+
+	var result Resp
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -50,14 +58,15 @@ func (c *Client) UpdateInvoiceReimburseStatusBatch(req *UpdateInvoiceReimburseSt
 
 // GetInvoiceBatch 批量获取报销发票信息
 // req: 批量获取报销发票信息请求参数
-func (c *Client) GetInvoiceBatch(req *GetInvoiceBatchRequest) (*GetInvoiceBatchResult, error) {
-	// 构造请求URL
-	path := "/card/invoice/reimburse/getinvoicebatch"
-
-	// 发送请求
-	var result GetInvoiceBatchResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) GetInvoiceBatch(ctx context.Context, req *GetInvoiceBatchRequest) (*GetInvoiceBatchResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/card/invoice/reimburse/getinvoicebatch?access_token=%s", token)
+
+	var result GetInvoiceBatchResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 // componentEnvelope 外层加密信封。
@@ -41,6 +43,10 @@ func (c *Client) ParseNotify(r *http.Request, rawBody []byte) (*ComponentNotify,
 	}
 	ctx := touchContext(r.Context())
 	q := r.URL.Query()
+
+	if err := checkOplatformTimestamp(q.Get("timestamp")); err != nil {
+		return nil, err
+	}
 
 	if rawBody == nil {
 		body, err := io.ReadAll(r.Body)
@@ -90,4 +96,21 @@ func (c *Client) ParseNotify(r *http.Request, rawBody []byte) (*ComponentNotify,
 	}
 
 	return notify, nil
+}
+
+// checkOplatformTimestamp validates a notify timestamp query string against the
+// local clock with a ±5-minute window (WeChat Open Platform replay window).
+func checkOplatformTimestamp(ts string) error {
+	n, err := strconv.ParseInt(ts, 10, 64)
+	if err != nil {
+		return fmt.Errorf("oplatform: invalid notify timestamp %q: %w", ts, err)
+	}
+	delta := time.Now().Unix() - n
+	if delta < 0 {
+		delta = -delta
+	}
+	if delta > 300 {
+		return fmt.Errorf("oplatform: notify timestamp out of window: delta=%ds", delta)
+	}
+	return nil
 }

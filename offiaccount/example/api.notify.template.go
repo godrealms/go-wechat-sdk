@@ -47,5 +47,5 @@ func main() {
 		AppSecret: "your app secret",
 	}
 	client := offiaccount.NewClient(ctx, config)
-	client.SendTemplateMessage(&request)
+	client.SendTemplateMessage(ctx, &request)
 }

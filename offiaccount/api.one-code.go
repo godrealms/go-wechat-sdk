@@ -1,5 +1,10 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+)
+
 // ApplyCodeRequest 申请二维码请求参数
 type ApplyCodeRequest struct {
 	CodeCount        int64  `json:"code_count"`         // 申请码的数量，≥10000，≤20000000，10000的整数倍
@@ -14,10 +19,14 @@ type ApplyCodeResult struct {
 
 // ApplyCode 申请二维码接口用于批量生成指定数量的营销码
 // https://developers.weixin.qq.com/doc/service/api/onecode/api_intp_marketcode_applycode.html
-func (c *Client) ApplyCode(request *ApplyCodeRequest) (*ApplyCodeResult, error) {
-	result := &ApplyCodeResult{}
-	err := c.Https.Post(c.ctx, "/intp/marketcode/applycode", request, result)
+func (c *Client) ApplyCode(ctx context.Context, request *ApplyCodeRequest) (*ApplyCodeResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &ApplyCodeResult{}
+	path := fmt.Sprintf("/intp/marketcode/applycode?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -48,10 +57,14 @@ type ApplyCodeQueryResult struct {
 
 // ApplyCodeQuery 查询二维码申请单状态及详细信息
 // https://developers.weixin.qq.com/doc/service/api/onecode/api_intp_marketcode_applycodequery.html
-func (c *Client) ApplyCodeQuery(request *ApplyCodeQueryRequest) (*ApplyCodeQueryResult, error) {
-	result := &ApplyCodeQueryResult{}
-	err := c.Https.Post(c.ctx, "/intp/marketcode/applycodequery", request, result)
+func (c *Client) ApplyCodeQuery(ctx context.Context, request *ApplyCodeQueryRequest) (*ApplyCodeQueryResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &ApplyCodeQueryResult{}
+	path := fmt.Sprintf("/intp/marketcode/applycodequery?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -72,10 +85,14 @@ type ApplyCodeDownloadResult struct {
 
 // ApplyCodeDownload 下载生成的二维码数据包
 // https://developers.weixin.qq.com/doc/service/api/onecode/api_intp_marketcode_applycodedownload.html
-func (c *Client) ApplyCodeDownload(request *ApplyCodeDownloadRequest) (*ApplyCodeDownloadResult, error) {
-	result := &ApplyCodeDownloadResult{}
-	err := c.Https.Post(c.ctx, "/intp/marketcode/applycodedownload", request, result)
+func (c *Client) ApplyCodeDownload(ctx context.Context, request *ApplyCodeDownloadRequest) (*ApplyCodeDownloadResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &ApplyCodeDownloadResult{}
+	path := fmt.Sprintf("/intp/marketcode/applycodedownload?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -97,10 +114,14 @@ type CodeActiveRequest struct {
 
 // CodeActive 激活指定范围的二维码用于实际营销活动
 // https://developers.weixin.qq.com/doc/service/api/onecode/api_intp_marketcode_codeactive.html
-func (c *Client) CodeActive(request *CodeActiveRequest) (*Resp, error) {
-	result := &Resp{}
-	err := c.Https.Post(c.ctx, "/intp/marketcode/codeactive", request, result)
+func (c *Client) CodeActive(ctx context.Context, request *CodeActiveRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &Resp{}
+	path := fmt.Sprintf("/intp/marketcode/codeactive?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -132,10 +153,14 @@ type CodeActiveQueryResult struct {
 
 // CodeActiveQuery 查询二维码激活状态及关联信息
 // https://developers.weixin.qq.com/doc/service/api/onecode/api_intp_marketcode_codeactivequery.html
-func (c *Client) CodeActiveQuery(request *CodeActiveQueryRequest) (*CodeActiveQueryResult, error) {
-	result := &CodeActiveQueryResult{}
-	err := c.Https.Post(c.ctx, "/intp/marketcode/codeactivequery", request, result)
+func (c *Client) CodeActiveQuery(ctx context.Context, request *CodeActiveQueryRequest) (*CodeActiveQueryResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &CodeActiveQueryResult{}
+	path := fmt.Sprintf("/intp/marketcode/codeactivequery?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -164,11 +189,14 @@ type TicketToCodeResult struct {
 
 // TicketToCode 将用户扫码获得的临时票据转换为正式营销码
 // https://developers.weixin.qq.com/doc/service/api/onecode/api_intp_marketcode_tickettocode.html
-func (c *Client) TicketToCode(request *TicketToCodeRequest) (*TicketToCodeResult, error) {
-	result := &TicketToCodeResult{}
-	// 注意：这个接口不需要access_token参数
-	err := c.Https.Post(c.ctx, "/intp/marketcode/tickettocode", request, result)
+func (c *Client) TicketToCode(ctx context.Context, request *TicketToCodeRequest) (*TicketToCodeResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	result := &TicketToCodeResult{}
+	path := fmt.Sprintf("/intp/marketcode/tickettocode?access_token=%s", token)
+	if err := c.Https.Post(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil

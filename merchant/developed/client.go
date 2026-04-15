@@ -67,6 +67,9 @@ func NewClient(cfg Config) (*Client, error) {
 	if cfg.APIv3Key == "" {
 		return nil, errors.New("pay: APIv3Key is required")
 	}
+	if len(cfg.APIv3Key) != 32 {
+		return nil, fmt.Errorf("pay: APIv3Key must be 32 bytes, got %d", len(cfg.APIv3Key))
+	}
 	if cfg.PrivateKey == nil {
 		return nil, errors.New("pay: PrivateKey is required")
 	}

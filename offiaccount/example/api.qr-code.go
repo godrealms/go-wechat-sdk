@@ -32,7 +32,7 @@ func main() {
 		},
 	}
 
-	result, err := client.CreateQRCode(tempQRCode)
+	result, err := client.CreateQRCode(ctx, tempQRCode)
 	if err != nil {
 		log.Printf("创建临时整型二维码失败: %v", err)
 	} else {
@@ -58,7 +58,7 @@ func main() {
 		},
 	}
 
-	result2, err := client.CreateQRCode(tempStrQRCode)
+	result2, err := client.CreateQRCode(ctx, tempStrQRCode)
 	if err != nil {
 		log.Printf("创建临时字符串二维码失败: %v", err)
 	} else {
@@ -83,7 +83,7 @@ func main() {
 		},
 	}
 
-	result3, err := client.CreateQRCode(permanentQRCode)
+	result3, err := client.CreateQRCode(ctx, permanentQRCode)
 	if err != nil {
 		log.Printf("创建永久整型二维码失败: %v", err)
 	} else {
@@ -107,7 +107,7 @@ func main() {
 		},
 	}
 
-	result4, err := client.CreateQRCode(permanentStrQRCode)
+	result4, err := client.CreateQRCode(ctx, permanentStrQRCode)
 	if err != nil {
 		log.Printf("创建永久字符串二维码失败: %v", err)
 	} else {

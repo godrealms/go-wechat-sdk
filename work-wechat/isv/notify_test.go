@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils/wxcrypto"
 )
@@ -17,7 +19,7 @@ import (
 // innerXML 是明文的 innerBody(不含 Encrypt 信封)。
 func buildNotifyRequest(t *testing.T, c *Client, innerXML string) *http.Request {
 	t.Helper()
-	timestamp := "1712900000"
+	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
 	nonce := "nonce123"
 	payload, err := c.crypto.BuildEncryptedReply([]byte(innerXML), timestamp, nonce)
 	if err != nil {
@@ -651,5 +653,22 @@ func TestParseNotify_BadSignature(t *testing.T) {
 	_, err := c.ParseNotify(req)
 	if err == nil || !strings.Contains(err.Error(), "signature") {
 		t.Fatalf("want signature error, got %v", err)
+	}
+}
+
+func TestParseNotify_RejectsStaleTimestamp(t *testing.T) {
+	c := newTestISVClient(t, "http://unused")
+	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[suite_ticket]]></InfoType><SuiteTicket><![CDATA[X]]></SuiteTicket></xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	// Override timestamp in the URL with a stale value (1 hour ago).
+	staleTs := strconv.FormatInt(time.Now().Unix()-3600, 10)
+	q := req.URL.Query()
+	q.Set("timestamp", staleTs)
+	req.URL.RawQuery = q.Encode()
+
+	if _, err := c.ParseNotify(req); err == nil ||
+		!strings.Contains(err.Error(), "timestamp out of window") {
+		t.Fatalf("expected stale timestamp rejection, got %v", err)
 	}
 }

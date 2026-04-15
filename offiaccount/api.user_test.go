@@ -22,6 +22,7 @@ func newUserTestClient(t *testing.T, srv *httptest.Server) *Client {
 func userOkServer(t *testing.T, body string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertAccessToken(t, r)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(200)
 		_, _ = w.Write([]byte(body))
@@ -30,7 +31,9 @@ func userOkServer(t *testing.T, body string) *httptest.Server {
 
 func userClosedServer(t *testing.T) *httptest.Server {
 	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assertAccessToken(t, r)
+	}))
 	srv.Close()
 	return srv
 }
@@ -41,7 +44,7 @@ func TestGetUserInfo_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newUserTestClient(t, srv)
-	result, err := c.GetUserInfo("oUser123", "zh_CN")
+	result, err := c.GetUserInfo(context.Background(), "oUser123", "zh_CN")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -52,7 +55,7 @@ func TestGetUserInfo_Success(t *testing.T) {
 
 func TestGetUserInfo_NetworkError(t *testing.T) {
 	c := newUserTestClient(t, userClosedServer(t))
-	_, err := c.GetUserInfo("oUser123", "")
+	_, err := c.GetUserInfo(context.Background(), "oUser123", "")
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -64,7 +67,7 @@ func TestGetFans_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newUserTestClient(t, srv)
-	result, err := c.GetFans("")
+	result, err := c.GetFans(context.Background(), "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -75,7 +78,7 @@ func TestGetFans_Success(t *testing.T) {
 
 func TestGetFans_NetworkError(t *testing.T) {
 	c := newUserTestClient(t, userClosedServer(t))
-	_, err := c.GetFans("")
+	_, err := c.GetFans(context.Background(), "")
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -87,7 +90,7 @@ func TestGetBlacklist_Success(t *testing.T) {
 	defer srv.Close()
 
 	c := newUserTestClient(t, srv)
-	result, err := c.GetBlacklist("")
+	result, err := c.GetBlacklist(context.Background(), "")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -100,7 +103,7 @@ func TestBatchBlacklist_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.BatchBlacklist([]string{"oUser1"})
+	_, err := c.BatchBlacklist(context.Background(), []string{"oUser1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -110,7 +113,7 @@ func TestBatchUnblacklist_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.BatchUnblacklist([]string{"oUser1"})
+	_, err := c.BatchUnblacklist(context.Background(), []string{"oUser1"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -120,7 +123,7 @@ func TestUpdateRemark_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.UpdateRemark("oUser1", "my remark")
+	_, err := c.UpdateRemark(context.Background(), "oUser1", "my remark")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -137,7 +140,7 @@ func TestBatchGetUserInfo_Success(t *testing.T) {
 			{Openid: "oUser2", Language: "zh_CN"},
 		},
 	}
-	result, err := c.BatchGetUserInfo(req)
+	result, err := c.BatchGetUserInfo(context.Background(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -150,7 +153,7 @@ func TestGetTags_Success(t *testing.T) {
 	srv := userOkServer(t, `{"tags":[{"id":1,"name":"VIP","count":100}]}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	result, err := c.GetTags()
+	result, err := c.GetTags(context.Background())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -163,7 +166,7 @@ func TestCreateTag_Success(t *testing.T) {
 	srv := userOkServer(t, `{"tag":{"id":100,"name":"VIP","count":0}}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	result, err := c.CreateTag("VIP")
+	result, err := c.CreateTag(context.Background(), "VIP")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -174,7 +177,7 @@ func TestCreateTag_Success(t *testing.T) {
 
 func TestCreateTag_NetworkError(t *testing.T) {
 	c := newUserTestClient(t, userClosedServer(t))
-	_, err := c.CreateTag("VIP")
+	_, err := c.CreateTag(context.Background(), "VIP")
 	if err == nil {
 		t.Error("expected network error")
 	}
@@ -184,7 +187,7 @@ func TestUpdateTag_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.UpdateTag(100, "Premium")
+	_, err := c.UpdateTag(context.Background(), 100, "Premium")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -194,7 +197,7 @@ func TestDeleteTag_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.DeleteTag(100)
+	_, err := c.DeleteTag(context.Background(), 100)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -205,7 +208,7 @@ func TestGetTagFans_Success(t *testing.T) {
 	srv := userOkServer(t, body)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	result, err := c.GetTagFans(&GetTagFansRequest{TagId: 100})
+	result, err := c.GetTagFans(context.Background(), &GetTagFansRequest{TagId: 100})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -218,7 +221,7 @@ func TestBatchTagging_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.BatchTagging([]string{"oUser1", "oUser2"}, 100)
+	_, err := c.BatchTagging(context.Background(), []string{"oUser1", "oUser2"}, 100)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -228,7 +231,7 @@ func TestBatchUntagging_Success(t *testing.T) {
 	srv := userOkServer(t, `{"errcode":0,"errmsg":"ok"}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	_, err := c.BatchUntagging([]string{"oUser1"}, 100)
+	_, err := c.BatchUntagging(context.Background(), []string{"oUser1"}, 100)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -238,7 +241,7 @@ func TestGetTagidList_Success(t *testing.T) {
 	srv := userOkServer(t, `{"tagid_list":[100,200]}`)
 	defer srv.Close()
 	c := newUserTestClient(t, srv)
-	result, err := c.GetTagidList("oUser1")
+	result, err := c.GetTagidList(context.Background(), "oUser1")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

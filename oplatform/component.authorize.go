@@ -35,10 +35,15 @@ func (c *Client) QueryAuth(ctx context.Context, authCode string) (*Authorization
 	if info.AuthorizerAppID == "" {
 		return nil, fmt.Errorf("oplatform: api_query_auth returned empty authorizer_appid")
 	}
+	// Clamp TTL with a floor (see authorizer token refresh for rationale).
+	expiresIn := info.ExpiresIn
+	if expiresIn < 120 {
+		expiresIn = 120
+	}
 	tokens := AuthorizerTokens{
 		AccessToken:  info.AuthorizerAccessToken,
 		RefreshToken: info.AuthorizerRefreshToken,
-		ExpireAt:     time.Now().Add(time.Duration(info.ExpiresIn) * time.Second),
+		ExpireAt:     time.Now().Add(time.Duration(expiresIn) * time.Second),
 	}
 	if err := c.store.SetAuthorizer(ctx, info.AuthorizerAppID, tokens); err != nil {
 		return nil, fmt.Errorf("oplatform: store set authorizer: %w", err)

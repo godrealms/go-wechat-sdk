@@ -13,17 +13,25 @@
 | 模块 | 状态 | 文档 |
 |---|---|---|
 | `utils` — HTTP 基础设施、签名、PEM、随机串 | ✅ | [utils.md](utils.md) |
-| `merchant/developed` — 微信支付（商户模式）| ✅ | [merchant-developed.md](merchant-developed.md) |
-| `merchant/service` — 微信支付（服务商模式）| ✅ | [merchant-service.md](merchant-service.md) |
-| `offiaccount` — 微信公众号 | ✅ | [offiaccount.md](offiaccount.md) |
-| `mini-program` — 微信小程序 | ✅ | [mini-program.md](mini-program.md) |
+| `merchant/developed` — 微信支付（商户模式）| ✅ 核心 API + 通知校验完整；combine / coupon / profit_sharing / transfer 仅冒烟测试 | [merchant-developed.md](merchant-developed.md) |
+| `merchant/service` — 微信支付（服务商模式）| ⚠️ 公开 API 完整，但缺少 e2e 测试 | [merchant-service.md](merchant-service.md) |
+| `offiaccount` — 微信公众号 | ✅ 全部公开方法已迁移到 AccessTokenE 模式 | [offiaccount.md](offiaccount.md) |
+| `mini-program` — 微信小程序 | ✅ 核心 API；TokenSource 注入点支持自定义缓存 | [mini-program.md](mini-program.md) |
 | `mini-game` — 小游戏 | ✅ | [mini-game.md](mini-game.md) |
-| `aispeech` — 智能对话（ASR / TTS / NLU）| ✅ | [aispeech.md](aispeech.md) |
-| `mini-store` — 微信小店 | ✅ | [mini-store.md](mini-store.md) |
-| `xiaowei` — 微信小微 IoT | ✅ | [xiaowei.md](xiaowei.md) |
+| `aispeech` — 智能对话（ASR / TTS / NLU）| ⚠️ 接口对接，缺真实音频测试 | [aispeech.md](aispeech.md) |
+| `mini-store` — 微信小店 | ⚠️ 部分接口未覆盖单测 | [mini-store.md](mini-store.md) |
+| `xiaowei` — 微信小微 IoT | ⚠️ 接口对接，缺真实设备测试 | [xiaowei.md](xiaowei.md) |
 | `channels` — 视频号 | ✅ | [channels.md](channels.md) |
 | `work-wechat/isv` — 企业微信 ISV | ✅ | [work-wechat-isv.md](work-wechat-isv.md) |
-| `oplatform` — 开放平台 | ✅ | 第三方平台授权底座；代小程序发布等待实现 |
+| `work-wechat`（自建应用） | ❌ 未实现 | 自建应用客户端尚未实现，请使用 `work-wechat/isv` 或自行封装 |
+| `oplatform` — 开放平台 | ⚠️ 第三方平台授权底座完成；代小程序发布等待实现 | 第三方平台授权底座；代小程序发布等待实现 |
+
+## Known gaps
+
+- `work-wechat`（自建应用）未实现，仅 ISV 模式可用。
+- `merchant/developed` 中 combine / coupon / profit_sharing / transfer 仅有冒烟测试。
+- `oplatform` 代小程序发布相关接口尚未实现。
+- `mini-store / aispeech / xiaowei` 缺少端到端测试，使用前请自行回归。
 
 ## 阅读建议
 

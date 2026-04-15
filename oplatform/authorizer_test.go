@@ -179,6 +179,58 @@ func TestAuthorizerClient_MiniProgramClient_UsesAuthorizerToken(t *testing.T) {
 	}
 }
 
+// Audit C6: a 61023 must evict the authorizer record from the store so the
+// next call sees ErrNotFound (and we promote that to ErrAuthorizerRevoked).
+func TestAuthorizerClient_AccessToken_Revoked_DeletesStoreRecord(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_authorizer_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"errcode":61023,"errmsg":"invalid refresh_token"}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	_ = store.SetAuthorizer(context.Background(), "wxRevoked", AuthorizerTokens{
+		AccessToken:  "stale_at",
+		RefreshToken: "expired_rt",
+		ExpireAt:     time.Now().Add(-time.Minute),
+	})
+	c := newTestClient(t, srv.URL, WithStore(store))
+	auth := c.Authorizer("wxRevoked")
+
+	_, err := auth.AccessToken(context.Background())
+	if !errors.Is(err, ErrAuthorizerRevoked) {
+		t.Fatalf("expected ErrAuthorizerRevoked, got %v", err)
+	}
+	// After the 61023, the store record must be gone.
+	if _, err := store.GetAuthorizer(context.Background(), "wxRevoked"); !errors.Is(err, ErrNotFound) {
+		t.Errorf("expected store record to be evicted, but GetAuthorizer returned err=%v", err)
+	}
+}
+
+// Audit C6 (companion): once the record has been evicted (or was never set),
+// AccessToken must return ErrAuthorizerRevoked rather than the confusing
+// "no refresh_token for authorizer" fallthrough error.
+func TestAuthorizerClient_AccessToken_StoreNotFound_ReturnsRevoked(t *testing.T) {
+	srv := httptest.NewServer(http.NewServeMux()) // no handlers; we shouldn't hit the network
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	// Note: no SetAuthorizer for "wxNeverAuthed".
+	c := newTestClient(t, srv.URL, WithStore(store))
+	auth := c.Authorizer("wxNeverAuthed")
+
+	_, err := auth.AccessToken(context.Background())
+	if !errors.Is(err, ErrAuthorizerRevoked) {
+		t.Fatalf("expected ErrAuthorizerRevoked for unknown authorizer, got %v", err)
+	}
+}
+
 func TestClient_RefreshAll(t *testing.T) {
 	var refreshCalls int32
 	mux := http.NewServeMux()

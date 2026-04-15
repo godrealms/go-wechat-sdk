@@ -1,14 +1,22 @@
 package offiaccount
 
-// GetWxaStoreCateList 拉取门店小程序类目
-func (c *Client) GetWxaStoreCateList() (*GetWxaStoreCateListResult, error) {
-	// 构造请求URL
-	path := "/wxa/get_merchant_category"
+import (
+	"context"
+	"fmt"
+	"net/url"
+)
 
-	// 发送请求
-	var result GetWxaStoreCateListResult
-	err := c.Https.Get(c.ctx, path, nil, &result)
+// GetWxaStoreCateList 拉取门店小程序类目
+func (c *Client) GetWxaStoreCateList(ctx context.Context) (*GetWxaStoreCateListResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := "/wxa/get_merchant_category"
+	params := url.Values{"access_token": {token}}
+
+	var result GetWxaStoreCateListResult
+	if err := c.Https.Get(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -17,14 +25,15 @@ func (c *Client) GetWxaStoreCateList() (*GetWxaStoreCateListResult, error) {
 
 // ApplyWxaStore 创建门店小程序
 // req: 创建门店小程序请求参数
-func (c *Client) ApplyWxaStore(req *ApplyWxaStoreRequest) (*ApplyWxaStoreResult, error) {
-	// 构造请求URL
-	path := "/wxa/apply_merchant"
-
-	// 发送请求
-	var result ApplyWxaStoreResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) ApplyWxaStore(ctx context.Context, req *ApplyWxaStoreRequest) (*ApplyWxaStoreResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/apply_merchant?access_token=%s", token)
+
+	var result ApplyWxaStoreResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -32,14 +41,16 @@ func (c *Client) ApplyWxaStore(req *ApplyWxaStoreRequest) (*ApplyWxaStoreResult,
 }
 
 // GetWxaStoreAuditInfo 查询门店小程序审核结果
-func (c *Client) GetWxaStoreAuditInfo() (*GetWxaStoreAuditInfoResult, error) {
-	// 构造请求URL
-	path := "/wxa/get_merchant_audit_info"
-
-	// 发送请求
-	var result GetWxaStoreAuditInfoResult
-	err := c.Https.Get(c.ctx, path, nil, &result)
+func (c *Client) GetWxaStoreAuditInfo(ctx context.Context) (*GetWxaStoreAuditInfoResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := "/wxa/get_merchant_audit_info"
+	params := url.Values{"access_token": {token}}
+
+	var result GetWxaStoreAuditInfoResult
+	if err := c.Https.Get(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -48,14 +59,15 @@ func (c *Client) GetWxaStoreAuditInfo() (*GetWxaStoreAuditInfoResult, error) {
 
 // ModifyWxaStore 修改门店小程序信息
 // req: 修改门店小程序信息请求参数
-func (c *Client) ModifyWxaStore(req *ModifyWxaStoreRequest) (*Resp, error) {
-	// 构造请求URL
-	path := "/wxa/modify_merchant"
-
-	// 发送请求
-	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) ModifyWxaStore(ctx context.Context, req *ModifyWxaStoreRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/modify_merchant?access_token=%s", token)
+
+	var result Resp
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -63,14 +75,16 @@ func (c *Client) ModifyWxaStore(req *ModifyWxaStoreRequest) (*Resp, error) {
 }
 
 // GetDistrictList 获取省市区信息
-func (c *Client) GetDistrictList() (*GetDistrictListResult, error) {
-	// 构造请求URL
-	path := "/wxa/get_district"
-
-	// 发送请求
-	var result GetDistrictListResult
-	err := c.Https.Get(c.ctx, path, nil, &result)
+func (c *Client) GetDistrictList(ctx context.Context) (*GetDistrictListResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := "/wxa/get_district"
+	params := url.Values{"access_token": {token}}
+
+	var result GetDistrictListResult
+	if err := c.Https.Get(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -79,14 +93,15 @@ func (c *Client) GetDistrictList() (*GetDistrictListResult, error) {
 
 // SearchMapPoi 搜索门店地图信息
 // req: 搜索门店地图信息请求参数
-func (c *Client) SearchMapPoi(req *SearchMapPoiRequest) (*SearchMapPoiResult, error) {
-	// 构造请求URL
-	path := "/wxa/search_map_poi"
-
-	// 发送请求
-	var result SearchMapPoiResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) SearchMapPoi(ctx context.Context, req *SearchMapPoiRequest) (*SearchMapPoiResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/search_map_poi?access_token=%s", token)
+
+	var result SearchMapPoiResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -95,14 +110,15 @@ func (c *Client) SearchMapPoi(req *SearchMapPoiRequest) (*SearchMapPoiResult, er
 
 // AddStore 新增门店
 // req: 新增门店请求参数
-func (c *Client) AddStore(req *AddStoreRequest) (*AddStoreResult, error) {
-	// 构造请求URL
-	path := "/wxa/add_store"
-
-	// 发送请求
-	var result AddStoreResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) AddStore(ctx context.Context, req *AddStoreRequest) (*AddStoreResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/add_store?access_token=%s", token)
+
+	var result AddStoreResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -111,14 +127,15 @@ func (c *Client) AddStore(req *AddStoreRequest) (*AddStoreResult, error) {
 
 // GetStoreInfo 查询门店详情
 // req: 查询门店详情请求参数
-func (c *Client) GetStoreInfo(req *GetStoreInfoRequest) (*GetStoreInfoResult, error) {
-	// 构造请求URL
-	path := "/wxa/get_store_info"
-
-	// 发送请求
-	var result GetStoreInfoResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) GetStoreInfo(ctx context.Context, req *GetStoreInfoRequest) (*GetStoreInfoResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/get_store_info?access_token=%s", token)
+
+	var result GetStoreInfoResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -127,14 +144,15 @@ func (c *Client) GetStoreInfo(req *GetStoreInfoRequest) (*GetStoreInfoResult, er
 
 // GetStoreList 查询门店列表
 // req: 查询门店列表请求参数
-func (c *Client) GetStoreList(req *GetStoreListRequest) (*GetStoreListResult, error) {
-	// 构造请求URL
-	path := "/wxa/get_store_list"
-
-	// 发送请求
-	var result GetStoreListResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) GetStoreList(ctx context.Context, req *GetStoreListRequest) (*GetStoreListResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/get_store_list?access_token=%s", token)
+
+	var result GetStoreListResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -143,14 +161,15 @@ func (c *Client) GetStoreList(req *GetStoreListRequest) (*GetStoreListResult, er
 
 // DelStore 删除门店
 // req: 删除门店请求参数
-func (c *Client) DelStore(req *DelStoreRequest) (*Resp, error) {
-	// 构造请求URL
-	path := "/wxa/del_store"
-
-	// 发送请求
-	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) DelStore(ctx context.Context, req *DelStoreRequest) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/del_store?access_token=%s", token)
+
+	var result Resp
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -159,14 +178,15 @@ func (c *Client) DelStore(req *DelStoreRequest) (*Resp, error) {
 
 // UpdateStore 更新门店信息
 // req: 更新门店信息请求参数
-func (c *Client) UpdateStore(req *UpdateStoreRequest) (*UpdateStoreResult, error) {
-	// 构造请求URL
-	path := "/wxa/update_store"
-
-	// 发送请求
-	var result UpdateStoreResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) UpdateStore(ctx context.Context, req *UpdateStoreRequest) (*UpdateStoreResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/update_store?access_token=%s", token)
+
+	var result UpdateStoreResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -175,14 +195,15 @@ func (c *Client) UpdateStore(req *UpdateStoreRequest) (*UpdateStoreResult, error
 
 // CreateMapPoi 在地图中创建门店
 // req: 在地图中创建门店请求参数
-func (c *Client) CreateMapPoi(req *CreateMapPoiRequest) (*CreateMapPoiResult, error) {
-	// 构造请求URL
-	path := "/wxa/create_map_poi"
-
-	// 发送请求
-	var result CreateMapPoiResult
-	err := c.Https.Post(c.ctx, path, req, &result)
+func (c *Client) CreateMapPoi(ctx context.Context, req *CreateMapPoiRequest) (*CreateMapPoiResult, error) {
+	token, err := c.AccessTokenE(ctx)
 	if err != nil {
+		return nil, err
+	}
+	path := fmt.Sprintf("/wxa/create_map_poi?access_token=%s", token)
+
+	var result CreateMapPoiResult
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

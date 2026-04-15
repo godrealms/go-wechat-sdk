@@ -50,7 +50,8 @@ func (c *Client) ParseNotification(ctx context.Context, r *http.Request, result 
 	return notify, nil
 }
 
-// decryptNotifyResource 对 notify.Resource 按 AEAD_AES_256_GCM 解密，返回明文。
+// decryptNotifyResource decrypts notify.Resource using AEAD_AES_256_GCM and
+// returns the plaintext.
 func decryptNotifyResource(res *types.Resource, apiV3Key string) ([]byte, error) {
 	if res == nil {
 		return nil, fmt.Errorf("resource is nil")
@@ -80,10 +81,11 @@ func FailNotification(w http.ResponseWriter, message string) {
 	_, _ = w.Write(body)
 }
 
-// ParseRefundNotify 解析退款回调通知。
-// 它复用 ParseNotification 的签名验证与解密逻辑，将解密后的明文反序列化为 *types.RefundResp。
+// ParseRefundNotify parses a WeChat Pay refund callback notification. It
+// reuses ParseNotification's signature verification and decryption, then
+// deserializes the plaintext into *types.RefundResp.
 //
-// 典型用法：
+// Typical usage:
 //
 //	notify, refund, err := client.ParseRefundNotify(ctx, r)
 //	if err != nil { ... }

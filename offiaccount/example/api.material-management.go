@@ -72,7 +72,7 @@ func main() {
 
 	// 获取素材总数
 	log.Println("\n=== 获取素材总数 ===")
-	count, err := client.GetMaterialCount()
+	count, err := client.GetMaterialCount(ctx)
 	if err != nil {
 		log.Printf("获取素材总数失败: %v", err)
 	} else {
@@ -91,7 +91,7 @@ func main() {
 		Count:  10,
 	}
 
-	list, err := client.BatchGetMaterial(listReq)
+	list, err := client.BatchGetMaterial(ctx, listReq)
 	if err != nil {
 		log.Printf("获取素材列表失败: %v", err)
 	} else {

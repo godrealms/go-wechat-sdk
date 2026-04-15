@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -25,17 +24,12 @@ func generateTestKey(t *testing.T) *rsa.PrivateKey {
 	return key
 }
 
-func newTestMerchantClient(t *testing.T, srv *httptest.Server) *Client {
+// newTestMerchantClient returns a Client wired up to a signed fake httptest.Server.
+// Use the returned *fakeServer to inspect captured requests (fs.requests) and to
+// override the response (fs.respond).
+func newTestMerchantClient(t *testing.T) (*Client, *fakeServer, *httptest.Server) {
 	t.Helper()
-	key := generateTestKey(t)
-	h := utils.NewHTTP(srv.URL, utils.WithTimeout(3*time.Second))
-	return NewWechatClient().
-		WithAppid("wx_test_appid").
-		WithMchid("1234567890").
-		WithCertificateNumber("CERT_SERIAL_NO").
-		WithAPIv3Key("abcdefgh12345678abcdefgh12345678").
-		WithPrivateKey(key).
-		WithHttp(h)
+	return newClientWithFakeServer(t)
 }
 
 func testOrder() *types.Transactions {
@@ -49,25 +43,15 @@ func testOrder() *types.Transactions {
 	}
 }
 
-func captureServer(t *testing.T, reply string) (*httptest.Server, *[]byte) {
-	t.Helper()
-	var captured []byte
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		captured, _ = io.ReadAll(r.Body)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(reply))
-	}))
-	return srv, &captured
-}
-
 // --- TransactionsApp tests ---
 
 func TestTransactionsApp_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"prepay_id":"wx20240101prepayid"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"wx20240101prepayid"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.TransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -78,36 +62,41 @@ func TestTransactionsApp_Success(t *testing.T) {
 }
 
 func TestTransactionsApp_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{"prepay_id":"pid"}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"pid"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, err := c.TransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 func TestTransactionsApp_SendsCorrectJSON(t *testing.T) {
-	srv, captured := captureServer(t, `{"prepay_id":"pid"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"pid"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, err := c.TransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
 	var body map[string]interface{}
-	if err := json.Unmarshal(*captured, &body); err != nil {
-		t.Fatalf("server received invalid JSON: %v, body: %s", err, string(*captured))
+	if err := json.Unmarshal(fs.requests[0].Body, &body); err != nil {
+		t.Fatalf("server received invalid JSON: %v, body: %s", err, string(fs.requests[0].Body))
 	}
 	if body["out_trade_no"] != "ORD20240101001" {
 		t.Errorf("expected out_trade_no ORD20240101001, got: %v", body["out_trade_no"])
@@ -131,10 +120,12 @@ func TestTransactionsApp_NetworkError(t *testing.T) {
 // --- TransactionsJsapi tests ---
 
 func TestTransactionsJsapi_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"prepay_id":"jsapi_prepay_id_001"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"jsapi_prepay_id_001"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.TransactionsJsapi(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -145,31 +136,33 @@ func TestTransactionsJsapi_Success(t *testing.T) {
 }
 
 func TestTransactionsJsapi_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{"prepay_id":"jsapi_pid"}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"jsapi_pid"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, err := c.TransactionsJsapi(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- TransactionsNative tests ---
 
 func TestTransactionsNative_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"code_url":"weixin://wxpay/bizpayurl?pr=test"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"code_url":"weixin://wxpay/bizpayurl?pr=test"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.TransactionsNative(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -180,31 +173,33 @@ func TestTransactionsNative_Success(t *testing.T) {
 }
 
 func TestTransactionsNative_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{"code_url":"weixin://test"}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"code_url":"weixin://test"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, err := c.TransactionsNative(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- TransactionsH5 tests ---
 
 func TestTransactionsH5_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"h5_url":"https://wx.tenpay.com/cgi-bin/mmpaywap?prepay_id=test"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"h5_url":"https://wx.tenpay.com/cgi-bin/mmpaywap?prepay_id=test"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.TransactionsH5(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -215,21 +210,21 @@ func TestTransactionsH5_Success(t *testing.T) {
 }
 
 func TestTransactionsH5_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{"h5_url":"https://test.com"}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"h5_url":"https://test.com"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, err := c.TransactionsH5(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
@@ -281,10 +276,12 @@ func TestWechatClient_WithHttp(t *testing.T) {
 // --- ModifyTransactionsApp tests ---
 
 func TestModifyTransactionsApp_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"prepay_id":"wx_modify_prepay_id"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"wx_modify_prepay_id"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.ModifyTransactionsApp(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -292,8 +289,9 @@ func TestModifyTransactionsApp_Success(t *testing.T) {
 	if result.PrepayId != "wx_modify_prepay_id" {
 		t.Errorf("expected prepay_id wx_modify_prepay_id, got %q", result.PrepayId)
 	}
-	if result.AppId != "wx_test_appid" {
-		t.Errorf("expected AppId wx_test_appid, got %q", result.AppId)
+	// ModifyTransactionsApp copies the client's configured appid into the response.
+	if result.AppId != c.Appid() {
+		t.Errorf("expected AppId %q, got %q", c.Appid(), result.AppId)
 	}
 	if result.PackageValue != "Sign=WXPay" {
 		t.Errorf("expected PackageValue Sign=WXPay, got %q", result.PackageValue)
@@ -303,10 +301,12 @@ func TestModifyTransactionsApp_Success(t *testing.T) {
 // --- ModifyTransactionsJsapi tests ---
 
 func TestModifyTransactionsJsapi_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"prepay_id":"jsapi_modify_pid"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"prepay_id":"jsapi_modify_pid"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.ModifyTransactionsJsapi(context.Background(), testOrder())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -323,10 +323,12 @@ func TestModifyTransactionsJsapi_Success(t *testing.T) {
 // --- QueryTransactionId tests ---
 
 func TestQueryTransactionId_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"transaction_id":"4200001234","out_trade_no":"ORD001","trade_state":"SUCCESS"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"transaction_id":"4200001234","out_trade_no":"ORD001","trade_state":"SUCCESS"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.QueryTransactionId(context.Background(), "4200001234")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -337,28 +339,30 @@ func TestQueryTransactionId_Success(t *testing.T) {
 }
 
 func TestQueryTransactionId_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, _ = c.QueryTransactionId(context.Background(), "txn123")
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- QueryOutTradeNo tests ---
 
 func TestQueryOutTradeNo_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"out_trade_no":"ORD001","trade_state":"SUCCESS"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"out_trade_no":"ORD001","trade_state":"SUCCESS"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.QueryOutTradeNo(context.Background(), "ORD001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -369,28 +373,30 @@ func TestQueryOutTradeNo_Success(t *testing.T) {
 }
 
 func TestQueryOutTradeNo_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, _ = c.QueryOutTradeNo(context.Background(), "ORD001")
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- TransactionsClose tests ---
 
 func TestTransactionsClose_Success(t *testing.T) {
-	srv, _ := captureServer(t, ``)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return http.StatusNoContent, nil
+	}
 
-	c := newTestMerchantClient(t, srv)
 	err := c.TransactionsClose(context.Background(), "ORD001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -398,28 +404,30 @@ func TestTransactionsClose_Success(t *testing.T) {
 }
 
 func TestTransactionsClose_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(``))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return http.StatusNoContent, nil
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_ = c.TransactionsClose(context.Background(), "ORD001")
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- Refunds tests ---
 
 func TestRefunds_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"refund_id":"REF001","out_refund_no":"REFNO001","status":"PROCESSING"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"refund_id":"REF001","out_refund_no":"REFNO001","status":"PROCESSING"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	refund := &types.Refunds{
 		OutTradeNo:  "ORD001",
 		OutRefundNo: "REFNO001",
@@ -435,33 +443,35 @@ func TestRefunds_Success(t *testing.T) {
 }
 
 func TestRefunds_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{"refund_id":"r1"}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"refund_id":"r1"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	refund := &types.Refunds{
 		OutTradeNo:  "ORD001",
 		OutRefundNo: "REFNO001",
 		Amount:      &types.Amount{Total: 100, Currency: "CNY"},
 	}
 	_, _ = c.Refunds(context.Background(), refund)
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- QueryRefunds tests ---
 
 func TestQueryRefunds_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"refund_id":"REF001","out_refund_no":"REFNO001","status":"SUCCESS"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"refund_id":"REF001","out_refund_no":"REFNO001","status":"SUCCESS"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	result, err := c.QueryRefunds(context.Background(), "REFNO001")
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -472,28 +482,30 @@ func TestQueryRefunds_Success(t *testing.T) {
 }
 
 func TestQueryRefunds_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, _ = c.QueryRefunds(context.Background(), "REFNO001")
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- ApplyAbnormalRefund tests ---
 
 func TestApplyAbnormalRefund_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"refund_id":"REF002","status":"PROCESSING"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"refund_id":"REF002","status":"PROCESSING"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	abnormal := &types.AbnormalRefund{
 		OutRefundNo: "REFNO002",
 	}
@@ -509,10 +521,12 @@ func TestApplyAbnormalRefund_Success(t *testing.T) {
 // --- TradeBill tests ---
 
 func TestTradeBill_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"download_url":"https://api.mch.weixin.qq.com/v3/billdownload/file","hash_value":"abc"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"download_url":"https://api.mch.weixin.qq.com/v3/billdownload/file","hash_value":"abc"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	quest := &types.TradeBillQuest{BillDate: "2024-01-01"}
 	result, err := c.TradeBill(context.Background(), quest)
 	if err != nil {
@@ -524,28 +538,30 @@ func TestTradeBill_Success(t *testing.T) {
 }
 
 func TestTradeBill_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, _ = c.TradeBill(context.Background(), &types.TradeBillQuest{BillDate: "2024-01-01"})
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
 // --- FundFlowBill tests ---
 
 func TestFundFlowBill_Success(t *testing.T) {
-	srv, _ := captureServer(t, `{"download_url":"https://api.mch.weixin.qq.com/v3/billdownload/file","hash_value":"def"}`)
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{"download_url":"https://api.mch.weixin.qq.com/v3/billdownload/file","hash_value":"def"}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	quest := &types.FundsBillQuest{BillDate: "2024-01-01"}
 	result, err := c.FundFlowBill(context.Background(), quest)
 	if err != nil {
@@ -557,18 +573,18 @@ func TestFundFlowBill_Success(t *testing.T) {
 }
 
 func TestFundFlowBill_SetsAuthorizationHeader(t *testing.T) {
-	var gotAuth string
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
-		w.WriteHeader(200)
-		_, _ = w.Write([]byte(`{}`))
-	}))
+	c, fs, srv := newTestMerchantClient(t)
 	defer srv.Close()
+	fs.respond = func(r *http.Request) (int, []byte) {
+		return 200, []byte(`{}`)
+	}
 
-	c := newTestMerchantClient(t, srv)
 	_, _ = c.FundFlowBill(context.Background(), &types.FundsBillQuest{BillDate: "2024-01-01"})
-	if !strings.HasPrefix(gotAuth, "WECHATPAY2-SHA256-RSA2048") {
-		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", gotAuth)
+	if len(fs.requests) == 0 {
+		t.Fatal("expected at least one request")
+	}
+	if !strings.HasPrefix(fs.requests[0].Auth, "WECHATPAY2-SHA256-RSA2048") {
+		t.Errorf("expected WECHATPAY2-SHA256-RSA2048 Authorization header, got: %q", fs.requests[0].Auth)
 	}
 }
 
@@ -605,13 +621,13 @@ func TestParseNotification_NilBody(t *testing.T) {
 func TestParseNotification_NoSigHeaders(t *testing.T) {
 	c := NewWechatClient()
 	req := httptest.NewRequest("POST", "/notify", strings.NewReader(`{"id":"evt001"}`))
-	// When signature headers are absent, verifyResponseSignature skips verification and returns nil.
-	notify, err := c.ParseNotification(context.Background(), req, nil)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	// Audit C1: missing signature headers must now hard-fail rather than silently pass.
+	_, err := c.ParseNotification(context.Background(), req, nil)
+	if err == nil {
+		t.Fatal("expected error when signature headers are missing")
 	}
-	if notify == nil {
-		t.Error("expected non-nil notify")
+	if !strings.Contains(err.Error(), "missing wechatpay signature header") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
@@ -656,13 +672,13 @@ func TestFailNotification_EmptyMessage(t *testing.T) {
 func TestParseRefundNotify_NoSigHeaders(t *testing.T) {
 	c := NewWechatClient()
 	req := httptest.NewRequest("POST", "/notify", strings.NewReader(`{"id":"evt001"}`))
-	// When signature headers are absent, verifyResponseSignature skips verification and returns nil.
-	notify, _, err := c.ParseRefundNotify(context.Background(), req)
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
+	// Audit C1: missing signature headers must now hard-fail rather than silently pass.
+	_, _, err := c.ParseRefundNotify(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error when signature headers are missing")
 	}
-	if notify == nil {
-		t.Error("expected non-nil notify")
+	if !strings.Contains(err.Error(), "missing wechatpay signature header") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 

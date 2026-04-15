@@ -6,8 +6,10 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // helper — build an encrypted POST request for a given plaintext XML payload
@@ -33,7 +35,7 @@ func TestParseNotify_VerifyTicket_AutoWritesStore(t *testing.T) {
 <InfoType><![CDATA[component_verify_ticket]]></InfoType>
 <ComponentVerifyTicket><![CDATA[TICKET_ABC]]></ComponentVerifyTicket>
 </xml>`
-	req := buildEncryptedReq(t, c, plain, "1700000000", "nonceA")
+	req := buildEncryptedReq(t, c, plain, strconv.FormatInt(time.Now().Unix(), 10), "nonceA")
 
 	notify, err := c.ParseNotify(req, nil)
 	if err != nil {
@@ -65,7 +67,7 @@ func TestParseNotify_Authorized(t *testing.T) {
 <AuthorizationCodeExpiredTime>1700003601</AuthorizationCodeExpiredTime>
 <PreAuthCode><![CDATA[PRE]]></PreAuthCode>
 </xml>`
-	req := buildEncryptedReq(t, c, plain, "1700000001", "nonceB")
+	req := buildEncryptedReq(t, c, plain, strconv.FormatInt(time.Now().Unix(), 10), "nonceB")
 
 	notify, err := c.ParseNotify(req, nil)
 	if err != nil {
@@ -86,8 +88,9 @@ func TestParseNotify_BadSignature(t *testing.T) {
 	c, _ := NewClient(testConfig())
 	encrypted, _ := c.crypto.Encrypt([]byte(`<xml><InfoType>x</InfoType></xml>`))
 	body := `<xml><Encrypt><![CDATA[` + encrypted + `]]></Encrypt></xml>`
+	freshTs := strconv.FormatInt(time.Now().Unix(), 10)
 	req := httptest.NewRequest(http.MethodPost,
-		"/oplatform/notify?msg_signature=deadbeef&timestamp=1700&nonce=n1",
+		"/oplatform/notify?msg_signature=deadbeef&timestamp="+freshTs+"&nonce=n1",
 		strings.NewReader(body))
 	if _, err := c.ParseNotify(req, nil); err == nil {
 		t.Error("expected signature error")
@@ -98,10 +101,11 @@ func TestParseNotify_RawBodyOverride(t *testing.T) {
 	c, _ := NewClient(testConfig())
 	plain := `<xml><AppId><![CDATA[wxcomp]]></AppId><InfoType><![CDATA[unauthorized]]></InfoType><AuthorizerAppid><![CDATA[wxAuthed]]></AuthorizerAppid></xml>`
 	encrypted, _ := c.crypto.Encrypt([]byte(plain))
-	sig := c.crypto.Signature("1700", "n1", encrypted)
+	freshTs := strconv.FormatInt(time.Now().Unix(), 10)
+	sig := c.crypto.Signature(freshTs, "n1", encrypted)
 	body := []byte(`<xml><Encrypt><![CDATA[` + encrypted + `]]></Encrypt></xml>`)
 	req := httptest.NewRequest(http.MethodPost,
-		"/oplatform/notify?msg_signature="+sig+"&timestamp=1700&nonce=n1",
+		"/oplatform/notify?msg_signature="+sig+"&timestamp="+freshTs+"&nonce=n1",
 		strings.NewReader("")) // empty body; we pass via rawBody
 	notify, err := c.ParseNotify(req, body)
 	if err != nil {
@@ -123,5 +127,21 @@ func TestParseNotify_NotFoundSentinel(t *testing.T) {
 	}
 	if err := xml.Unmarshal([]byte(`<xml/>`), &env); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestParseNotify_RejectsStaleTimestamp(t *testing.T) {
+	c, _ := NewClient(testConfig())
+	plain := `<xml>
+<AppId><![CDATA[wxcomp]]></AppId>
+<InfoType><![CDATA[component_verify_ticket]]></InfoType>
+<ComponentVerifyTicket><![CDATA[T]]></ComponentVerifyTicket>
+</xml>`
+	staleTs := strconv.FormatInt(time.Now().Unix()-3600, 10)
+	req := buildEncryptedReq(t, c, plain, staleTs, "nonceStale")
+
+	if _, err := c.ParseNotify(req, nil); err == nil ||
+		!strings.Contains(err.Error(), "timestamp out of window") {
+		t.Fatalf("expected stale-timestamp rejection, got %v", err)
 	}
 }

@@ -42,7 +42,12 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 	}
 	c.tokenMutex.Lock()
 	c.accessToken = result.AccessToken
-	c.expiresAt = time.Now().Add(time.Duration(result.ExpiresIn-60) * time.Second)
+	// Clamp TTL with a 60s floor (same as refreshAccessToken, see audit C7).
+	ttl := result.ExpiresIn - 60
+	if ttl < 60 {
+		ttl = 60
+	}
+	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
 	c.tokenMutex.Unlock()
 	return result, nil
 }

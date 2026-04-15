@@ -1,14 +1,24 @@
 package offiaccount
 
+import (
+	"context"
+	"fmt"
+	"net/url"
+)
+
 // GetTags 获取公众号已创建的标签列表
-func (c *Client) GetTags() (*GetTagsResult, error) {
+func (c *Client) GetTags(ctx context.Context) (*GetTagsResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
 	path := "/cgi-bin/tags/get"
+	params := url.Values{"access_token": {token}}
 
 	// 发送请求
 	var result GetTagsResult
-	err := c.Https.Get(c.ctx, path, nil, &result)
-	if err != nil {
+	if err := c.Https.Get(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -17,9 +27,13 @@ func (c *Client) GetTags() (*GetTagsResult, error) {
 
 // CreateTag 创建标签
 // name: 标签名（30个字符以内）
-func (c *Client) CreateTag(name string) (*CreateTagResult, error) {
+func (c *Client) CreateTag(ctx context.Context, name string) (*CreateTagResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/tags/create"
+	path := fmt.Sprintf("/cgi-bin/tags/create?access_token=%s", token)
 
 	// 构造请求体
 	req := &CreateTagRequest{
@@ -30,8 +44,7 @@ func (c *Client) CreateTag(name string) (*CreateTagResult, error) {
 
 	// 发送请求
 	var result CreateTagResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -41,9 +54,13 @@ func (c *Client) CreateTag(name string) (*CreateTagResult, error) {
 // UpdateTag 修改标签
 // id: 标签ID
 // name: 标签名
-func (c *Client) UpdateTag(id int64, name string) (*Resp, error) {
+func (c *Client) UpdateTag(ctx context.Context, id int64, name string) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/tags/update"
+	path := fmt.Sprintf("/cgi-bin/tags/update?access_token=%s", token)
 
 	// 构造请求体
 	req := &UpdateTagRequest{
@@ -55,8 +72,7 @@ func (c *Client) UpdateTag(id int64, name string) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -65,9 +81,13 @@ func (c *Client) UpdateTag(id int64, name string) (*Resp, error) {
 
 // DeleteTag 删除标签
 // id: 标签ID
-func (c *Client) DeleteTag(id int64) (*Resp, error) {
+func (c *Client) DeleteTag(ctx context.Context, id int64) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/tags/delete"
+	path := fmt.Sprintf("/cgi-bin/tags/delete?access_token=%s", token)
 
 	// 构造请求体
 	req := &DeleteTagRequest{
@@ -78,8 +98,7 @@ func (c *Client) DeleteTag(id int64) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -88,14 +107,17 @@ func (c *Client) DeleteTag(id int64) (*Resp, error) {
 
 // GetTagFans 获取标签下粉丝列表
 // req: 获取标签下粉丝列表请求参数
-func (c *Client) GetTagFans(req *GetTagFansRequest) (*GetTagFansResult, error) {
+func (c *Client) GetTagFans(ctx context.Context, req *GetTagFansRequest) (*GetTagFansResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/user/tag/get"
+	path := fmt.Sprintf("/cgi-bin/user/tag/get?access_token=%s", token)
 
 	// 发送请求
 	var result GetTagFansResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -105,9 +127,13 @@ func (c *Client) GetTagFans(req *GetTagFansRequest) (*GetTagFansResult, error) {
 // BatchTagging 批量为用户打标签
 // openidList: 粉丝openid列表，最多50个
 // tagid: 标签id
-func (c *Client) BatchTagging(openidList []string, tagid int64) (*Resp, error) {
+func (c *Client) BatchTagging(ctx context.Context, openidList []string, tagid int64) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/tags/members/batchtagging"
+	path := fmt.Sprintf("/cgi-bin/tags/members/batchtagging?access_token=%s", token)
 
 	// 构造请求体
 	req := &BatchTaggingRequest{
@@ -117,8 +143,7 @@ func (c *Client) BatchTagging(openidList []string, tagid int64) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -128,9 +153,13 @@ func (c *Client) BatchTagging(openidList []string, tagid int64) (*Resp, error) {
 // BatchUntagging 批量为用户取消标签
 // openidList: 粉丝openid列表
 // tagid: 标签id
-func (c *Client) BatchUntagging(openidList []string, tagid int64) (*Resp, error) {
+func (c *Client) BatchUntagging(ctx context.Context, openidList []string, tagid int64) (*Resp, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/tags/members/batchuntagging"
+	path := fmt.Sprintf("/cgi-bin/tags/members/batchuntagging?access_token=%s", token)
 
 	// 构造请求体
 	req := &BatchUntaggingRequest{
@@ -140,8 +169,7 @@ func (c *Client) BatchUntagging(openidList []string, tagid int64) (*Resp, error)
 
 	// 发送请求
 	var result Resp
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -150,9 +178,13 @@ func (c *Client) BatchUntagging(openidList []string, tagid int64) (*Resp, error)
 
 // GetTagidList 获取用户身上的标签列表
 // openid: 用户openid
-func (c *Client) GetTagidList(openid string) (*GetTagidListResult, error) {
+func (c *Client) GetTagidList(ctx context.Context, openid string) (*GetTagidListResult, error) {
+	token, err := c.AccessTokenE(ctx)
+	if err != nil {
+		return nil, err
+	}
 	// 构造请求URL
-	path := "/cgi-bin/tags/getidlist"
+	path := fmt.Sprintf("/cgi-bin/tags/getidlist?access_token=%s", token)
 
 	// 构造请求体
 	req := &GetTagidListRequest{
@@ -161,8 +193,7 @@ func (c *Client) GetTagidList(openid string) (*GetTagidListResult, error) {
 
 	// 发送请求
 	var result GetTagidListResult
-	err := c.Https.Post(c.ctx, path, req, &result)
-	if err != nil {
+	if err := c.Https.Post(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

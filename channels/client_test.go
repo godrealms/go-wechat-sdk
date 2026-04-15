@@ -62,6 +62,25 @@ func TestAccessToken(t *testing.T) {
 	}
 }
 
+func TestAccessToken_HandlesShortExpiresIn(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"access_token":"X","expires_in":10}`))
+	}))
+	defer srv.Close()
+	c := newTestClient(t, srv.URL)
+	tok, err := c.AccessToken(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tok != "X" {
+		t.Fatalf("got %q", tok)
+	}
+	// expiresAt must be in the future, not the past.
+	if !c.expiresAt.After(time.Now()) {
+		t.Errorf("expiresAt is in the past: %v", c.expiresAt)
+	}
+}
+
 func TestAccessToken_UsesInjectedTokenSource(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		t.Errorf("/cgi-bin/token must NOT be called when TokenSource is injected: %s", r.URL.Path)

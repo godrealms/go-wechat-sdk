@@ -6,6 +6,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"crypto/sha1"
+	"crypto/subtle"
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/hex"
@@ -16,6 +17,11 @@ import (
 	"sort"
 	"strings"
 )
+
+// errOpaque is the single error returned for ANY post-AES-decryption failure
+// in this package. We deliberately do not distinguish padding errors, length
+// errors, or appid mismatch — that distinction is a padding-oracle leak (audit C4).
+var errOpaque = errors.New("wxcrypto: decrypt failed")
 
 // MsgCrypto 持有 token + AESKey + AppId，做签名/加解密。线程安全。
 type MsgCrypto struct {
@@ -78,14 +84,14 @@ func SubtleConstEq(a, b string) bool {
 func (m *MsgCrypto) Decrypt(encryptedMsg string) (plaintext []byte, fromAppid string, err error) {
 	cipherText, err := base64.StdEncoding.DecodeString(encryptedMsg)
 	if err != nil {
-		return nil, "", fmt.Errorf("decode encrypted msg: %w", err)
+		return nil, "", errOpaque
 	}
 	block, err := aes.NewCipher(m.aesKey)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errOpaque
 	}
 	if len(cipherText)%aes.BlockSize != 0 {
-		return nil, "", fmt.Errorf("ciphertext len %d not multiple of %d", len(cipherText), aes.BlockSize)
+		return nil, "", errOpaque
 	}
 	buf := make([]byte, len(cipherText))
 	mode := cipher.NewCBCDecrypter(block, m.iv)
@@ -93,22 +99,22 @@ func (m *MsgCrypto) Decrypt(encryptedMsg string) (plaintext []byte, fromAppid st
 
 	buf, err = pkcs7Unpad(buf, aes.BlockSize)
 	if err != nil {
-		return nil, "", err
+		return nil, "", errOpaque
 	}
 	if len(buf) < 20 {
-		return nil, "", errors.New("decrypted payload too short")
+		return nil, "", errOpaque
 	}
 	buf = buf[16:]
 	msgLen := binary.BigEndian.Uint32(buf[:4])
 	if int(msgLen)+4 > len(buf) {
-		return nil, "", fmt.Errorf("msgLen %d exceeds buffer %d", msgLen, len(buf)-4)
+		return nil, "", errOpaque
 	}
 	msg := buf[4 : 4+msgLen]
-	fromAppid = string(buf[4+msgLen:])
-	if m.appid != "" && fromAppid != m.appid {
-		return nil, fromAppid, fmt.Errorf("appid mismatch: got %q want %q", fromAppid, m.appid)
+	gotAppid := string(buf[4+msgLen:])
+	if m.appid != "" && gotAppid != m.appid {
+		return nil, "", errOpaque
 	}
-	return msg, fromAppid, nil
+	return msg, gotAppid, nil
 }
 
 // Encrypt 加密明文 XML 字节，返回 base64 密文。
@@ -183,18 +189,30 @@ func pkcs7Pad(data []byte, blockSize int) []byte {
 	return append(data, padding...)
 }
 
+// pkcs7Unpad removes PKCS#7 padding using crypto/subtle so that the work
+// done is independent of whether the padding is valid. Audit C4.
 func pkcs7Unpad(data []byte, blockSize int) ([]byte, error) {
-	if len(data) == 0 || len(data)%blockSize != 0 {
-		return nil, errors.New("invalid padded data length")
+	n := len(data)
+	if n == 0 || n%blockSize != 0 {
+		return nil, errOpaque
 	}
-	pad := int(data[len(data)-1])
-	if pad == 0 || pad > blockSize {
-		return nil, fmt.Errorf("invalid pad byte %d", pad)
+	pad := int(data[n-1])
+	// pad must be in [1, blockSize].
+	valid := subtle.ConstantTimeLessOrEq(1, pad)
+	valid &= subtle.ConstantTimeLessOrEq(pad, blockSize)
+	// Check that the last `pad` bytes all equal `pad`. We always inspect the
+	// last `blockSize` bytes; positions outside the padding region get a
+	// pass via the (NOT inPad) branch so any byte there is ignored.
+	for i := 0; i < blockSize; i++ {
+		b := data[n-1-i]
+		// inPad == 1 iff (i+1) <= pad, i.e. this byte is in the padding region.
+		inPad := subtle.ConstantTimeLessOrEq(i+1, pad)
+		match := subtle.ConstantTimeByteEq(b, byte(pad))
+		// valid &= (NOT inPad) | match — equivalent to: inPad implies match
+		valid &= 1 ^ (inPad & (1 ^ match))
 	}
-	for i := len(data) - pad; i < len(data); i++ {
-		if int(data[i]) != pad {
-			return nil, errors.New("invalid pkcs7 padding")
-		}
+	if valid != 1 {
+		return nil, errOpaque
 	}
-	return data[:len(data)-pad], nil
+	return data[:n-pad], nil
 }

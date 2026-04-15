@@ -50,7 +50,13 @@ func (a *AuthorizerClient) AccessToken(ctx context.Context) (string, error) {
 	if err == nil && time.Now().Add(authorizerTokenSafetyWindow).Before(tokens.ExpireAt) {
 		return tokens.AccessToken, nil
 	}
-	if err != nil && !errors.Is(err, ErrNotFound) {
+	if errors.Is(err, ErrNotFound) {
+		// Audit C6: no usable refresh_token for this authorizer. This happens after a
+		// 61023 self-heal, or when the caller hasn't yet completed authorization.
+		// Either way, the contract is the same: caller should restart QueryAuth.
+		return "", ErrAuthorizerRevoked
+	}
+	if err != nil {
 		return "", fmt.Errorf("oplatform: store get authorizer: %w", err)
 	}
 
@@ -94,6 +100,10 @@ func (a *AuthorizerClient) refreshLocked(ctx context.Context, refreshToken strin
 		return "", fmt.Errorf("oplatform: api_authorizer_token: %w", err)
 	}
 	if resp.ErrCode == errcodeAuthorizerRevoked {
+		// Audit C6: evict the now-broken authorizer record so the next call
+		// doesn't loop on the same stale refresh_token. We swallow any delete
+		// error — the original revoke is the more important signal.
+		_ = a.c.store.DeleteAuthorizer(ctx, a.appID)
 		return "", ErrAuthorizerRevoked
 	}
 	if err := checkWeixinErr(resp.ErrCode, resp.ErrMsg); err != nil {
@@ -102,10 +112,18 @@ func (a *AuthorizerClient) refreshLocked(ctx context.Context, refreshToken strin
 	if resp.AuthorizerAccessToken == "" {
 		return "", fmt.Errorf("oplatform: empty authorizer_access_token")
 	}
+	// Clamp TTL with a floor so a malformed/hostile upstream returning
+	// expires_in<=safety_window cannot poison the cache into a permanent
+	// miss and trigger a refresh storm. 120s = 60s read-side safety window
+	// + 60s usable buffer.
+	expiresIn := resp.ExpiresIn
+	if expiresIn < 120 {
+		expiresIn = 120
+	}
 	tokens := AuthorizerTokens{
 		AccessToken:  resp.AuthorizerAccessToken,
 		RefreshToken: resp.AuthorizerRefreshToken,
-		ExpireAt:     time.Now().Add(time.Duration(resp.ExpiresIn) * time.Second),
+		ExpireAt:     time.Now().Add(time.Duration(expiresIn) * time.Second),
 	}
 	if tokens.RefreshToken == "" {
 		tokens.RefreshToken = refreshToken

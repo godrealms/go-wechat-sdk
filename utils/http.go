@@ -13,7 +13,8 @@ import (
 
 // Logger is an optional debug-logging interface. By default the SDK does not print any
 // request/response content to avoid leaking sensitive data (OpenIDs, order numbers, amounts)
-// in production. Callers may inject their own implementation via WithLogger.
+// in production. Callers may inject their own implementation via WithLogger — but see the
+// PII warning on WithLogger before wiring a non-nop sink.
 type Logger interface {
 	Debugf(format string, args ...any)
 }
@@ -79,6 +80,12 @@ func WithHeaders(headers map[string]string) Option {
 }
 
 // WithLogger injects a debug logger. Pass nil to use the no-op default.
+//
+// PII warning: if you inject a logger, the SDK will log request URLs and
+// request/response bodies verbatim at Debug level. WeChat Pay v3 request URLs
+// and headers do not carry secrets on their own, but request and response
+// bodies for refund, profit-sharing, and transfer endpoints may contain
+// encrypted PII (openid, bank data). Audit your logger sink before enabling.
 func WithLogger(logger Logger) Option {
 	return func(h *HTTP) {
 		if logger != nil {
