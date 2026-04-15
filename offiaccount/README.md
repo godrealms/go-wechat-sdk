@@ -390,12 +390,18 @@ func handler() {
 
 ### 2. 上下文管理
 
+`NewClient` 的 `ctx` 参数仅用于签名兼容，**不会**被客户端保存或影响后续请求。
+超时/取消请为每个 API 调用单独传入 `ctx`：
+
 ```go
-// 为每个请求创建带超时的上下文
+// 客户端在进程启动时一次性创建即可
+client := offiaccount.NewClient(context.Background(), config)
+
+// 每个请求独立设置 deadline / cancel
 ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 defer cancel()
-
-client := offiaccount.NewClient(ctx, config)
+token, err := client.AccessTokenE(ctx)
+if err != nil { /* ... */ }
 ```
 
 ### 3. 日志记录
