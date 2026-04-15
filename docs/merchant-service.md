@@ -167,16 +167,202 @@ _, _ = client.PartnerTransactionsJsapi(ctx, map[string]any{
 })
 ```
 
-## 6. 局限
+## 6. 子商户进件（特约商户进件 / applyment4sub）
 
-本包目前**只封装了下单接口**。如果服务商业务需要：
+服务商把子商户资料提交给微信支付审核。文档：<https://pay.weixin.qq.com/docs/partner/apis/partner-applyment/applyments.html>
 
-- 子商户进件
-- 子商户查询
-- 服务商侧的分账配置
+```go
+// 提交进件单
+func (c *Client) ApplymentSubmit(ctx context.Context, body any, platformSerial string) (*ApplymentSubmitResponse, error)
 
-请直接通过 `Inner().PostV3Raw` / `Inner().GetV3Raw` 手动调用对应的微信文档 URL。基础设施（签名/验签/证书管理）全都复用。
+// 用业务申请编号查询
+func (c *Client) ApplymentQueryByBusinessCode(ctx context.Context, businessCode string) (*ApplymentQueryResponse, error)
 
-## 7. 并发语义
+// 用微信侧 applyment_id 查询
+func (c *Client) ApplymentQueryByID(ctx context.Context, applymentID int64) (*ApplymentQueryResponse, error)
+
+// 敏感字段加密助手：一步返回 (ciphertext, platformSerial)
+func (c *Client) EncryptSensitive(ctx context.Context, plaintext string) (string, string, error)
+```
+
+返回类型：
+
+```go
+type ApplymentSubmitResponse struct {
+    ApplymentID int64 `json:"applyment_id"`
+}
+
+type ApplymentQueryResponse struct {
+    BusinessCode      string        `json:"business_code,omitempty"`
+    ApplymentID       int64         `json:"applyment_id,omitempty"`
+    SubMchid          string        `json:"sub_mchid,omitempty"`    // 审核通过后返回
+    SignURL           string        `json:"sign_url,omitempty"`     // 超管签约链接
+    ApplymentState    string        `json:"applyment_state"`        // 例如 APPLYMENT_STATE_FINISHED
+    ApplymentStateMsg string        `json:"applyment_state_msg"`
+    AuditDetail       []AuditDetail `json:"audit_detail,omitempty"` // 被驳回的字段明细
+}
+
+type AuditDetail struct {
+    ParamName    string `json:"param_name"`
+    RejectReason string `json:"reject_reason"`
+}
+```
+
+### 使用案例：提交进件
+
+所有姓名、身份证号、手机号、银行卡号等敏感字段**必须先加密**再放进请求体。`EncryptSensitive` 每次返回的 `platformSerial` 在同一次提交里必须是**同一张**平台证书（否则服务端解不出来）——简单起见，在准备一整个请求体前只调一次就行：
+
+```go
+ctx := context.Background()
+
+// 1) 先拉一张平台证书用于加密本次所有敏感字段
+_, serial, err := client.EncryptSensitive(ctx, "") // 随便加密一次触发拉取；忽略结果
+if err != nil { log.Fatal(err) }
+
+encrypt := func(s string) string {
+    ct, _, err := client.EncryptSensitive(ctx, s)
+    if err != nil { log.Fatal(err) }
+    return ct
+}
+
+body := map[string]any{
+    "business_code": "1900013511_10000",
+    "contact_info": map[string]any{
+        "contact_type":      "LEGAL",
+        "contact_name":      encrypt("张三"),
+        "contact_id_number": encrypt("110101199001011234"),
+        "mobile_phone":      encrypt("13800138000"),
+        "contact_email":     encrypt("zs@example.com"),
+    },
+    "subject_info": map[string]any{
+        "subject_type": "SUBJECT_TYPE_ENTERPRISE",
+        "business_license_info": map[string]any{
+            "license_copy":   "MEDIA_ID_xxx", // 用 /v3/merchant/media/upload 上传得到
+            "license_number": "91440300MA5xxxxxxx",
+            "merchant_name":  "深圳示例有限公司",
+            "legal_person":   "张三",
+        },
+    },
+    "business_info": map[string]any{
+        "merchant_shortname": "示例小店",
+        "service_phone":      "075588888888",
+        "sales_info": map[string]any{
+            "sales_scenes_type": []string{"SALES_SCENES_STORE"},
+        },
+    },
+    "settlement_info": map[string]any{
+        "settlement_id":        "719",
+        "qualification_type":   "餐饮",
+    },
+    "bank_account_info": map[string]any{
+        "bank_account_type": "BANK_ACCOUNT_TYPE_CORPORATE",
+        "account_name":      encrypt("深圳示例有限公司"),
+        "account_bank":      "工商银行",
+        "bank_address_code": "110000",
+        "account_number":    encrypt("6222021234567890123"),
+    },
+}
+
+resp, err := client.ApplymentSubmit(ctx, body, serial)
+if err != nil { log.Fatal(err) }
+log.Printf("applyment_id = %d", resp.ApplymentID)
+```
+
+### 使用案例：轮询进件状态
+
+```go
+// 刚提交时还没有 applyment_id，先用 business_code 查一次拿到
+st, err := client.ApplymentQueryByBusinessCode(ctx, "1900013511_10000")
+if err != nil { return err }
+log.Printf("state=%s msg=%s", st.ApplymentState, st.ApplymentStateMsg)
+
+// 之后可以直接走 applyment_id
+st, _ = client.ApplymentQueryByID(ctx, st.ApplymentID)
+
+// 如果被驳回，audit_detail 会告诉你是哪些字段
+for _, d := range st.AuditDetail {
+    log.Printf("  %s: %s", d.ParamName, d.RejectReason)
+}
+
+// 审核通过后拿到 sub_mchid 和超管签约链接
+if st.ApplymentState == "APPLYMENT_STATE_FINISHED" {
+    log.Printf("sub_mchid=%s sign_url=%s", st.SubMchid, st.SignURL)
+}
+```
+
+## 7. 服务商侧的分账配置
+
+> 若只是"发起分账"（`ProfitSharingOrder`）、查询分账结果等，请直接用 `Inner()` 调用 `pay.Client` 的既有方法——服务商和直连商户走同一套路径，只是 body 里要带 `sub_mchid`。
+>
+> 本节专门覆盖的是**给子商户配置分账**的三个管理类接口。
+
+```go
+// 添加分账接收方（不带敏感字段加密）
+func (c *Client) ProfitSharingAddReceiver(ctx context.Context, body map[string]any) (map[string]any, error)
+
+// 添加分账接收方，同时携带 Wechatpay-Serial 头——用于 receiver.name 已加密的场景
+func (c *Client) ProfitSharingAddReceiverWithSerial(ctx context.Context, body map[string]any, platformSerial string) (map[string]any, error)
+
+// 删除分账接收方
+func (c *Client) ProfitSharingDeleteReceiver(ctx context.Context, body map[string]any) (map[string]any, error)
+
+// 查询某个子商户的最大分账比例（max_ratio 单位为万分比，例如 2000 表示 20%）
+func (c *Client) ProfitSharingMerchantConfig(ctx context.Context, subMchid string) (map[string]any, error)
+```
+
+这四个方法会自动把 `appid` / `sub_mchid` 填成 `Client` 初始化时配置的默认值；调用方显式提供的字段优先。`ProfitSharingMerchantConfig` 的 `subMchid` 为空时使用默认 sub_mchid。
+
+### 使用案例：添加一个商户号型接收方
+
+```go
+_, err := client.ProfitSharingAddReceiver(ctx, map[string]any{
+    "type":          "MERCHANT_ID",
+    "account":       "1900000100",
+    "relation_type": "SUPPLIER",
+})
+```
+
+### 使用案例：添加一个个人 openid 接收方（name 需要加密）
+
+```go
+encName, serial, err := client.EncryptSensitive(ctx, "张三")
+if err != nil { return err }
+
+_, err = client.ProfitSharingAddReceiverWithSerial(ctx, map[string]any{
+    "type":          "PERSONAL_OPENID",
+    "account":       "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o",
+    "name":          encName,         // 已加密的姓名
+    "relation_type": "USER",
+}, serial)
+```
+
+### 使用案例：查询最大分账比例
+
+```go
+resp, err := client.ProfitSharingMerchantConfig(ctx, "") // 空 -> 用默认 sub_mchid
+if err != nil { return err }
+log.Printf("max_ratio = %v (万分比)", resp["max_ratio"])
+```
+
+### 使用案例：删除接收方
+
+```go
+_, err := client.ProfitSharingDeleteReceiver(ctx, map[string]any{
+    "type":    "PERSONAL_OPENID",
+    "account": "oUpF8uMuAJO_M2pxb1Q9zNjWeS6o",
+})
+```
+
+## 8. 局限
+
+本包已经覆盖了服务商最常用的几类接口。下列能力当前仍需走 `Inner().DoV3` 手动调用：
+
+- 子商户结算账户查询（`GET /v3/applyment4sub/sub_merchants/{sub_mchid}/settlement`）
+- 子商户结算账户修改（`PUT /v3/applyment4sub/sub_merchants/{sub_mchid}/modify-settlement`）
+- 分账动态接口的其它 partner 变体
+
+这些接口的签名/验签、平台证书拉取、敏感字段加密全都可以复用 `Inner()` 已经提供的基础设施——具体到 `DoV3(method, path, query, body, headers, result)` + `PlatformCertForEncrypt`/`EncryptSensitiveField`。
+
+## 9. 并发语义
 
 与 `pay.Client` 完全一致——线程安全，可在多 goroutine 共享。所有核心签名/验签逻辑都继承自 `pay.Client`，本包只是做了业务层的字段注入。
