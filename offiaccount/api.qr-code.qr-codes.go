@@ -26,6 +26,7 @@ type Scene struct {
 
 // CreateQRCodeResult 二维码结果结构体
 type CreateQRCodeResult struct {
+	Resp
 	Ticket        string `json:"ticket"`
 	ExpireSeconds int    `json:"expire_seconds"`
 	URL           string `json:"url"`
@@ -43,7 +44,7 @@ func (c *Client) CreateQRCode(ctx context.Context, req *CreateQRCodeRequest) (*C
 
 	// 发送请求
 	var result CreateQRCodeResult
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}

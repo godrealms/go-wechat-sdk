@@ -26,7 +26,7 @@ func (c *Client) ApplyCode(ctx context.Context, request *ApplyCodeRequest) (*App
 	}
 	result := &ApplyCodeResult{}
 	path := fmt.Sprintf("/intp/marketcode/applycode?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -64,7 +64,7 @@ func (c *Client) ApplyCodeQuery(ctx context.Context, request *ApplyCodeQueryRequ
 	}
 	result := &ApplyCodeQueryResult{}
 	path := fmt.Sprintf("/intp/marketcode/applycodequery?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -92,7 +92,7 @@ func (c *Client) ApplyCodeDownload(ctx context.Context, request *ApplyCodeDownlo
 	}
 	result := &ApplyCodeDownloadResult{}
 	path := fmt.Sprintf("/intp/marketcode/applycodedownload?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -121,7 +121,7 @@ func (c *Client) CodeActive(ctx context.Context, request *CodeActiveRequest) (*R
 	}
 	result := &Resp{}
 	path := fmt.Sprintf("/intp/marketcode/codeactive?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -160,7 +160,7 @@ func (c *Client) CodeActiveQuery(ctx context.Context, request *CodeActiveQueryRe
 	}
 	result := &CodeActiveQueryResult{}
 	path := fmt.Sprintf("/intp/marketcode/codeactivequery?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -196,7 +196,7 @@ func (c *Client) TicketToCode(ctx context.Context, request *TicketToCodeRequest)
 	}
 	result := &TicketToCodeResult{}
 	path := fmt.Sprintf("/intp/marketcode/tickettocode?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil

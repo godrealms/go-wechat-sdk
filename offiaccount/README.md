@@ -539,4 +539,4 @@ client := offiaccount.NewClient(context.Background(), config)
 
 ## 许可证
 
-本项目采用 MIT 许可证 - 查看 [LICENSE](../LICENSE) 文件了解详情
+本项目采用 Apache License 2.0 - 查看 [LICENSE](../LICENSE) 文件了解详情

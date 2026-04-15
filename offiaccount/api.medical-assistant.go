@@ -2,7 +2,6 @@ package offiaccount
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 )
 
@@ -47,20 +46,8 @@ func (c *Client) SendChannelMsg(ctx context.Context, request *SendChannelMsgRequ
 		return nil, err
 	}
 	result := &SendChannelMsgResult{}
-
-	// 将business_info转换为json.RawMessage以保持原始结构
-	var body map[string]interface{}
-	bodyBytes, _ := json.Marshal(request)
-	json.Unmarshal(bodyBytes, &body)
-
-	// 特别处理business_info字段
-	if request.BusinessInfo != nil {
-		businessInfoBytes, _ := json.Marshal(request.BusinessInfo)
-		body["business_info"] = json.RawMessage(businessInfoBytes)
-	}
-
 	path := fmt.Sprintf("/cityservice/sendchannelmsg?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, body, result); err != nil {
+	if err = c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil

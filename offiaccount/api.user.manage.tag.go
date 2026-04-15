@@ -18,7 +18,7 @@ func (c *Client) GetTags(ctx context.Context) (*GetTagsResult, error) {
 
 	// 发送请求
 	var result GetTagsResult
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (c *Client) CreateTag(ctx context.Context, name string) (*CreateTagResult, 
 
 	// 发送请求
 	var result CreateTagResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -72,7 +72,7 @@ func (c *Client) UpdateTag(ctx context.Context, id int64, name string) (*Resp, e
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +98,7 @@ func (c *Client) DeleteTag(ctx context.Context, id int64) (*Resp, error) {
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -117,7 +117,7 @@ func (c *Client) GetTagFans(ctx context.Context, req *GetTagFansRequest) (*GetTa
 
 	// 发送请求
 	var result GetTagFansResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -143,7 +143,7 @@ func (c *Client) BatchTagging(ctx context.Context, openidList []string, tagid in
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -169,7 +169,7 @@ func (c *Client) BatchUntagging(ctx context.Context, openidList []string, tagid 
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -193,7 +193,7 @@ func (c *Client) GetTagidList(ctx context.Context, openid string) (*GetTagidList
 
 	// 发送请求
 	var result GetTagidListResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

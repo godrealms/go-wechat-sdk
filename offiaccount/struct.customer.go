@@ -7,6 +7,7 @@ type KFInfo struct {
 	KfID             string `json:"kf_id"`              // 客服编号
 	KfHeadImgURL     string `json:"kf_headimgurl"`      // 客服头像
 	KfWX             string `json:"kf_wx"`              // 如果客服账号已绑定了客服人员微信号，则此处显示微信号
+	KfOpenid         string `json:"kf_openid"`          // 客服的 openid（如绑定了客服人员微信号）
 	InviteWX         string `json:"invite_wx"`          // 如果客服账号尚未绑定微信号，但是已经发起了一个绑定邀请，则此处显示绑定邀请的微信号
 	InviteExpireTime string `json:"invite_expire_time"` // 如果客服账号尚未绑定微信号，但是已经发起过一个绑定邀请，邀请的过期时间，为unix 时间戳
 	InviteStatus     string `json:"invite_status"`      // 邀请的状态，有等待确认"waiting"，被拒绝"rejected"，过期"expired"

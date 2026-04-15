@@ -751,7 +751,8 @@ type District struct {
 
 // GetDistrictListResult 获取省市区信息结果
 type GetDistrictListResult struct {
-	Status      int64         `json:"status"`       // 状态码
+	Resp
+	Status      int64         `json:"status"`       // 状态码（此接口用 status 而非 errcode 标识成功，非 0 为失败）
 	Message     string        `json:"message"`      // 状态描述
 	DataVersion string        `json:"data_version"` // 数据版本
 	Result      [][]*District `json:"result"`       // 数据内容，此数组是二维数组，分别代表省市区的信息
@@ -917,6 +918,7 @@ type PING struct {
 
 // CallbackCheckResponse 网络通信检测结果
 type CallbackCheckResponse struct {
+	Resp
 	DNS  []*DNS  `json:"dns"`  // DNS解析结果列表
 	PING []*PING `json:"ping"` // PING检测结果列表
 }

@@ -189,6 +189,7 @@ type QueryCustomMenu struct {
 
 // SelfMenu 当前自定义菜单配置信息（查询结果）
 type SelfMenu struct {
+	Resp
 	// 菜单是否开启，0:未开启，1:开启
 	IsMenuOpen int `json:"is_menu_open"`
 	// 自定义菜单信息
@@ -204,7 +205,6 @@ type AddConditionalMenuResponse struct {
 
 // UploadImageResponse 上传图片响应结构
 type UploadImageResponse struct {
-	Url     string `json:"url"`
-	ErrCode int    `json:"errcode"`
-	ErrMsg  string `json:"errmsg"`
+	Resp
+	Url string `json:"url"`
 }

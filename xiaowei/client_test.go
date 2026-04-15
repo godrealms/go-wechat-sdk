@@ -2,6 +2,7 @@ package xiaowei
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -79,6 +80,47 @@ func TestAccessToken_Caches(t *testing.T) {
 	}
 	if calls != 1 {
 		t.Errorf("expected 1 fetch, got %d", calls)
+	}
+}
+
+// TestAccessToken_ErrcodeTyped verifies token-fetch errcode is surfaced as a
+// typed *APIError, so callers can errors.As-distinguish it.
+func TestAccessToken_ErrcodeTyped(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"errcode":40013,"errmsg":"invalid appid"}`))
+	}))
+	defer srv.Close()
+	c := newTestClient(t, srv.URL)
+	_, err := c.AccessToken(context.Background())
+	if err == nil {
+		t.Fatal("expected errcode error")
+	}
+	var apiErr *APIError
+	if !errors.As(err, &apiErr) {
+		t.Fatalf("expected *APIError, got %T: %v", err, err)
+	}
+	if apiErr.ErrCode != 40013 {
+		t.Errorf("ErrCode = %d, want 40013", apiErr.ErrCode)
+	}
+}
+
+// TestAccessToken_TTLClamp verifies tiny/zero expires_in is floored.
+func TestAccessToken_TTLClamp(t *testing.T) {
+	var calls int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
+		_, _ = w.Write([]byte(`{"access_token":"TOK","expires_in":0}`))
+	}))
+	defer srv.Close()
+	c := newTestClient(t, srv.URL)
+	if _, err := c.AccessToken(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.AccessToken(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Errorf("expected 1 fetch with TTL clamp, got %d", calls)
 	}
 }
 

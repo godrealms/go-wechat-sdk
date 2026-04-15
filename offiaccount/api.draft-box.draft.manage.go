@@ -7,7 +7,11 @@ import (
 )
 
 // DraftSwitch 草稿箱开关设置
-// checkOnly: 仅检查状态时传true
+//
+// 无论是否查询，官方接口都要求 POST；checkonly=1 只是 query 参数，用于仅查询状态不做切换。
+// https://developers.weixin.qq.com/doc/offiaccount/Draft_Box/Temporary_MP_Switch.html
+//
+// checkOnly: true 时仅查询当前开关状态，不做切换
 func (c *Client) DraftSwitch(ctx context.Context, checkOnly bool) (*DraftSwitchResult, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
@@ -22,16 +26,8 @@ func (c *Client) DraftSwitch(ctx context.Context, checkOnly bool) (*DraftSwitchR
 	path := fmt.Sprintf("/cgi-bin/draft/switch?%s", params.Encode())
 
 	var result DraftSwitchResult
-	if checkOnly {
-		err = c.Https.Get(ctx, path, nil, &result)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		err = c.Https.Post(ctx, path, nil, &result)
-		if err != nil {
-			return nil, err
-		}
+	if err = c.doPost(ctx, path, nil, &result); err != nil {
+		return nil, err
 	}
 
 	return &result, nil
@@ -54,7 +50,7 @@ func (c *Client) AddDraft(ctx context.Context, articles []*DraftArticle) (*AddDr
 
 	// 发送请求
 	var result AddDraftResult
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +75,7 @@ func (c *Client) GetDraft(ctx context.Context, mediaID string) (*GetDraftResult,
 
 	// 发送请求
 	var result GetDraftResult
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +100,7 @@ func (c *Client) DeleteDraft(ctx context.Context, mediaID string) (*Resp, error)
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +120,7 @@ func (c *Client) UpdateDraft(ctx context.Context, req *UpdateDraftRequest) (*Res
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +139,7 @@ func (c *Client) GetDraftCount(ctx context.Context) (*DraftCountResult, error) {
 
 	// 发送请求
 	var result DraftCountResult
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -163,7 +159,7 @@ func (c *Client) BatchGetDraft(ctx context.Context, req *BatchGetDraftRequest) (
 
 	// 发送请求
 	var result BatchGetDraftResult
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}

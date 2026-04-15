@@ -15,7 +15,7 @@ func (c *Client) GetKFMsgList(ctx context.Context, req *KFGetMsgListRequest) (*M
 	path := fmt.Sprintf("/customservice/msgrecord/getmsglist?access_token=%s", token)
 
 	var result MsgListResp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -32,7 +32,7 @@ func (c *Client) SetKFTyping(ctx context.Context, req *KFTypingRequest) (*Resp, 
 	path := fmt.Sprintf("/cgi-bin/message/custom/typing?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -49,7 +49,7 @@ func (c *Client) SendKFMessage(ctx context.Context, msg *KFMessage) (*Resp, erro
 	path := fmt.Sprintf("/cgi-bin/message/custom/send?access_token=%s", token)
 
 	var result Resp
-	if err := c.Https.Post(ctx, path, msg, &result); err != nil {
+	if err := c.doPost(ctx, path, msg, &result); err != nil {
 		return nil, err
 	}
 

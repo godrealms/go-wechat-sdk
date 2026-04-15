@@ -50,7 +50,7 @@ func (c *Client) QueryFee(ctx context.Context, request *QueryFeeRequest) (*Query
 	}
 	result := &QueryFeeResult{}
 	path := fmt.Sprintf("/nontax/queryfee?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -108,7 +108,7 @@ func (c *Client) UnifiedOrder(ctx context.Context, request *UnifiedOrderRequest)
 	}
 	result := &UnifiedOrderResult{}
 	path := fmt.Sprintf("/nontax/unifiedorder?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -137,7 +137,7 @@ func (c *Client) DownloadBill(ctx context.Context, request *DownloadBillRequest)
 	}
 	result := &DownloadBillResult{}
 	path := fmt.Sprintf("/nontax/downloadbill?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -158,7 +158,7 @@ func (c *Client) NotifyInconsistentOrder(ctx context.Context, request *NotifyInc
 	}
 	result := &Resp{}
 	path := fmt.Sprintf("/nontax/notifyinconsistentorder?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -180,7 +180,7 @@ func (c *Client) MockNotification(ctx context.Context, request *MockNotification
 	}
 	result := &Resp{}
 	path := fmt.Sprintf("/nontax/mocknotification?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -202,7 +202,7 @@ func (c *Client) MockQueryFee(ctx context.Context, request *MockQueryFeeRequest)
 	}
 	result := &Resp{}
 	path := fmt.Sprintf("/nontax/mockqueryfee?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -245,7 +245,7 @@ func (c *Client) MicroPay(ctx context.Context, request *MicroPayRequest) (*Micro
 	}
 	result := &MicroPayResult{}
 	path := fmt.Sprintf("/nontax/micropay?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -275,7 +275,7 @@ func (c *Client) GetOrderList(ctx context.Context, request *GetOrderListRequest)
 	}
 	result := &GetOrderListResult{}
 	path := fmt.Sprintf("/nontax/getorderlist?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -305,7 +305,7 @@ func (c *Client) Refund(ctx context.Context, request *RefundRequest) (*RefundRes
 	}
 	result := &RefundResult{}
 	path := fmt.Sprintf("/nontax/refund?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -395,7 +395,7 @@ func (c *Client) GetOrder(ctx context.Context, request *GetOrderRequest) (*GetOr
 	}
 	result := &GetOrderResult{}
 	path := fmt.Sprintf("/nontax/getorder?access_token=%s", token)
-	if err := c.Https.Post(ctx, path, request, result); err != nil {
+	if err := c.doPost(ctx, path, request, result); err != nil {
 		return nil, err
 	}
 	return result, nil

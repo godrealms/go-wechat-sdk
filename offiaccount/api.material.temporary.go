@@ -1,12 +1,10 @@
 package offiaccount
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,78 +16,24 @@ import (
 // filename: 媒体文件名
 // reader: 媒体文件内容读取器
 func (c *Client) UploadTempMedia(ctx context.Context, mediaType TempMediaType, filename string, reader io.Reader) (*UploadTempMediaResult, error) {
-	// 获取access_token
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	// 构造请求URL
-	params := url.Values{}
-	params.Add("access_token", token)
-	params.Add("type", string(mediaType))
-	path := fmt.Sprintf("/cgi-bin/media/upload?%s", params.Encode())
-
-	// 创建multipart表单
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// 添加文件字段
-	part, err := writer.CreateFormFile("media", filename)
+	// 读取文件到内存（微信临时素材上限 10MB，可接受）
+	data, err := io.ReadAll(reader)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create a file field: %v", err)
+		return nil, fmt.Errorf("read media failed: %w", err)
 	}
 
-	// 复制文件内容
-	_, err = io.Copy(part, reader)
-	if err != nil {
-		return nil, fmt.Errorf("copying file contents failed: %v", err)
-	}
+	path := fmt.Sprintf("/cgi-bin/media/upload?access_token=%s&type=%s",
+		token, url.QueryEscape(string(mediaType)))
 
-	// 关闭writer
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("closing writer failed: %v", err)
-	}
-
-	// 构建完整URL
-	fullURL := c.Https.BaseURL + path
-
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("the http request was created failed: %v", err)
-	}
-
-	// 设置Content-Type
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sending http request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response failed: %v", err)
-	}
-
-	// 检查响应状态码
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	// 解析响应
 	var result UploadTempMediaResult
-	if len(respBody) > 0 {
-		if err = json.Unmarshal(respBody, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-		}
+	if err = c.doPostMultipartFile(ctx, path, "media", filename, data, &result); err != nil {
+		return nil, err
 	}
-
 	return &result, nil
 }
 
@@ -114,6 +58,12 @@ func (c *Client) UploadTempMediaByPath(ctx context.Context, mediaType TempMediaT
 
 // GetTempMedia 获取临时素材
 // mediaID: 媒体文件ID
+//
+// 返回值：
+//   - 图片 / 语音 / 缩略图：第一个返回值为原始字节
+//   - 视频素材：第二个返回值为 *GetTempMediaVideoResult（内含 video_url）
+//
+// 如果服务端返回 errcode 非 0，直接返回 *WeixinError。
 func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, *GetTempMediaVideoResult, error) {
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
@@ -147,31 +97,25 @@ func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, *Get
 		return nil, nil, fmt.Errorf("read response failed: %v", err)
 	}
 
-	// 检查响应是否为JSON格式（错误情况）
-	contentType := resp.Header.Get("Content-Type")
-	if strings.Contains(contentType, "application/json") {
-		// 解析为错误响应
-		var result GetTempMediaVideoResult
-		if len(respBody) > 0 {
-			if err = json.Unmarshal(respBody, &result); err != nil {
-				return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-			}
+	// 如果看起来像 JSON（以 '{' 开头），先探测 errcode 再区分 video / error
+	if len(respBody) > 0 && respBody[0] == '{' {
+		var probe Resp
+		if err = json.Unmarshal(respBody, &probe); err == nil && probe.ErrCode != 0 {
+			return nil, nil, &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}
 		}
-		return nil, &result, nil
+
+		// 无 errcode → 视频素材 JSON，解析 video_url
+		var result GetTempMediaVideoResult
+		if err = json.Unmarshal(respBody, &result); err != nil {
+			return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
+		}
+		// 如果 Title 或 VideoURL 有值，视作视频结果；否则回落到原始字节
+		if result.VideoURL != "" {
+			return nil, &result, nil
+		}
 	}
 
-	// 检查是否为视频素材的JSON响应
-	if strings.Contains(string(respBody), "video_url") {
-		var result GetTempMediaVideoResult
-		if len(respBody) > 0 {
-			if err = json.Unmarshal(respBody, &result); err != nil {
-				return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-			}
-		}
-		return nil, &result, nil
-	}
-
-	// 返回原始文件数据
+	// 返回原始文件数据（图片 / 语音等）
 	return respBody, nil, nil
 }
 
@@ -210,17 +154,16 @@ func (c *Client) GetHDVoice(ctx context.Context, mediaID string) ([]byte, *Resp,
 		return nil, nil, fmt.Errorf("read response failed: %v", err)
 	}
 
-	// 检查响应是否为JSON格式（错误情况）
-	contentType := resp.Header.Get("Content-Type")
-	if strings.Contains(contentType, "application/json") {
-		// 解析为错误响应
-		var result Resp
-		if len(respBody) > 0 {
-			if err = json.Unmarshal(respBody, &result); err != nil {
-				return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-			}
+	// 如果看起来像 JSON（以 '{' 开头），一定是错误响应
+	if len(respBody) > 0 && respBody[0] == '{' {
+		var probe Resp
+		if err = json.Unmarshal(respBody, &probe); err != nil {
+			return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
 		}
-		return nil, &result, nil
+		if probe.ErrCode != 0 {
+			return nil, &probe, &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}
+		}
+		return nil, &probe, nil
 	}
 
 	// 返回原始文件数据

@@ -15,11 +15,8 @@ func (c *Client) CreateCustomMenu(ctx context.Context, body *CreateMenuButton) e
 	}
 	path := fmt.Sprintf("/cgi-bin/menu/create?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -36,7 +33,7 @@ func (c *Client) GetCurrentSelfMenuInfo(ctx context.Context) (*SelfMenu, error) 
 		"access_token": {token},
 	}
 	result := &SelfMenu{}
-	err = c.Https.Get(ctx, "/cgi-bin/get_current_selfmenu_info", query, result)
+	err = c.doGet(ctx, "/cgi-bin/get_current_selfmenu_info", query, result)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +51,7 @@ func (c *Client) GetMenu(ctx context.Context) (*QueryCustomMenu, error) {
 		"access_token": {token},
 	}
 	result := &QueryCustomMenu{}
-	err = c.Https.Get(ctx, "/cgi-bin/menu/get", query, result)
+	err = c.doGet(ctx, "/cgi-bin/menu/get", query, result)
 	if err != nil {
 		return nil, err
 	}
@@ -72,11 +69,8 @@ func (c *Client) DeleteMenu(ctx context.Context) error {
 		"access_token": {token},
 	}
 	result := &Resp{}
-	err = c.Https.Get(ctx, "/cgi-bin/menu/delete", query, result)
-	if err != nil {
+	if err = c.doGet(ctx, "/cgi-bin/menu/delete", query, result); err != nil {
 		return err
-	} else if result.ErrCode != 0 {
-		return &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return nil
 }
@@ -96,11 +90,8 @@ func (c *Client) AddConditionalMenu(ctx context.Context, body *ConditionalMenu) 
 	}
 	path := fmt.Sprintf("/cgi-bin/menu/addconditional?access_token=%s", token)
 	result := &AddConditionalMenuResponse{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -115,11 +106,8 @@ func (c *Client) DeleteConditionalMenu(ctx context.Context, menuId string) (*Res
 	body := map[string]string{"menuid": menuId}
 	path := fmt.Sprintf("/cgi-bin/menu/delconditional?access_token=%s", token)
 	result := &Resp{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }
@@ -134,11 +122,8 @@ func (c *Client) TryMatchMenu(ctx context.Context, userId string) (*QueryCustomM
 	body := map[string]string{"user_id": userId}
 	path := fmt.Sprintf("/cgi-bin/menu/trymatch?access_token=%s", token)
 	result := &QueryCustomMenu{}
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result, nil
 }

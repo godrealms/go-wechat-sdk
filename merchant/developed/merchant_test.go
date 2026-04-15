@@ -257,7 +257,7 @@ func TestWechatClient_BuilderChain(t *testing.T) {
 	if c.CertificateNumber() != "cert_no" {
 		t.Errorf("expected cert_no, got %q", c.CertificateNumber())
 	}
-	if c.PrivateKeyVal() != key {
+	if c.PrivateKey() != key {
 		t.Error("expected private key to be set")
 	}
 }

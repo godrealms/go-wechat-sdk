@@ -94,7 +94,7 @@ func (cc *CorpClient) refreshLocked(ctx context.Context) (string, error) {
 		return "", err
 	}
 	tokens.CorpAccessToken = resp.AccessToken
-	tokens.CorpTokenExpireAt = time.Now().Add(time.Duration(resp.ExpiresIn)*time.Second - safetyMargin)
+	tokens.CorpTokenExpireAt = time.Now().Add(clampTokenTTL(resp.ExpiresIn))
 	if err := cc.parent.store.PutAuthorizer(ctx, cc.parent.cfg.SuiteID, cc.corpID, tokens); err != nil {
 		return "", fmt.Errorf("isv: persist corp token: %w", err)
 	}

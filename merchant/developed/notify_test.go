@@ -89,7 +89,7 @@ func TestParseNotification_Success(t *testing.T) {
 	req.Header.Set("Wechatpay-Nonce", respNonce)
 	req.Header.Set("Wechatpay-Signature", sigB64)
 	// Serial 必须匹配缓存里的平台证书
-	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.CertificateVal()))
+	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.Certificate()))
 
 	type txn struct {
 		TransactionId string `json:"transaction_id"`
@@ -116,7 +116,7 @@ func TestParseNotification_BadSignature(t *testing.T) {
 	req.Header.Set("Wechatpay-Timestamp", "1700000000")
 	req.Header.Set("Wechatpay-Nonce", "abc")
 	req.Header.Set("Wechatpay-Signature", base64.StdEncoding.EncodeToString([]byte("wrong")))
-	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.CertificateVal()))
+	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.Certificate()))
 	if _, err := c.ParseNotification(context.Background(), req, nil); err == nil {
 		t.Error("expected signature error")
 	}
@@ -141,7 +141,7 @@ func TestParseNotification_RejectsStaleTimestamp(t *testing.T) {
 	req.Header.Set("Wechatpay-Timestamp", staleTs)
 	req.Header.Set("Wechatpay-Nonce", "n")
 	req.Header.Set("Wechatpay-Signature", "s")
-	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.CertificateVal()))
+	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.Certificate()))
 
 	_, err := c.ParseNotification(context.Background(), req, nil)
 	if err == nil || !strings.Contains(err.Error(), "timestamp out of window") {

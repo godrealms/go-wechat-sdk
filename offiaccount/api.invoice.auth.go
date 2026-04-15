@@ -19,7 +19,7 @@ func (c *Client) SetInvoiceBizAttr(ctx context.Context, action string, req *SetB
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -38,7 +38,7 @@ func (c *Client) GetAuthData(ctx context.Context, req *GetAuthDataRequest) (*Get
 
 	// 发送请求
 	var result GetAuthDataResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -60,7 +60,7 @@ func (c *Client) GetInvoiceTicket(ctx context.Context) (*Ticket, error) {
 
 	// 发送请求
 	var result Ticket
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -79,7 +79,7 @@ func (c *Client) GetAuthUrl(ctx context.Context, req *GetAuthUrlRequest) (*GetAu
 
 	// 发送请求
 	var result GetAuthUrlResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -98,7 +98,7 @@ func (c *Client) RejectInsert(ctx context.Context, req *RejectInsertRequest) (*R
 
 	// 发送请求
 	var result Resp
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

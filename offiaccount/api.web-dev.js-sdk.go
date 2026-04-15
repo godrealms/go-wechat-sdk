@@ -21,7 +21,7 @@ func (c *Client) GetJSApiTicket(ctx context.Context) (*Ticket, error) {
 
 	// 发送请求
 	var result Ticket
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (c *Client) GetWxCardTicket(ctx context.Context) (*Ticket, error) {
 
 	// 发送请求
 	var result Ticket
-	if err := c.Https.Get(ctx, path, params, &result); err != nil {
+	if err := c.doGet(ctx, path, params, &result); err != nil {
 		return nil, err
 	}
 

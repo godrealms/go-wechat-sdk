@@ -17,7 +17,7 @@ func (c *Client) GetProductCardInfo(ctx context.Context, req *GetProductCardInfo
 
 	// 发送请求
 	var result GetProductCardInfoResult
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}

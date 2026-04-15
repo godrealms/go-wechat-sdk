@@ -111,7 +111,7 @@ func (c *Client) AddKFAccount(ctx context.Context, kfAccount, nickname string) (
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +138,7 @@ func (c *Client) UpdateKFAccount(ctx context.Context, kfAccount, nickname string
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +162,7 @@ func (c *Client) DelKFAccount(ctx context.Context, kfAccount string) (*Resp, err
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +191,7 @@ func (c *Client) InviteKFWorker(ctx context.Context, kfAccount, inviteWX string)
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, body, &result)
+	err = c.doPost(ctx, path, body, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +210,7 @@ func (c *Client) GetOnlineKFList(ctx context.Context) (*KFOnlineListResp, error)
 
 	// 发送请求
 	var result KFOnlineListResp
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +229,7 @@ func (c *Client) GetKFList(ctx context.Context) (*KFListResp, error) {
 
 	// 发送请求
 	var result KFListResp
-	err = c.Https.Get(ctx, path, nil, &result)
+	err = c.doGet(ctx, path, nil, &result)
 	if err != nil {
 		return nil, err
 	}

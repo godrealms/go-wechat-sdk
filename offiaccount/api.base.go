@@ -72,8 +72,7 @@ func (c *Client) CallbackCheck(ctx context.Context, action, checkOperator string
 	}
 	result := &CallbackCheckResponse{}
 	path := fmt.Sprintf("/cgi-bin/callback/check?%s", query.Encode())
-	err = c.Https.Post(ctx, path, body, result)
-	if err != nil {
+	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -90,14 +89,10 @@ func (c *Client) GetCallbackIp(ctx context.Context) ([]string, error) {
 	query := url.Values{
 		"access_token": {token},
 	}
-	var result = &IpList{}
-	err = c.Https.Get(ctx, "/cgi-bin/getcallbackip", query, result)
-	if err != nil {
+	result := &IpList{}
+	if err = c.doGet(ctx, "/cgi-bin/getcallbackip", query, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
-
 	return result.IpList, nil
 }
 
@@ -111,12 +106,9 @@ func (c *Client) GetApiDomainIP(ctx context.Context) ([]string, error) {
 	query := url.Values{
 		"access_token": {token},
 	}
-	var result = &IpList{}
-	err = c.Https.Get(ctx, "/cgi-bin/get_api_domain_ip", query, result)
-	if err != nil {
+	result := &IpList{}
+	if err = c.doGet(ctx, "/cgi-bin/get_api_domain_ip", query, result); err != nil {
 		return nil, err
-	} else if result.ErrCode != 0 {
-		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
 	}
 	return result.IpList, nil
 }

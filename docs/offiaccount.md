@@ -189,13 +189,22 @@ type EncryptedEnvelope struct {
 }
 
 func ParseNotify(r *http.Request, crypto *MsgCrypto) ([]byte, error)
+func ParseNotifyPlaintext(r *http.Request, token string) ([]byte, error)
 ```
 
-`ParseNotify` 的语义：
+`ParseNotify`（加密模式 / 兼容模式）的语义：
 
-- `r.Method == GET`（接入校验阶段）：校验 `signature / timestamp / nonce`，通过则返回 `echostr` 字节给调用方原样写回。
-- `r.Method == POST` 且传了 `crypto`：读 body → 解析 envelope → 用 `msg_signature` 验签 → AES 解密 → 返回明文 XML。
-- `r.Method == POST` 且 `crypto == nil`（明文模式）：直接返回 body。
+- 先校验 `timestamp` 必须在当前时间 ±5 分钟以内（防重放），超窗或缺失直接返回 error。
+- `r.Method == GET`（接入校验阶段）：用 `crypto.Token()` 校验 `signature / timestamp / nonce`，通过则返回 `echostr` 字节给调用方原样写回。
+- `r.Method == POST`：读 body → 解析 envelope → 用 `msg_signature` 验签 → AES 解密 → 返回明文 XML。
+- `crypto` **必须非 nil**。历史上 `crypto == nil` 时会直接返回 body，这个行为已经废弃（会返回 `ErrNotifyNoCrypto`），因为它会放行任何未签名的请求；如果你用的是「明文模式」请改用 `ParseNotifyPlaintext` 并把公众号后台配置的 Token 传进去。
+
+`ParseNotifyPlaintext`（明文模式）的语义：
+
+- 校验 `timestamp` 在 ±5 分钟以内。
+- 用传入的 `token` 校验 `signature / timestamp / nonce`（与 GET 接入签名同一个算法）。
+- `r.Method == GET`：返回 `echostr`。
+- `r.Method == POST`：返回原始 body（签名已验证）。
 
 ## 4. 完整使用案例：公众号服务器
 

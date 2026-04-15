@@ -21,7 +21,7 @@ func (c *Client) GetUpstreamMsg(ctx context.Context, beginDate, endDate string) 
 	}
 
 	var result GetUpstreamMsgResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -44,7 +44,7 @@ func (c *Client) GetUpstreamMsgMonth(ctx context.Context, beginDate, endDate str
 	}
 
 	var result GetUpstreamMsgResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -67,7 +67,7 @@ func (c *Client) GetUpstreamMsgDistWeek(ctx context.Context, beginDate, endDate 
 	}
 
 	var result GetUpstreamMsgDistResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +90,7 @@ func (c *Client) GetUpstreamMsgDistMonth(ctx context.Context, beginDate, endDate
 	}
 
 	var result GetUpstreamMsgDistResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -113,7 +113,7 @@ func (c *Client) GetUpstreamMsgHour(ctx context.Context, beginDate, endDate stri
 	}
 
 	var result GetUpstreamMsgHourResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -136,7 +136,7 @@ func (c *Client) GetUpstreamMsgWeek(ctx context.Context, beginDate, endDate stri
 	}
 
 	var result GetUpstreamMsgResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 
@@ -159,7 +159,7 @@ func (c *Client) GetUpstreamMsgDist(ctx context.Context, beginDate, endDate stri
 	}
 
 	var result GetUpstreamMsgDistResult
-	if err := c.Https.Post(ctx, path, req, &result); err != nil {
+	if err := c.doPost(ctx, path, req, &result); err != nil {
 		return nil, err
 	}
 

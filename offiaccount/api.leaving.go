@@ -17,7 +17,7 @@ func (c *Client) OpenArticleComment(ctx context.Context, req *OpenArticleComment
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (c *Client) CloseArticleComment(ctx context.Context, req *CloseArticleComme
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (c *Client) ListComment(ctx context.Context, req *ListCommentRequest) (*Lis
 
 	// 发送请求
 	var result ListCommentResult
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func (c *Client) ElectComment(ctx context.Context, req *ElectCommentRequest) (*R
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +97,7 @@ func (c *Client) UnElectComment(ctx context.Context, req *UnElectCommentRequest)
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func (c *Client) DeleteComment(ctx context.Context, req *DeleteCommentRequest) (
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -137,7 +137,7 @@ func (c *Client) ReplyComment(ctx context.Context, req *ReplyCommentRequest) (*R
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func (c *Client) DeleteReplyComment(ctx context.Context, req *DeleteReplyComment
 
 	// 发送请求
 	var result Resp
-	err = c.Https.Post(ctx, path, req, &result)
+	err = c.doPost(ctx, path, req, &result)
 	if err != nil {
 		return nil, err
 	}
