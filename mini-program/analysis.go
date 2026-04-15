@@ -1,6 +1,19 @@
 package mini_program
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
+
+// requireDateRange validates that both begin_date and end_date are non-empty.
+// Format is NOT validated client-side (WeChat accepts YYYYMMDD; server is
+// authoritative on the exact format and lookback window).
+func requireDateRange(method, beginDate, endDate string) error {
+	if beginDate == "" || endDate == "" {
+		return fmt.Errorf("mini_program: %s: beginDate and endDate are required", method)
+	}
+	return nil
+}
 
 // AnalysisDateReq is the common date-range request for data-analysis endpoints.
 type AnalysisDateReq struct {
@@ -58,6 +71,9 @@ type GetDailyVisitTrendResp struct {
 
 // GetDailySummary returns daily summary trend data for the given date range.
 func (c *Client) GetDailySummary(ctx context.Context, beginDate, endDate string) (*GetDailySummaryResp, error) {
+	if err := requireDateRange("GetDailySummary", beginDate, endDate); err != nil {
+		return nil, err
+	}
 	body := &AnalysisDateReq{BeginDate: beginDate, EndDate: endDate}
 	var resp GetDailySummaryResp
 	if err := c.doPost(ctx, "/datacube/getweanalysisappiddailysummarytrend", body, &resp); err != nil {
@@ -68,6 +84,9 @@ func (c *Client) GetDailySummary(ctx context.Context, beginDate, endDate string)
 
 // GetVisitPage returns per-page visit data for the given date range.
 func (c *Client) GetVisitPage(ctx context.Context, beginDate, endDate string) (*GetVisitPageResp, error) {
+	if err := requireDateRange("GetVisitPage", beginDate, endDate); err != nil {
+		return nil, err
+	}
 	body := &AnalysisDateReq{BeginDate: beginDate, EndDate: endDate}
 	var resp GetVisitPageResp
 	if err := c.doPost(ctx, "/datacube/getweanalysisappidvisitpage", body, &resp); err != nil {
@@ -78,6 +97,9 @@ func (c *Client) GetVisitPage(ctx context.Context, beginDate, endDate string) (*
 
 // GetDailyVisitTrend returns daily visit trend data for the given date range.
 func (c *Client) GetDailyVisitTrend(ctx context.Context, beginDate, endDate string) (*GetDailyVisitTrendResp, error) {
+	if err := requireDateRange("GetDailyVisitTrend", beginDate, endDate); err != nil {
+		return nil, err
+	}
 	body := &AnalysisDateReq{BeginDate: beginDate, EndDate: endDate}
 	var resp GetDailyVisitTrendResp
 	if err := c.doPost(ctx, "/datacube/getweanalysisappiddailyvisittrend", body, &resp); err != nil {

@@ -86,7 +86,7 @@ type Code2SessionResp struct {
 // session_key, and (if applicable) unionid.
 func (c *Client) Code2Session(ctx context.Context, jsCode string) (*Code2SessionResp, error) {
 	if jsCode == "" {
-		return nil, fmt.Errorf("mini_program: jsCode is required")
+		return nil, fmt.Errorf("mini_program: Code2Session: jsCode is required")
 	}
 	q := url.Values{
 		"appid":      {c.cfg.AppId},

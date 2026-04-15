@@ -178,10 +178,40 @@ func TestMediaCheckAsync_EmptyOpenID(t *testing.T) {
 	assertValidationErr(t, err, "OpenID is required")
 }
 
+// --- analysis.go ---
+
+func TestGetDailySummary_EmptyDates(t *testing.T) {
+	c := newValidationClient(t)
+	for _, tc := range []struct{ begin, end string }{
+		{"", ""}, {"20240101", ""}, {"", "20240101"},
+	} {
+		_, err := c.GetDailySummary(context.Background(), tc.begin, tc.end)
+		assertValidationErr(t, err, "beginDate and endDate are required")
+	}
+}
+
+func TestGetVisitPage_EmptyDates(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetVisitPage(context.Background(), "", "")
+	assertValidationErr(t, err, "beginDate and endDate are required")
+}
+
+func TestGetDailyVisitTrend_EmptyDates(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetDailyVisitTrend(context.Background(), "", "")
+	assertValidationErr(t, err, "beginDate and endDate are required")
+}
+
 // --- client.go ---
 
 func TestSendSubscribeMessage_NilBody(t *testing.T) {
 	c := newValidationClient(t)
 	err := c.SendSubscribeMessage(context.Background(), nil)
 	assertValidationErr(t, err, "body is required")
+}
+
+func TestCode2Session_EmptyJSCode(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.Code2Session(context.Background(), "")
+	assertValidationErr(t, err, "Code2Session: jsCode is required")
 }
