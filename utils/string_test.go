@@ -67,11 +67,23 @@ func TestGenerateNonceString_NotPredictable(t *testing.T) {
 }
 
 // TestGenerateHashBasedString_DeprecatedAlias verifies the deprecated alias
-// still works (for backwards compatibility).
+// still works AND produces values with the same charset/length contract as
+// GenerateNonceString — so any future accidental divergence (e.g. someone
+// inlining a stale implementation into the alias) would be caught here.
 func TestGenerateHashBasedString_DeprecatedAlias(t *testing.T) {
+	const allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 	s := GenerateHashBasedString(32)
 	if len(s) != 32 {
 		t.Errorf("length mismatch: %d", len(s))
+	}
+	for _, r := range s {
+		if !strings.ContainsRune(allowed, r) {
+			t.Errorf("alias produced unexpected char %q in %q", r, s)
+		}
+	}
+	// Default-length contract must also match.
+	if got := len(GenerateHashBasedString(0)); got != 32 {
+		t.Errorf("alias default length: got %d, want 32", got)
 	}
 }
 
