@@ -22,7 +22,10 @@ func main() {
 
 	// 示例1: 获取 Access Token
 	log.Println("=== 获取 Access Token ===")
-	token := client.GetAccessToken()
+	token, err := client.AccessTokenE(ctx)
+	if err != nil {
+		log.Fatalf("获取 Access Token 失败: %v", err)
+	}
 	log.Printf("Access Token: %s", token)
 
 	// 示例2: 获取用户列表

@@ -45,22 +45,18 @@ func (c *Client) AccessTokenE(ctx context.Context) (string, error)
 
 返回当前有效的 access_token（自动刷新，双检锁缓存）。推荐在所有 API 调用前使用此方法。
 
-#### GetAccessToken *(已废弃)*
-
-```go
-func (c *Client) GetAccessToken() string
-```
-
-> ⚠️ **Deprecated.** 静默忽略 token 刷新错误，请改用 `AccessTokenE(ctx)`。
-
 #### GetStableAccessToken
 
 ```go
-// 稳定版 access_token（双通道）
-func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error)
+// 稳定版 access_token（双通道，与 /cgi-bin/token 完全隔离）
+func (c *Client) GetStableAccessToken(ctx context.Context, forceRefresh bool) (*AccessToken, error)
 ```
 
-内部使用 `sync.RWMutex` + 双重检查，提前 60 秒视为过期，避免临界点问题。**并发安全**。
+调用 `/cgi-bin/stable_token`，返回稳定 token。`forceRefresh=true` 会立即作废上次的稳定 token 并返回新的。成功后会把 token 写入客户端内部缓存（60 秒安全 TTL 下限），后续 `AccessTokenE` 调用可直接命中。
+
+> ⚠️ **Breaking change (2026-04):** 此方法原本忽略 ctx 并内部使用 `context.Background()`；现在接受显式 ctx，与其它方法保持一致。
+
+> ⚠️ **Removed (2026-04):** 原 `GetAccessToken() string` 已删除。它静默吞掉 token 刷新错误，属于审计 2026-04-14 标记的 P0 安全隐患。请改用 `AccessTokenE(ctx)`。
 
 ### 错误类型
 
@@ -107,7 +103,7 @@ if errors.As(err, &werr) && werr.ErrCode == 40001 {
 下列表只列"大类 + 主要入口点"。每个方法的签名请直接在对应 `api.*.go` 看代码（都有中文注释）。
 
 ### 基础 (`api.base.go`, `api.api-manage.go`)
-`GetAccessToken` / `AccessTokenE` / `GetStableAccessToken` / `CallbackCheck` / `GetCallbackIp` / `GetApiDomainIP` / `GetApiQuota` / `ClearQuota` / `GetRidInfo`。
+`AccessTokenE` / `GetStableAccessToken` / `CallbackCheck` / `GetCallbackIp` / `GetApiDomainIP` / `GetApiQuota` / `ClearQuota` / `GetRidInfo`。
 
 ### 自定义菜单 (`api.custom-menu.go`)
 `CreateCustomMenu` / `GetMenu` / `DeleteMenu` / `AddConditionalMenu` / `DeleteConditionalMenu` / `TryMatchMenu`。

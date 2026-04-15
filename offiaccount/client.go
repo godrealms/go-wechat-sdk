@@ -24,7 +24,6 @@ type Config struct {
 // Client manages access token lifecycle and provides methods for the WeChat Official Account (公众号) server-side API.
 // It is safe for concurrent use.
 type Client struct {
-	ctx    context.Context
 	Config *Config
 	Https  *utils.HTTP
 
@@ -54,14 +53,16 @@ func WithHTTPClient(h *utils.HTTP) Option {
 	}
 }
 
-// NewClient creates an Official Account client. A background Context is used when ctx is nil.
-// Call WithTokenSource to delegate token management to an open-platform authorizer.
+// NewClient creates an Official Account client.
+//
+// The ctx parameter is retained for API compatibility but is no longer
+// stored on the Client — every method that touches the network takes its
+// own ctx, which is the Go-idiomatic shape. Pass anything, including nil.
+// Call WithTokenSource to delegate token management to an open-platform
+// authorizer.
 func NewClient(ctx context.Context, config *Config, opts ...Option) *Client {
-	if ctx == nil {
-		ctx = context.Background()
-	}
+	_ = ctx // retained for signature compatibility; not stored
 	c := &Client{
-		ctx:    ctx,
 		Config: config,
 		Https:  utils.NewHTTP("https://api.weixin.qq.com", utils.WithTimeout(time.Second*30)),
 	}
@@ -76,7 +77,7 @@ func NewClient(ctx context.Context, config *Config, opts ...Option) *Client {
 // When a TokenSource is configured the call is delegated to it without touching /cgi-bin/token.
 func (c *Client) AccessTokenE(ctx context.Context) (string, error) {
 	if ctx == nil {
-		ctx = c.ctx
+		ctx = context.Background()
 	}
 	if c.tokenSource != nil {
 		return c.tokenSource.AccessToken(ctx)
@@ -111,14 +112,6 @@ func (c *Client) AccessTokenE(ctx context.Context) (string, error) {
 	}
 	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
 	return c.accessToken, nil
-}
-
-// getAccessToken 旧版内部入口（保留以兼容现有代码）。
-//
-// Deprecated: 使用 AccessTokenE 来正确处理错误。
-func (c *Client) getAccessToken() string {
-	token, _ := c.AccessTokenE(c.ctx)
-	return token
 }
 
 // refreshAccessToken 调用微信服务器刷新 access_token。
