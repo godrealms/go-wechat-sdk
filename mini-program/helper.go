@@ -90,6 +90,12 @@ func decodeEnvelope(path string, respBody []byte, out any) error {
 // 微信对二进制接口（QR 码、图片）返回二进制 body；如果服务端报错，会改回
 // JSON envelope `{"errcode":N,...}`。我们用首字节判别 JSON 而非 unmarshal
 // 整个 body，避免把恰好以 '{' 起头的二进制数据当成 JSON 解析失败。
+//
+// 与 doPost 的非对称性：doPost 要求整个响应都是合法 JSON，否则 fail loud；
+// doPostRaw 则必须容忍非 JSON 响应（就是二进制成功返回）。代价是：如果代理
+// 返回一段以 '{' 起头但不完整的 JSON（例如截断到 `{"errc`），我们会把它当
+// 成二进制原样返回，调用方直到尝试解码图片才会发现异常。这是“二进制/JSON
+// 同端点”设计的固有代价，不是 bug。
 func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, error) {
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
