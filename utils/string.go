@@ -35,8 +35,12 @@ func RandomString(length int, prefix string) string {
 	return prefix + sb.String()
 }
 
-// GenerateHashBasedString 基于 crypto/rand 生成哈希散列字符串
-func GenerateHashBasedString(length int) string {
+// GenerateNonceString 使用 crypto/rand 生成长度为 length 的随机字母数字串，
+// 适合用作微信支付 nonce_str / 请求 ID 等场景。length <= 0 时退化为 32。
+//
+// 与 RandomString 的区别：本函数使用包含 0/O、1/I 等易混淆字符的更宽 charset
+// (A-Za-z0-9, 共 62 个字符)，结果长度严格等于 length，不附加前缀。
+func GenerateNonceString(length int) string {
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
 	if length <= 0 {
 		length = 32
@@ -52,6 +56,14 @@ func GenerateHashBasedString(length int) string {
 		result[i] = charset[b%byte(len(charset))]
 	}
 	return string(result)
+}
+
+// GenerateHashBasedString 是 GenerateNonceString 的旧名。该名字对实际行为
+// (随机字母数字串而非任何形式的"哈希")存在误导，将在未来版本移除。
+//
+// Deprecated: 请改用 GenerateNonceString。
+func GenerateHashBasedString(length int) string {
+	return GenerateNonceString(length)
 }
 
 // ShuffleString 使用 crypto/rand 打乱字符串

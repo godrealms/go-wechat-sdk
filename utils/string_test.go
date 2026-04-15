@@ -33,7 +33,42 @@ func TestRandomString_NotPredictable(t *testing.T) {
 	}
 }
 
-func TestGenerateHashBasedString(t *testing.T) {
+func TestGenerateNonceString(t *testing.T) {
+	s := GenerateNonceString(32)
+	if len(s) != 32 {
+		t.Errorf("length mismatch: %d", len(s))
+	}
+	const allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	for _, r := range s {
+		if !strings.ContainsRune(allowed, r) {
+			t.Errorf("unexpected char %q in %q", r, s)
+		}
+	}
+}
+
+func TestGenerateNonceString_DefaultLength(t *testing.T) {
+	if got := len(GenerateNonceString(0)); got != 32 {
+		t.Errorf("expect default length 32, got %d", got)
+	}
+	if got := len(GenerateNonceString(-1)); got != 32 {
+		t.Errorf("expect default length 32 for negative, got %d", got)
+	}
+}
+
+func TestGenerateNonceString_NotPredictable(t *testing.T) {
+	seen := map[string]struct{}{}
+	for i := 0; i < 200; i++ {
+		s := GenerateNonceString(32)
+		if _, ok := seen[s]; ok {
+			t.Fatalf("duplicate nonce in 200 trials: %s", s)
+		}
+		seen[s] = struct{}{}
+	}
+}
+
+// TestGenerateHashBasedString_DeprecatedAlias verifies the deprecated alias
+// still works (for backwards compatibility).
+func TestGenerateHashBasedString_DeprecatedAlias(t *testing.T) {
 	s := GenerateHashBasedString(32)
 	if len(s) != 32 {
 		t.Errorf("length mismatch: %d", len(s))

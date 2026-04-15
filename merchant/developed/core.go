@@ -62,7 +62,7 @@ func (c *Client) doV3WithHeaders(
 		signPath = signPath + "?" + query.Encode()
 	}
 
-	nonce := utils.GenerateHashBasedString(32)
+	nonce := utils.GenerateNonceString(32)
 	ts := time.Now().Unix()
 
 	auth, err := c.authorizationHeader(method, signPath, string(raw), nonce, ts)
@@ -99,11 +99,11 @@ func (c *Client) doV3WithHeaders(
 			}
 			if jerr := json.Unmarshal([]byte(httpErr.Body), &env); jerr == nil && env.Code != "" {
 				return &V3Error{
-					HTTPStatus: httpErr.StatusCode,
-					Code:       env.Code,
-					Message:    env.Message,
-					Detail:     env.Detail,
-					Path:       urlPath,
+					Status:  httpErr.StatusCode,
+					ErrCode: env.Code,
+					ErrMsg:  env.Message,
+					Detail:  env.Detail,
+					Path:    urlPath,
 				}
 			}
 		}

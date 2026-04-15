@@ -28,7 +28,7 @@ func (c *Client) ModifyTransactionsJsapi(ctx context.Context, order *types.Trans
 	}
 	parameter := &types.TransactionsJsapi{
 		TimeStamp: strconv.FormatInt(time.Now().Unix(), 10),
-		NonceStr:  utils.GenerateHashBasedString(32),
+		NonceStr:  utils.GenerateNonceString(32),
 		Package:   fmt.Sprintf("prepay_id=%s", resp.PrepayId),
 		SignType:  "RSA",
 	}
