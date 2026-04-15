@@ -1,6 +1,9 @@
 package mini_program
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // JumpWxa specifies the Mini Program path and query to open via a URL Scheme.
 type JumpWxa struct {
@@ -53,6 +56,9 @@ type GenerateShortLinkResp struct {
 
 // GenerateScheme generates a URL Scheme for launching the Mini Program from SMS, email, or other external contexts.
 func (c *Client) GenerateScheme(ctx context.Context, req *GenerateSchemeReq) (*GenerateSchemeResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_program: GenerateScheme: req is required")
+	}
 	var resp GenerateSchemeResp
 	if err := c.doPost(ctx, "/wxa/generatescheme", req, &resp); err != nil {
 		return nil, err
@@ -62,6 +68,9 @@ func (c *Client) GenerateScheme(ctx context.Context, req *GenerateSchemeReq) (*G
 
 // GenerateUrlLink generates a URL Link suitable for contexts where URL Schemes cannot be used (e.g. SMS, email).
 func (c *Client) GenerateUrlLink(ctx context.Context, req *GenerateUrlLinkReq) (*GenerateUrlLinkResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_program: GenerateUrlLink: req is required")
+	}
 	var resp GenerateUrlLinkResp
 	if err := c.doPost(ctx, "/wxa/generate_urllink", req, &resp); err != nil {
 		return nil, err
@@ -71,6 +80,12 @@ func (c *Client) GenerateUrlLink(ctx context.Context, req *GenerateUrlLinkReq) (
 
 // GenerateShortLink generates a Short Link for sharing within WeChat.
 func (c *Client) GenerateShortLink(ctx context.Context, req *GenerateShortLinkReq) (*GenerateShortLinkResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_program: GenerateShortLink: req is required")
+	}
+	if req.PageURL == "" {
+		return nil, fmt.Errorf("mini_program: GenerateShortLink: req.PageURL is required")
+	}
 	var resp GenerateShortLinkResp
 	if err := c.doPost(ctx, "/wxa/genwxashortlink", req, &resp); err != nil {
 		return nil, err

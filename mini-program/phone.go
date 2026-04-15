@@ -1,6 +1,9 @@
 package mini_program
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // GetPhoneNumberReq is the request body for the get-phone-number API.
 type GetPhoneNumberReq struct {
@@ -28,6 +31,9 @@ type GetPhoneNumberResp struct {
 
 // GetPhoneNumber exchanges the code returned by the front-end getPhoneNumber callback for the user's phone number.
 func (c *Client) GetPhoneNumber(ctx context.Context, code string) (*GetPhoneNumberResp, error) {
+	if code == "" {
+		return nil, fmt.Errorf("mini_program: GetPhoneNumber: code is required")
+	}
 	body := &GetPhoneNumberReq{Code: code}
 	var resp GetPhoneNumberResp
 	if err := c.doPost(ctx, "/wxa/business/getuserphonenumber", body, &resp); err != nil {

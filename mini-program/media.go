@@ -18,9 +18,23 @@ type UploadTempMediaResp struct {
 	CreatedAt int64  `json:"created_at"`
 }
 
+// validMediaTypes are the WeChat-accepted values for temporary media upload.
+var validMediaTypes = map[string]struct{}{
+	"image": {}, "voice": {}, "video": {}, "thumb": {},
+}
+
 // UploadTempMedia uploads a temporary media asset (image, voice, video, or thumbnail).
 // mediaType must be one of: "image", "voice", "video", "thumb".
 func (c *Client) UploadTempMedia(ctx context.Context, mediaType, fileName string, fileData io.Reader) (*UploadTempMediaResp, error) {
+	if _, ok := validMediaTypes[mediaType]; !ok {
+		return nil, fmt.Errorf("mini_program: UploadTempMedia: mediaType must be one of image/voice/video/thumb, got %q", mediaType)
+	}
+	if fileName == "" {
+		return nil, fmt.Errorf("mini_program: UploadTempMedia: fileName is required")
+	}
+	if fileData == nil {
+		return nil, fmt.Errorf("mini_program: UploadTempMedia: fileData is required")
+	}
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
 		return nil, err
@@ -63,6 +77,9 @@ func (c *Client) UploadTempMedia(ctx context.Context, mediaType, fileName string
 
 // GetTempMedia retrieves a temporary media asset by its media ID and returns the raw file bytes.
 func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, error) {
+	if mediaID == "" {
+		return nil, fmt.Errorf("mini_program: GetTempMedia: mediaID is required")
+	}
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
 		return nil, err

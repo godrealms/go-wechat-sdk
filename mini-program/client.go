@@ -155,6 +155,9 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 
 // SendSubscribeMessage sends a subscription template message to the user identified in body.
 func (c *Client) SendSubscribeMessage(ctx context.Context, body any) error {
+	if body == nil {
+		return fmt.Errorf("mini_program: SendSubscribeMessage: body is required")
+	}
 	token, err := c.AccessToken(ctx)
 	if err != nil {
 		return err
