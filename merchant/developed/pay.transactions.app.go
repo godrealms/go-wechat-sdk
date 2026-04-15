@@ -30,7 +30,7 @@ func (c *Client) ModifyTransactionsApp(ctx context.Context, order *types.Transac
 		PartnerId:    c.mchid,
 		PrepayId:     resp.PrepayId,
 		PackageValue: "Sign=WXPay",
-		NonceStr:     utils.GenerateHashBasedString(32),
+		NonceStr:     utils.GenerateNonceString(32),
 		TimeStamp:    strconv.FormatInt(time.Now().Unix(), 10),
 	}
 	if err := parameter.GenerateSignature(c.privateKey); err != nil {

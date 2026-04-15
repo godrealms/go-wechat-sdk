@@ -375,11 +375,28 @@ func TestClient_DoV3_ParsesV3ErrorEnvelope(t *testing.T) {
 	if !errors.As(err, &v3) {
 		t.Fatalf("expected *V3Error, got %T: %v", err, err)
 	}
-	if v3.Code != "PARAM_ERROR" {
-		t.Errorf("unexpected code: %s", v3.Code)
+	if v3.Code() != "PARAM_ERROR" {
+		t.Errorf("unexpected code: %s", v3.Code())
 	}
-	if v3.HTTPStatus != http.StatusBadRequest {
-		t.Errorf("unexpected status: %d", v3.HTTPStatus)
+	if v3.HTTPStatus() != http.StatusBadRequest {
+		t.Errorf("unexpected status: %d", v3.HTTPStatus())
+	}
+
+	// V3Error must also be inspectable via the package-agnostic
+	// utils.WechatAPIV3Error interface so callers can avoid importing this
+	// concrete package.
+	var iface utils.WechatAPIV3Error
+	if !errors.As(err, &iface) {
+		t.Fatalf("expected error to satisfy utils.WechatAPIV3Error, got %T", err)
+	}
+	if iface.Code() != "PARAM_ERROR" {
+		t.Errorf("interface Code() = %q, want PARAM_ERROR", iface.Code())
+	}
+	if iface.Message() != "appid invalid" {
+		t.Errorf("interface Message() = %q, want appid invalid", iface.Message())
+	}
+	if iface.HTTPStatus() != http.StatusBadRequest {
+		t.Errorf("interface HTTPStatus() = %d, want %d", iface.HTTPStatus(), http.StatusBadRequest)
 	}
 }
 

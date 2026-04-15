@@ -46,7 +46,7 @@ func (c *Client) FetchPlatformCertificates(ctx context.Context) ([]*x509.Certifi
 	}
 
 	const urlPath = "/v3/certificates"
-	nonce := utils.GenerateHashBasedString(32)
+	nonce := utils.GenerateNonceString(32)
 	ts := time.Now().Unix()
 	auth, err := c.authorizationHeader(http.MethodGet, urlPath, "", nonce, ts)
 	if err != nil {

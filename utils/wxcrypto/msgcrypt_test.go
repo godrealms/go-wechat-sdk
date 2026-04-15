@@ -172,3 +172,33 @@ func TestDecrypt_OpaqueErrorOnAnyTampering(t *testing.T) {
 		})
 	}
 }
+
+// Audit: Decrypt must also reject malformed inputs (invalid base64 / empty)
+// with the same opaque error as cryptographic failures. Anything else risks
+// leaking a distinguishable signal back to an attacker.
+func TestDecrypt_OpaqueErrorOnMalformedInput(t *testing.T) {
+	mc, err := New("tk", genEncodingAESKey(t), "wxappid")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cases := []struct {
+		name   string
+		cipher string
+	}{
+		{"empty", ""},
+		{"not base64", "@@@not-base64@@@"},
+		{"valid base64 but too short", base64.StdEncoding.EncodeToString([]byte("short"))},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _, err := mc.Decrypt(tc.cipher)
+			if err == nil {
+				t.Fatalf("expected error")
+			}
+			if err.Error() != "wxcrypto: decrypt failed" {
+				t.Errorf("expected opaque error, got %q", err.Error())
+			}
+		})
+	}
+}
