@@ -84,7 +84,9 @@ func (f *fakeTokenSource) AccessToken(ctx context.Context) (string, error) {
 }
 
 func TestAccessToken_HandlesShortExpiresIn(t *testing.T) {
+	var calls int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		calls++
 		_, _ = w.Write([]byte(`{"access_token":"X","expires_in":10}`))
 	}))
 	defer srv.Close()
@@ -100,9 +102,12 @@ func TestAccessToken_HandlesShortExpiresIn(t *testing.T) {
 	if tok != "X" {
 		t.Fatalf("got %q", tok)
 	}
-	// expiresAt must be in the future, not the past.
-	if !c.expiresAt.After(time.Now()) {
-		t.Errorf("expiresAt is in the past: %v", c.expiresAt)
+	// Second call must be cached (TTL floored to 60s), proving expiresAt is in the future.
+	if _, err := c.AccessToken(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Errorf("expected 1 fetch with TTL clamp, got %d", calls)
 	}
 }
 

@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
@@ -28,9 +27,7 @@ type TokenSource interface {
 type Client struct {
 	cfg         Config
 	http        *utils.HTTP
-	mu          sync.RWMutex
-	accessToken string
-	expiresAt   time.Time
+	cache       *utils.TokenCache
 	tokenSource TokenSource
 }
 
@@ -59,6 +56,7 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	if c.tokenSource == nil && cfg.AppSecret == "" {
 		return nil, fmt.Errorf("mini_store: AppSecret is required when no TokenSource is injected")
 	}
+	c.cache = utils.NewTokenCache("mini_store", c.fetchToken)
 	return c, nil
 }
 
@@ -72,23 +70,9 @@ type accessTokenResp struct {
 	ErrMsg      string `json:"errmsg,omitempty"`
 }
 
-// AccessToken returns a valid access_token, refreshing 60 s before expiry.
-func (c *Client) AccessToken(ctx context.Context) (string, error) {
-	if c.tokenSource != nil {
-		return c.tokenSource.AccessToken(ctx)
-	}
-	c.mu.RLock()
-	if c.accessToken != "" && time.Now().Before(c.expiresAt) {
-		t := c.accessToken
-		c.mu.RUnlock()
-		return t, nil
-	}
-	c.mu.RUnlock()
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.accessToken != "" && time.Now().Before(c.expiresAt) {
-		return c.accessToken, nil
-	}
+// fetchToken issues the /cgi-bin/token HTTP call. It is passed to TokenCache
+// as the refresh callback and is not called directly.
+func (c *Client) fetchToken(ctx context.Context) (string, int64, error) {
 	q := url.Values{
 		"grant_type": {"client_credential"},
 		"appid":      {c.cfg.AppId},
@@ -96,21 +80,18 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 	}
 	out := &accessTokenResp{}
 	if err := c.http.Get(ctx, "/cgi-bin/token", q, out); err != nil {
-		return "", fmt.Errorf("mini_store: fetch token: %w", err)
+		return "", 0, fmt.Errorf("mini_store: fetch token: %w", err)
 	}
 	if out.ErrCode != 0 {
-		return "", &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
+		return "", 0, &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
 	}
-	if out.AccessToken == "" {
-		return "", fmt.Errorf("mini_store: empty access_token")
+	return out.AccessToken, out.ExpiresIn, nil
+}
+
+// AccessToken returns a valid access_token, refreshing 60 s before expiry.
+func (c *Client) AccessToken(ctx context.Context) (string, error) {
+	if c.tokenSource != nil {
+		return c.tokenSource.AccessToken(ctx)
 	}
-	// Clamp TTL: floor at 60s so a hostile/malformed upstream cannot cause a
-	// refresh storm by returning a small expires_in.
-	ttl := out.ExpiresIn - 60
-	if ttl < 60 {
-		ttl = 60
-	}
-	c.accessToken = out.AccessToken
-	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
-	return c.accessToken, nil
+	return c.cache.Get(ctx)
 }
