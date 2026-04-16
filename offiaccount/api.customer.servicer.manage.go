@@ -1,94 +1,33 @@
 package offiaccount
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"mime/multipart"
-	"net/http"
 	"net/url"
 )
 
-// UploadKFHeadImg 设置客服头像
+// UploadKFHeadImg 设置客服头像。
 // kfAccount: 完整客服账号，格式为：账号前缀@公众号微信号
 // filename: 头像文件名
 // reader: 头像文件内容读取器
 func (c *Client) UploadKFHeadImg(ctx context.Context, kfAccount string, filename string, reader io.Reader) (*Resp, error) {
-	// 获取access_token
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, err
 	}
-
-	// 构造请求URL
+	data, err := io.ReadAll(reader)
+	if err != nil {
+		return nil, fmt.Errorf("offiaccount: UploadKFHeadImg: read file: %w", err)
+	}
 	params := url.Values{}
-	params.Add("access_token", token)
-	params.Add("kf_account", kfAccount)
-
-	path := fmt.Sprintf("/customservice/kfaccount/uploadheadimg?%s", params.Encode())
-
-	// 创建multipart表单
-	var requestBody bytes.Buffer
-	writer := multipart.NewWriter(&requestBody)
-
-	// 添加文件字段
-	part, err := writer.CreateFormFile("media", filename)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create a file field: %v", err)
-	}
-
-	// 复制文件内容
-	_, err = io.Copy(part, reader)
-	if err != nil {
-		return nil, fmt.Errorf("copying file contents failed: %v", err)
-	}
-
-	// 关闭writer
-	err = writer.Close()
-	if err != nil {
-		return nil, fmt.Errorf("closing writer failed: %v", err)
-	}
-
-	// 构建完整URL
-	fullURL := c.Https.BaseURL + path
-
-	// 创建HTTP请求
-	httpReq, err := http.NewRequestWithContext(ctx, "POST", fullURL, &requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("the http request was created failed: %v", err)
-	}
-
-	// 设置Content-Type
-	httpReq.Header.Set("Content-Type", writer.FormDataContentType())
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(httpReq)
-	if err != nil {
-		return nil, fmt.Errorf("sending http request failed: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response failed: %v", err)
-	}
-
-	// 检查响应状态码
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	// 解析响应
+	params.Set("access_token", token)
+	params.Set("kf_account", kfAccount)
+	path := "/customservice/kfaccount/uploadheadimg?" + params.Encode()
 	var result Resp
-	if len(respBody) > 0 {
-		if err = json.Unmarshal(respBody, &result); err != nil {
-			return nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
-		}
+	if err = c.doPostMultipartFile(ctx, path, "media", filename, data, &result); err != nil {
+		return nil, err
 	}
-
 	return &result, nil
 }
 

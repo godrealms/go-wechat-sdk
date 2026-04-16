@@ -12,12 +12,9 @@ import (
 // 历史实现自己拼 multipart/http 请求并绕过了统一的 errcode 检查，这里统一走
 // doPostMultipart，和 UploadImg / AddMaterial 保持一致。
 func (c *Client) UploadImage(ctx context.Context, filename, mediaType string) (*UploadImageResponse, error) {
-	if _, err := os.Stat(filename); os.IsNotExist(err) {
-		return nil, fmt.Errorf("the file does not exist: %s", filename)
-	}
 	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("read file failed: %w", err)
+		return nil, fmt.Errorf("offiaccount: UploadImage: read file: %w", err)
 	}
 
 	token, err := c.AccessTokenE(ctx)

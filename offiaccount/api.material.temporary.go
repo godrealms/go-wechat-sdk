@@ -44,7 +44,7 @@ func (c *Client) UploadTempMediaByPath(ctx context.Context, mediaType TempMediaT
 	// 打开文件
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("open file failed: %v", err)
+		return nil, fmt.Errorf("offiaccount: UploadTempMediaByPath: open file: %w", err)
 	}
 	defer file.Close()
 
@@ -81,20 +81,20 @@ func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, *Get
 	// 创建HTTP请求
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("the http request was created failed: %v", err)
+		return nil, nil, fmt.Errorf("offiaccount: GetTempMedia: new request: %w", err)
 	}
 
 	// 发送请求
 	resp, err := c.Https.Client.Do(httpReq)
 	if err != nil {
-		return nil, nil, fmt.Errorf("sending http request failed: %v", err)
+		return nil, nil, fmt.Errorf("offiaccount: GetTempMedia: send: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// 读取响应
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read response failed: %v", err)
+		return nil, nil, fmt.Errorf("offiaccount: GetTempMedia: read body: %w", err)
 	}
 
 	// 如果看起来像 JSON（以 '{' 开头），先探测 errcode 再区分 video / error
@@ -107,7 +107,7 @@ func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, *Get
 		// 无 errcode → 视频素材 JSON，解析 video_url
 		var result GetTempMediaVideoResult
 		if err = json.Unmarshal(respBody, &result); err != nil {
-			return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
+			return nil, nil, fmt.Errorf("offiaccount: GetTempMedia: decode: %w", err)
 		}
 		// 如果 Title 或 VideoURL 有值，视作视频结果；否则回落到原始字节
 		if result.VideoURL != "" {
@@ -138,27 +138,27 @@ func (c *Client) GetHDVoice(ctx context.Context, mediaID string) ([]byte, *Resp,
 	// 创建HTTP请求
 	httpReq, err := http.NewRequestWithContext(ctx, "GET", fullURL, nil)
 	if err != nil {
-		return nil, nil, fmt.Errorf("the http request was created failed: %v", err)
+		return nil, nil, fmt.Errorf("offiaccount: GetHDVoice: new request: %w", err)
 	}
 
 	// 发送请求
 	resp, err := c.Https.Client.Do(httpReq)
 	if err != nil {
-		return nil, nil, fmt.Errorf("sending http request failed: %v", err)
+		return nil, nil, fmt.Errorf("offiaccount: GetHDVoice: send: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// 读取响应
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, nil, fmt.Errorf("read response failed: %v", err)
+		return nil, nil, fmt.Errorf("offiaccount: GetHDVoice: read body: %w", err)
 	}
 
 	// 如果看起来像 JSON（以 '{' 开头），一定是错误响应
 	if len(respBody) > 0 && respBody[0] == '{' {
 		var probe Resp
 		if err = json.Unmarshal(respBody, &probe); err != nil {
-			return nil, nil, fmt.Errorf("unmarshal response body failed: %v:%s", err, string(respBody))
+			return nil, nil, fmt.Errorf("offiaccount: GetHDVoice: decode: %w", err)
 		}
 		if probe.ErrCode != 0 {
 			return nil, &probe, &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}

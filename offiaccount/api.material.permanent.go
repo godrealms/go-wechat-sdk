@@ -161,7 +161,7 @@ func (c *Client) UploadImageByPath(ctx context.Context, filepath string) (*Uploa
 	// 打开文件
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("open file failed: %v", err)
+		return nil, fmt.Errorf("offiaccount: UploadImageByPath: open file: %w", err)
 	}
 	defer file.Close()
 
@@ -217,7 +217,7 @@ func (c *Client) AddMaterialByPath(ctx context.Context, materialType MaterialTyp
 	// 打开文件
 	file, err := os.Open(filepath)
 	if err != nil {
-		return nil, fmt.Errorf("open file failed: %v", err)
+		return nil, fmt.Errorf("offiaccount: AddMaterialByPath: open file: %w", err)
 	}
 	defer file.Close()
 

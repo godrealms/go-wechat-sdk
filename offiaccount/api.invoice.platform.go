@@ -77,7 +77,7 @@ func (c *Client) SetPdf(ctx context.Context, filename string, pdf io.Reader) (*S
 	// 读入内存：helper 需要 []byte，PDF 文件通常在几十 KB ~ 数 MB 量级可接受。
 	data, err := io.ReadAll(pdf)
 	if err != nil {
-		return nil, fmt.Errorf("read pdf failed: %w", err)
+		return nil, fmt.Errorf("offiaccount: SetPdf: read pdf: %w", err)
 	}
 
 	var result SetPdfResult
