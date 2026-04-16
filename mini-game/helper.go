@@ -6,13 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-)
 
-// baseResp 微信公共错误字段。
-type baseResp struct {
-	ErrCode int    `json:"errcode"`
-	ErrMsg  string `json:"errmsg"`
-}
+	"github.com/godrealms/go-wechat-sdk/utils"
+)
 
 // doPost 发送 POST JSON，自动注入 access_token，始终检查 errcode。
 //
@@ -41,30 +37,10 @@ func (c *Client) doPost(ctx context.Context, path string, body any, out any) err
 	return decodeEnvelope(path, respBody, out)
 }
 
-// decodeEnvelope is the shared error-aware unmarshal step.
+// decodeEnvelope delegates to the shared utils.DecodeEnvelope, producing a
+// package-local *APIError on non-zero errcodes.
 func decodeEnvelope(path string, respBody []byte, out any) error {
-	var base baseResp
-	if err := json.Unmarshal(respBody, &base); err != nil {
-		return fmt.Errorf("mini-game: %s: decode envelope: %w (body snippet: %s)",
-			path, err, snippet(respBody))
-	}
-	if base.ErrCode != 0 {
-		return &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
-	}
-	if out != nil {
-		if err := json.Unmarshal(respBody, out); err != nil {
-			return fmt.Errorf("mini-game: %s: decode result: %w", path, err)
-		}
-	}
-	return nil
-}
-
-// snippet returns at most the first 200 bytes of body as a string, for use
-// in error messages.
-func snippet(b []byte) string {
-	const max = 200
-	if len(b) <= max {
-		return string(b)
-	}
-	return string(b[:max]) + "...(truncated)"
+	return utils.DecodeEnvelope("mini-game", path, respBody, out, func(code int, msg, p string) error {
+		return &APIError{ErrCode: code, ErrMsg: msg, Path: p}
+	})
 }

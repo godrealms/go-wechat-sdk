@@ -6,13 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-)
 
-// baseResp 微信公共错误字段。
-type baseResp struct {
-	ErrCode int    `json:"errcode"`
-	ErrMsg  string `json:"errmsg"`
-}
+	"github.com/godrealms/go-wechat-sdk/utils"
+)
 
 // doGet 发送 GET 请求，自动注入 access_token，始终检查 errcode。
 //
@@ -65,24 +61,12 @@ func (c *Client) doPost(ctx context.Context, path string, body any, out any) err
 	return decodeEnvelope(path, respBody, out)
 }
 
-// decodeEnvelope is the shared error-aware unmarshal step used by both
-// doGet and doPost. It surfaces a typed *APIError for non-zero errcodes
-// and a wrapped error for malformed JSON envelopes.
+// decodeEnvelope delegates to the shared utils.DecodeEnvelope, producing a
+// package-local *APIError on non-zero errcodes.
 func decodeEnvelope(path string, respBody []byte, out any) error {
-	var base baseResp
-	if err := json.Unmarshal(respBody, &base); err != nil {
-		return fmt.Errorf("mini-program: %s: decode envelope: %w (body snippet: %s)",
-			path, err, snippet(respBody))
-	}
-	if base.ErrCode != 0 {
-		return &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
-	}
-	if out != nil {
-		if err := json.Unmarshal(respBody, out); err != nil {
-			return fmt.Errorf("mini-program: %s: decode result: %w", path, err)
-		}
-	}
-	return nil
+	return utils.DecodeEnvelope("mini-program", path, respBody, out, func(code int, msg, p string) error {
+		return &APIError{ErrCode: code, ErrMsg: msg, Path: p}
+	})
 }
 
 // doPostRaw 发送 POST JSON，返回原始字节（用于二进制响应如图片）。
@@ -94,8 +78,8 @@ func decodeEnvelope(path string, respBody []byte, out any) error {
 // 与 doPost 的非对称性：doPost 要求整个响应都是合法 JSON，否则 fail loud；
 // doPostRaw 则必须容忍非 JSON 响应（就是二进制成功返回）。代价是：如果代理
 // 返回一段以 '{' 起头但不完整的 JSON（例如截断到 `{"errc`），我们会把它当
-// 成二进制原样返回，调用方直到尝试解码图片才会发现异常。这是“二进制/JSON
-// 同端点”设计的固有代价，不是 bug。
+// 成二进制原样返回，调用方直到尝试解码图片才会发现异常。这是"二进制/JSON
+// 同端点"设计的固有代价，不是 bug。
 func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, error) {
 	tok, err := c.AccessToken(ctx)
 	if err != nil {
@@ -111,20 +95,10 @@ func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, 
 		return nil, err
 	}
 	if len(respBody) > 0 && respBody[0] == '{' {
-		var resp baseResp
-		if json.Unmarshal(respBody, &resp) == nil && resp.ErrCode != 0 {
-			return nil, &APIError{ErrCode: resp.ErrCode, ErrMsg: resp.ErrMsg, Path: path}
+		var base utils.BaseResp
+		if json.Unmarshal(respBody, &base) == nil && base.ErrCode != 0 {
+			return nil, &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
 		}
 	}
 	return respBody, nil
-}
-
-// snippet returns at most the first 200 bytes of body as a string, for use
-// in error messages.
-func snippet(b []byte) string {
-	const max = 200
-	if len(b) <= max {
-		return string(b)
-	}
-	return string(b[:max]) + "...(truncated)"
 }

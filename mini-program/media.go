@@ -9,6 +9,8 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 // UploadTempMediaResp is the response from the upload-temporary-media API.
@@ -63,7 +65,7 @@ func (c *Client) UploadTempMedia(ctx context.Context, mediaType, fileName string
 		return nil, err
 	}
 	var resp struct {
-		baseResp
+		utils.BaseResp
 		UploadTempMediaResp
 	}
 	if err := json.Unmarshal(respBody, &resp); err != nil {
@@ -92,7 +94,7 @@ func (c *Client) GetTempMedia(ctx context.Context, mediaID string) ([]byte, erro
 		return nil, err
 	}
 	if len(respBody) > 0 && respBody[0] == '{' {
-		var resp baseResp
+		var resp utils.BaseResp
 		if json.Unmarshal(respBody, &resp) == nil && resp.ErrCode != 0 {
 			return nil, &APIError{ErrCode: resp.ErrCode, ErrMsg: resp.ErrMsg, Path: "/cgi-bin/media/get"}
 		}
