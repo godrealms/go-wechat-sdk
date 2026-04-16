@@ -7,26 +7,26 @@ import (
 	"time"
 )
 
-// GetAccessToken retrieves the interface call credential (access token).
-// The global unique backend interface call credential is valid for 7200s; developers must store it safely.
+// GetStableAccessToken returns a stable access_token that is not
+// invalidated by concurrent calls to the regular /cgi-bin/token endpoint.
+// Pass forceRefresh=true to rotate the token immediately (which WILL
+// invalidate the previous stable token).
 //
-// Deprecated: GetAccessToken silently drops token errors. Use AccessTokenE instead.
-func (c *Client) GetAccessToken() string {
-	return c.getAccessToken()
-}
-
-// GetStableAccessToken returns a stable access_token that is not invalidated by concurrent calls
-// to the regular token endpoint. Pass forceRefresh=true to rotate the token immediately.
+// The stable_token endpoint is rate-limited to 10,000 calls/minute and
+// 500,000 calls/day. Its token pool is isolated from the one populated
+// by AccessTokenE / /cgi-bin/token — the two do not interfere.
 //
-// 获取稳定 AccessToken
-// 获取全局后台接口调用凭据，有效期最长为7200s，开发者需要进行妥善保存；
-// 有两种调用模式:
-//  1. 普通模式，access_token 有效期内重复调用该接口不会更新 access_token，绝大部分场景下使用该模式；
-//  2. 强制刷新模式，会导致上次获取的 access_token 失效，并返回新的 access_token；
+// On success, the returned token is also written to the client's
+// in-process token cache with a 60s TTL floor, so subsequent
+// AccessTokenE calls will see it until expiry.
 //
-// 该接口调用频率限制为 1万次 每分钟，每天限制调用 50万 次；
-// 与getAccessToken获取的调用凭证完全隔离，互不影响。该接口仅支持 POST JSON 形式的调用；
-func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
+// Breaking change vs pre-audit signature: this method used to ignore
+// its context and call context.Background() internally. It now takes a
+// ctx parameter like every other method on the client.
+func (c *Client) GetStableAccessToken(ctx context.Context, forceRefresh bool) (*AccessToken, error) {
+	if c.Config == nil || c.Config.AppId == "" || c.Config.AppSecret == "" {
+		return nil, fmt.Errorf("offiaccount: AppId and AppSecret are required")
+	}
 	body := map[string]interface{}{
 		"grant_type":    "client_credential",
 		"appid":         c.Config.AppId,
@@ -34,11 +34,14 @@ func (c *Client) GetStableAccessToken(forceRefresh bool) (*AccessToken, error) {
 		"force_refresh": forceRefresh,
 	}
 	result := &AccessToken{}
-	if err := c.Https.Post(context.Background(), "/cgi-bin/stable_token", body, result); err != nil {
+	if err := c.Https.Post(ctx, "/cgi-bin/stable_token", body, result); err != nil {
 		return nil, err
 	}
 	if result.ErrCode != 0 {
 		return nil, &WeixinError{ErrCode: result.ErrCode, ErrMsg: result.ErrMsg}
+	}
+	if result.AccessToken == "" {
+		return nil, fmt.Errorf("offiaccount: stable_token returned empty access_token")
 	}
 	c.tokenMutex.Lock()
 	c.accessToken = result.AccessToken

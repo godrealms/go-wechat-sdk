@@ -69,14 +69,22 @@ func TestClient_AccessTokenE_ReturnsWeixinError(t *testing.T) {
 	}
 }
 
-func TestClient_GetAccessToken_BackwardsCompatible(t *testing.T) {
+// TestClient_AccessTokenE_FetchesFromUpstream exercises the happy path of
+// AccessTokenE against a fake /cgi-bin/token. It replaces the old
+// TestClient_GetAccessToken_BackwardsCompatible test that pinned the
+// now-removed GetAccessToken() shim.
+func TestClient_AccessTokenE_FetchesFromUpstream(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"access_token":"COMPAT","expires_in":7200}`))
 	}))
 	defer srv.Close()
 
 	c := newClientWithBaseURL(srv.URL, &Config{AppId: "appid", AppSecret: "secret"})
-	if got := c.GetAccessToken(); got != "COMPAT" {
+	got, err := c.AccessTokenE(context.Background())
+	if err != nil {
+		t.Fatalf("AccessTokenE: %v", err)
+	}
+	if got != "COMPAT" {
 		t.Errorf("expected COMPAT, got %q", got)
 	}
 }
