@@ -38,6 +38,15 @@ func NewTokenCache(pkg string, fetch TokenFetcher) *TokenCache {
 	return &TokenCache{pkg: pkg, fetch: fetch}
 }
 
+// Invalidate forces the next call to Get to refresh the token.
+// Useful after receiving a 42001 "access_token expired" error from WeChat.
+func (tc *TokenCache) Invalidate() {
+	tc.mu.Lock()
+	tc.accessToken = ""
+	tc.expiresAt = time.Time{}
+	tc.mu.Unlock()
+}
+
 // Get returns a cached access_token, refreshing it when fewer than 60 seconds
 // remain before expiry. Uses a read-lock fast path with a write-lock fallback
 // (double-checked locking) to minimise contention under high concurrency.

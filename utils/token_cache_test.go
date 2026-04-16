@@ -126,6 +126,31 @@ func TestTokenCache_Concurrent(t *testing.T) {
 	}
 }
 
+func TestTokenCache_Invalidate(t *testing.T) {
+	var calls int
+	tc := NewTokenCache("test", func(ctx context.Context) (string, int64, error) {
+		calls++
+		return "TOK", 7200, nil
+	})
+	if _, err := tc.Get(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 1 {
+		t.Fatalf("expected 1 fetch, got %d", calls)
+	}
+	tc.Invalidate()
+	tok, err := tc.Get(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tok != "TOK" {
+		t.Errorf("got %q, want TOK", tok)
+	}
+	if calls != 2 {
+		t.Errorf("expected 2 fetches after Invalidate, got %d", calls)
+	}
+}
+
 func TestTokenCache_RefreshAfterExpiry(t *testing.T) {
 	var calls int
 	tc := NewTokenCache("test", func(ctx context.Context) (string, int64, error) {

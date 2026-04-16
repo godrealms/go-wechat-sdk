@@ -28,9 +28,10 @@ type TokenSource interface {
 
 // Client manages the aispeech API. Safe for concurrent use.
 type Client struct {
-	cfg         Config
-	http        *utils.HTTP
-	cache       *utils.TokenCache
+	cfg   Config
+	http  *utils.HTTP
+	cache *utils.TokenCache
+
 	tokenSource TokenSource
 }
 
