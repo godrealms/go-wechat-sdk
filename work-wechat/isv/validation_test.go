@@ -378,3 +378,179 @@ func TestSetSessionInfo_NilInfo(t *testing.T) {
 	err := c.SetSessionInfo(context.Background(), "preauthcode123", nil)
 	mustContain(t, err, "info is required")
 }
+
+// ---------- Calendar validation ----------
+
+func TestCreateCalendar_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.CreateCalendar(context.Background(), nil)
+	mustContain(t, err, "CreateCalendar")
+}
+
+func TestUpdateCalendar_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.UpdateCalendar(context.Background(), nil)
+	mustContain(t, err, "UpdateCalendar")
+}
+
+func TestGetCalendar_EmptyIDs(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetCalendar(context.Background(), nil)
+	mustContain(t, err, "calIDs is required")
+}
+
+func TestDeleteCalendar_EmptyID(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.DeleteCalendar(context.Background(), "")
+	mustContain(t, err, "calID")
+}
+
+func TestCreateSchedule_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.CreateSchedule(context.Background(), nil)
+	mustContain(t, err, "CreateSchedule")
+}
+
+func TestUpdateSchedule_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.UpdateSchedule(context.Background(), nil)
+	mustContain(t, err, "UpdateSchedule")
+}
+
+func TestDeleteSchedule_EmptyID(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.DeleteSchedule(context.Background(), "")
+	mustContain(t, err, "scheduleID")
+}
+
+func TestGetScheduleByCalendar_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetScheduleByCalendar(context.Background(), nil)
+	mustContain(t, err, "GetScheduleByCalendar")
+}
+
+// ---------- Checkin validation ----------
+
+func TestGetCheckinData_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetCheckinData(context.Background(), nil)
+	mustContain(t, err, "GetCheckinData")
+}
+
+func TestGetCheckinOption_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetCheckinOption(context.Background(), nil)
+	mustContain(t, err, "GetCheckinOption")
+}
+
+func TestGetCheckinDayData_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetCheckinDayData(context.Background(), nil)
+	mustContain(t, err, "GetCheckinDayData")
+}
+
+func TestGetCheckinMonthData_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetCheckinMonthData(context.Background(), nil)
+	mustContain(t, err, "GetCheckinMonthData")
+}
+
+// ---------- Department validation ----------
+
+func TestCreateDepartment_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.CreateDepartment(context.Background(), nil)
+	mustContain(t, err, "CreateDepartment")
+}
+
+func TestUpdateDepartment_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.UpdateDepartment(context.Background(), nil)
+	mustContain(t, err, "UpdateDepartment")
+}
+
+func TestDeleteDepartment_ZeroID(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.DeleteDepartment(context.Background(), 0)
+	mustContain(t, err, "id must be > 0")
+}
+
+// ---------- Invite validation ----------
+
+func TestInviteUser_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.InviteUser(context.Background(), nil)
+	mustContain(t, err, "InviteUser")
+}
+
+// ---------- Workbench validation ----------
+
+func TestSetWorkbenchTemplate_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.SetWorkbenchTemplate(context.Background(), nil)
+	mustContain(t, err, "SetWorkbenchTemplate")
+}
+
+func TestGetWorkbenchTemplate_ZeroAgentID(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	_, err := cc.GetWorkbenchTemplate(context.Background(), 0)
+	mustContain(t, err, "agentID must be > 0")
+}
+
+func TestSetWorkbenchData_NilReq(t *testing.T) {
+	cc := newValidationCorpClient(t)
+	err := cc.SetWorkbenchData(context.Background(), nil)
+	mustContain(t, err, "SetWorkbenchData")
+}
+
+// ---------- Suite Permanent validation ----------
+
+func TestGetPermanentCode_EmptyAuthCode(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetPermanentCode(context.Background(), "")
+	mustContain(t, err, "authCode")
+}
+
+func TestGetAuthInfo_EmptyCorpID(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetAuthInfo(context.Background(), "", "perm123")
+	mustContain(t, err, "corpID")
+}
+
+func TestGetAuthInfo_EmptyPermanentCode(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetAuthInfo(context.Background(), "corp1", "")
+	mustContain(t, err, "permanentCode")
+}
+
+func TestGetAdminList_EmptyCorpID(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetAdminList(context.Background(), "", "agent1")
+	mustContain(t, err, "corpID")
+}
+
+func TestGetAdminList_EmptyAgentID(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.GetAdminList(context.Background(), "corp1", "")
+	mustContain(t, err, "agentID")
+}
+
+// ---------- Provider ID Convert validation ----------
+
+func TestCorpIDToOpenCorpID_EmptyCorpID(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.CorpIDToOpenCorpID(context.Background(), "")
+	mustContain(t, err, "corpID")
+}
+
+func TestUserIDToOpenUserID_EmptyCorpID(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.UserIDToOpenUserID(context.Background(), "", []string{"u1"})
+	mustContain(t, err, "corpID")
+}
+
+func TestUserIDToOpenUserID_EmptyUserIDs(t *testing.T) {
+	c := newValidationClient(t)
+	_, err := c.UserIDToOpenUserID(context.Background(), "corp1", nil)
+	mustContain(t, err, "userIDs is required")
+}

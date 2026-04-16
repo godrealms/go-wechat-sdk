@@ -2,12 +2,16 @@ package isv
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 )
 
 // CreateDepartment creates a department on behalf of the authorized enterprise.
 func (cc *CorpClient) CreateDepartment(ctx context.Context, req *CreateDeptReq) (*CreateDeptResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("isv: CreateDepartment: req is required")
+	}
 	var resp CreateDeptResp
 	if err := cc.doPost(ctx, "/cgi-bin/department/create", req, &resp); err != nil {
 		return nil, err
@@ -17,11 +21,17 @@ func (cc *CorpClient) CreateDepartment(ctx context.Context, req *CreateDeptReq) 
 
 // UpdateDepartment updates a department on behalf of the authorized enterprise.
 func (cc *CorpClient) UpdateDepartment(ctx context.Context, req *UpdateDeptReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: UpdateDepartment: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/department/update", req, nil)
 }
 
 // DeleteDepartment deletes a department by ID on behalf of the authorized enterprise.
 func (cc *CorpClient) DeleteDepartment(ctx context.Context, id int) error {
+	if err := requirePositive("DeleteDepartment", "id", id); err != nil {
+		return err
+	}
 	extra := url.Values{"id": {strconv.Itoa(id)}}
 	return cc.doGet(ctx, "/cgi-bin/department/delete", extra, nil)
 }

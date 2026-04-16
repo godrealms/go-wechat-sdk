@@ -8,6 +8,9 @@ import (
 
 // GetPermanentCode 用 auth_code 换取企业永久授权码并自动持久化 AuthorizerTokens。
 func (c *Client) GetPermanentCode(ctx context.Context, authCode string) (*PermanentCodeResp, error) {
+	if err := requireNonEmpty("GetPermanentCode", "authCode", authCode); err != nil {
+		return nil, err
+	}
 	body := map[string]string{"auth_code": authCode}
 	var resp PermanentCodeResp
 	if err := c.doPost(ctx, "/cgi-bin/service/get_permanent_code", body, &resp); err != nil {
@@ -34,6 +37,12 @@ func (c *Client) GetPermanentCode(ctx context.Context, authCode string) (*Perman
 
 // GetAuthInfo 查询企业授权信息(不缓存)。
 func (c *Client) GetAuthInfo(ctx context.Context, corpID, permanentCode string) (*AuthInfoResp, error) {
+	if err := requireNonEmpty("GetAuthInfo", "corpID", corpID); err != nil {
+		return nil, err
+	}
+	if err := requireNonEmpty("GetAuthInfo", "permanentCode", permanentCode); err != nil {
+		return nil, err
+	}
 	body := map[string]string{
 		"auth_corpid":    corpID,
 		"permanent_code": permanentCode,
@@ -47,6 +56,12 @@ func (c *Client) GetAuthInfo(ctx context.Context, corpID, permanentCode string) 
 
 // GetAdminList 获取授权应用的管理员列表。
 func (c *Client) GetAdminList(ctx context.Context, corpID, agentID string) (*AdminListResp, error) {
+	if err := requireNonEmpty("GetAdminList", "corpID", corpID); err != nil {
+		return nil, err
+	}
+	if err := requireNonEmpty("GetAdminList", "agentID", agentID); err != nil {
+		return nil, err
+	}
 	body := map[string]string{
 		"auth_corpid": corpID,
 		"agentid":     agentID,
