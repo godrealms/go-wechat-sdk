@@ -1,4 +1,4 @@
-package mini_store
+package aispeech
 
 import (
 	"context"
@@ -9,7 +9,9 @@ import (
 	"testing"
 )
 
-func helperFakeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
+// fakeServer wires a fake WeChat backend that always serves an access_token
+// for /cgi-bin/token and routes everything else through the supplied handler.
+func fakeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "/cgi-bin/token") {
@@ -21,10 +23,11 @@ func helperFakeServer(t *testing.T, handler http.HandlerFunc) *httptest.Server {
 }
 
 // TestDoPost_ReturnsTypedAPIError ensures doPost surfaces a typed *APIError
-// when WeChat returns a non-zero errcode, so callers can errors.As() it.
+// (not just a plain fmt.Errorf string) when WeChat returns a non-zero
+// errcode, so callers can errors.As() it. Audit Batch 1.
 func TestDoPost_ReturnsTypedAPIError(t *testing.T) {
-	srv := helperFakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"errcode":9101000,"errmsg":"no permission"}`))
+	srv := fakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"errcode":40001,"errmsg":"invalid credential"}`))
 	})
 	defer srv.Close()
 
@@ -37,21 +40,17 @@ func TestDoPost_ReturnsTypedAPIError(t *testing.T) {
 	if !errors.As(err, &ae) {
 		t.Fatalf("expected *APIError, got %T: %v", err, err)
 	}
-	if ae.ErrCode != 9101000 {
-		t.Errorf("ErrCode = %d, want 9101000", ae.ErrCode)
-	}
-	if ae.ErrMsg != "no permission" {
-		t.Errorf("ErrMsg = %q, want %q", ae.ErrMsg, "no permission")
-	}
-	if ae.Path != "/some/path" {
-		t.Errorf("Path = %q, want %q", ae.Path, "/some/path")
+	if ae.ErrCode != 40001 || ae.ErrMsg != "invalid credential" || ae.Path != "/some/path" {
+		t.Errorf("unexpected APIError: %+v", ae)
 	}
 }
 
-// TestDoPost_FailsLoudOnNonJSONBody verifies a malformed envelope returns
-// a wrapped error rather than silently treating the body as success.
+// TestDoPost_FailsLoudOnNonJSONBody verifies that a malformed JSON envelope
+// (e.g. an HTML error page from a proxy) returns a wrapped error rather
+// than silently treating the body as a success — that's the "silent
+// unmarshal" footgun this batch exists to fix.
 func TestDoPost_FailsLoudOnNonJSONBody(t *testing.T) {
-	srv := helperFakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+	srv := fakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte(`<html><body>502 Bad Gateway</body></html>`))
 	})
@@ -66,29 +65,30 @@ func TestDoPost_FailsLoudOnNonJSONBody(t *testing.T) {
 	if !strings.Contains(err.Error(), "decode envelope") {
 		t.Errorf("error should mention decode envelope: %v", err)
 	}
+	// Must not satisfy *APIError — that would be a false signal.
 	var ae *APIError
 	if errors.As(err, &ae) {
 		t.Errorf("non-JSON body should NOT decode to *APIError, got %+v", ae)
 	}
 }
 
-// TestDoPost_DecodesSuccessIntoOut verifies the success path decodes JSON
-// into the caller's out struct.
+// TestDoPost_DecodesSuccessIntoOut verifies the success path decodes the
+// JSON body into the caller's out struct.
 func TestDoPost_DecodesSuccessIntoOut(t *testing.T) {
-	srv := helperFakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`{"product_id":"p1","title":"Demo"}`))
+	srv := fakeServer(t, func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"text":"hello","score":42}`))
 	})
 	defer srv.Close()
 
 	c := newTestClient(t, srv.URL)
 	var out struct {
-		ProductID string `json:"product_id"`
-		Title     string `json:"title"`
+		Text  string `json:"text"`
+		Score int    `json:"score"`
 	}
 	if err := c.doPost(context.Background(), "/x", nil, &out); err != nil {
 		t.Fatalf("doPost: %v", err)
 	}
-	if out.ProductID != "p1" || out.Title != "Demo" {
+	if out.Text != "hello" || out.Score != 42 {
 		t.Errorf("unexpected out: %+v", out)
 	}
 }
