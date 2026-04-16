@@ -53,7 +53,7 @@ func (cc *CorpClient) doUpload(ctx context.Context, path string, extra url.Value
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("isv: upload http %d: %s", resp.StatusCode, string(body))
 	}
-	return decodeRaw(body, out)
+	return decodeRaw(path, body, out)
 }
 
 // UploadMedia uploads a temporary media file (image, voice, video, or file).

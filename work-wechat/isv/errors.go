@@ -3,7 +3,12 @@ package isv
 import (
 	"errors"
 	"fmt"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
+
+// Compile-time check: *WeixinError must implement utils.WechatAPIError.
+var _ utils.WechatAPIError = (*WeixinError)(nil)
 
 // 哨兵错误,可用 errors.Is 判断。
 var (

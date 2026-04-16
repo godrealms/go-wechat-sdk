@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 // WxaAdminClient 代小程序开发管理客户端。
@@ -91,20 +93,10 @@ func (w *WxaAdminClient) doGetRaw(ctx context.Context, path string, q url.Values
 	return body, header.Get("Content-Type"), nil
 }
 
-// decodeRaw 折叠 errcode 检查 + typed out 反序列化。
+// decodeRaw delegates to utils.DecodeEnvelope for two-stage JSON decode:
+// check errcode first, then unmarshal into out.
 func decodeRaw(path string, raw json.RawMessage, out any) error {
-	var base struct {
-		ErrCode int    `json:"errcode"`
-		ErrMsg  string `json:"errmsg"`
-	}
-	_ = json.Unmarshal(raw, &base)
-	if err := checkWeixinErr(base.ErrCode, base.ErrMsg); err != nil {
-		return err
-	}
-	if out != nil {
-		if err := json.Unmarshal(raw, out); err != nil {
-			return fmt.Errorf("oplatform: %s decode: %w", path, err)
-		}
-	}
-	return nil
+	return utils.DecodeEnvelope("oplatform", path, []byte(raw), out, func(code int, msg, _ string) error {
+		return &WeixinError{ErrCode: code, ErrMsg: msg}
+	})
 }

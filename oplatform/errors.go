@@ -3,7 +3,12 @@ package oplatform
 import (
 	"errors"
 	"fmt"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
+
+// Compile-time check: *WeixinError must implement utils.WechatAPIError.
+var _ utils.WechatAPIError = (*WeixinError)(nil)
 
 // WeixinError wraps a non-zero WeChat errcode from the Open Platform API.
 type WeixinError struct {

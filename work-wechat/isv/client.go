@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/godrealms/go-wechat-sdk/utils"
 	"github.com/godrealms/go-wechat-sdk/utils/wxcrypto"
 )
 
@@ -161,26 +162,13 @@ func (c *Client) doRequestRaw(ctx context.Context, method, path string, query ur
 	if resp.StatusCode/100 != 2 {
 		return fmt.Errorf("isv: http %d: %s", resp.StatusCode, string(raw))
 	}
-	return decodeRaw(raw, out)
+	return decodeRaw(path, raw, out)
 }
 
-// decodeRaw 实现"两阶段解码":先检查 errcode,再 unmarshal 到 out。
-func decodeRaw(raw []byte, out interface{}) error {
-	var probe struct {
-		ErrCode int    `json:"errcode"`
-		ErrMsg  string `json:"errmsg"`
-	}
-	if err := json.Unmarshal(raw, &probe); err != nil {
-		return fmt.Errorf("isv: decode errcode: %w", err)
-	}
-	if probe.ErrCode != 0 {
-		return &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}
-	}
-	if out == nil {
-		return nil
-	}
-	if err := json.Unmarshal(raw, out); err != nil {
-		return fmt.Errorf("isv: decode body: %w", err)
-	}
-	return nil
+// decodeRaw delegates to utils.DecodeEnvelope for two-stage JSON decode:
+// check errcode first, then unmarshal into out.
+func decodeRaw(path string, raw []byte, out interface{}) error {
+	return utils.DecodeEnvelope("isv", path, raw, out, func(code int, msg, _ string) error {
+		return &WeixinError{ErrCode: code, ErrMsg: msg}
+	})
 }
