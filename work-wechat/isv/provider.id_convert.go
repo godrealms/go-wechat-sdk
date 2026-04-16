@@ -71,7 +71,7 @@ func (c *Client) fetchProviderTokenLocked(ctx context.Context) (string, error) {
 }
 
 // providerDoPost 和 doPost 类似,只是注入的 token 是 provider_access_token。
-func (c *Client) providerDoPost(ctx context.Context, path string, body, out interface{}) error {
+func (c *Client) providerDoPost(ctx context.Context, path string, body, out any) error {
 	tok, err := c.getProviderAccessToken(ctx)
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func (c *Client) providerDoPost(ctx context.Context, path string, body, out inte
 
 // providerDoGet 和 doGet 类似,只是注入的 token 是 provider_access_token。
 // 不能复用 c.doGet —— 后者会自动注入 suite_access_token。
-func (c *Client) providerDoGet(ctx context.Context, path string, extra url.Values, out interface{}) error {
+func (c *Client) providerDoGet(ctx context.Context, path string, extra url.Values, out any) error {
 	tok, err := c.getProviderAccessToken(ctx)
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (c *Client) UserIDToOpenUserID(ctx context.Context, corpID string, userIDs 
 	if len(userIDs) == 0 {
 		return nil, fmt.Errorf("isv: UserIDToOpenUserID: userIDs is required")
 	}
-	body := map[string]interface{}{
+	body := map[string]any{
 		"auth_corpid": corpID,
 		"userid_list": userIDs,
 	}

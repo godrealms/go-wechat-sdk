@@ -44,7 +44,7 @@ func (c *Client) AddDraft(ctx context.Context, articles []*DraftArticle) (*AddDr
 	path := fmt.Sprintf("/cgi-bin/draft/add?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"articles": articles,
 	}
 
@@ -69,7 +69,7 @@ func (c *Client) GetDraft(ctx context.Context, mediaID string) (*GetDraftResult,
 	path := fmt.Sprintf("/cgi-bin/draft/get?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"media_id": mediaID,
 	}
 
@@ -94,7 +94,7 @@ func (c *Client) DeleteDraft(ctx context.Context, mediaID string) (*Resp, error)
 	path := fmt.Sprintf("/cgi-bin/draft/delete?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"media_id": mediaID,
 	}
 

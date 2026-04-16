@@ -8,7 +8,7 @@ import (
 
 // doPost 发送 JSON POST 到 parent.baseURL + path,query 自动注入 corp_access_token。
 // 企业微信 corp 接口的 query key 是 access_token（不是 corp_access_token）。
-func (cc *CorpClient) doPost(ctx context.Context, path string, body, out interface{}) error {
+func (cc *CorpClient) doPost(ctx context.Context, path string, body, out any) error {
 	tok, err := cc.AccessToken(ctx)
 	if err != nil {
 		return err
@@ -18,7 +18,7 @@ func (cc *CorpClient) doPost(ctx context.Context, path string, body, out interfa
 }
 
 // doGet 发送 GET 到 parent.baseURL + path，query 自动注入 corp_access_token。
-func (cc *CorpClient) doGet(ctx context.Context, path string, extra url.Values, out interface{}) error {
+func (cc *CorpClient) doGet(ctx context.Context, path string, extra url.Values, out any) error {
 	tok, err := cc.AccessToken(ctx)
 	if err != nil {
 		return err
@@ -31,7 +31,7 @@ func (cc *CorpClient) doGet(ctx context.Context, path string, extra url.Values, 
 }
 
 // doPostExtra is like doPost but merges extra query params alongside access_token.
-func (cc *CorpClient) doPostExtra(ctx context.Context, path string, extra url.Values, body, out interface{}) error {
+func (cc *CorpClient) doPostExtra(ctx context.Context, path string, extra url.Values, body, out any) error {
 	tok, err := cc.AccessToken(ctx)
 	if err != nil {
 		return err

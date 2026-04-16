@@ -94,7 +94,7 @@ func TestTransactionsApp_SendsCorrectJSON(t *testing.T) {
 	if len(fs.requests) == 0 {
 		t.Fatal("expected at least one request")
 	}
-	var body map[string]interface{}
+	var body map[string]any
 	if err := json.Unmarshal(fs.requests[0].Body, &body); err != nil {
 		t.Fatalf("server received invalid JSON: %v, body: %s", err, string(fs.requests[0].Body))
 	}

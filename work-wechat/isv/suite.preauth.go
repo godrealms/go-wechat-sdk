@@ -23,7 +23,7 @@ func (c *Client) SetSessionInfo(ctx context.Context, preAuthCode string, info *S
 	if info == nil {
 		return fmt.Errorf("isv: SetSessionInfo: info is required")
 	}
-	body := map[string]interface{}{
+	body := map[string]any{
 		"pre_auth_code": preAuthCode,
 		"session_info":  info,
 	}

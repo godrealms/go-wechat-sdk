@@ -19,24 +19,24 @@ func TestGetApprovalTemplate(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/gettemplatedetail" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["template_id"] != "tpl001" {
 			t.Errorf("body.template_id: %v", body["template_id"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"template_names": []map[string]interface{}{
+			"template_names": []map[string]any{
 				{"text": "请假申请", "lang": "zh_CN"},
 			},
-			"template_content": map[string]interface{}{
-				"controls": []map[string]interface{}{
+			"template_content": map[string]any{
+				"controls": []map[string]any{
 					{
-						"property": map[string]interface{}{
+						"property": map[string]any{
 							"control": "Text",
 							"id":      "ctrl_1",
-							"title": []map[string]interface{}{
+							"title": []map[string]any{
 								{"text": "事由", "lang": "zh_CN"},
 							},
 						},
@@ -80,7 +80,7 @@ func TestApplyEvent(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/applyevent" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["creator_userid"] != "zhangsan" {
 			t.Errorf("body.creator_userid: %v", body["creator_userid"])
@@ -88,16 +88,16 @@ func TestApplyEvent(t *testing.T) {
 		if body["template_id"] != "tpl001" {
 			t.Errorf("body.template_id: %v", body["template_id"])
 		}
-		applyData, ok := body["apply_data"].(map[string]interface{})
+		applyData, ok := body["apply_data"].(map[string]any)
 		if !ok {
 			t.Errorf("body.apply_data missing or wrong type")
 		} else {
-			contents, ok2 := applyData["contents"].([]interface{})
+			contents, ok2 := applyData["contents"].([]any)
 			if !ok2 || len(contents) == 0 {
 				t.Errorf("apply_data.contents: %v", applyData["contents"])
 			}
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 			"sp_no":   "202001010001",
@@ -140,31 +140,31 @@ func TestGetApprovalDetail(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/getapprovaldetail" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["sp_no"] != "202001010001" {
 			t.Errorf("body.sp_no: %v", body["sp_no"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"info": map[string]interface{}{
+			"info": map[string]any{
 				"sp_no":       "202001010001",
 				"sp_name":     "请假申请",
 				"sp_status":   2,
 				"template_id": "tpl001",
 				"apply_time":  int64(1577836800),
-				"applyer": map[string]interface{}{
+				"applyer": map[string]any{
 					"userid":  "zhangsan",
 					"partyid": "1",
 				},
-				"sp_record": []map[string]interface{}{
+				"sp_record": []map[string]any{
 					{
 						"sp_status":    2,
 						"approverattr": 1,
-						"details": []map[string]interface{}{
+						"details": []map[string]any{
 							{
-								"approver": map[string]interface{}{
+								"approver": map[string]any{
 									"userid": "lisi",
 								},
 								"speech":    "同意",
@@ -174,8 +174,8 @@ func TestGetApprovalDetail(t *testing.T) {
 						},
 					},
 				},
-				"apply_data": map[string]interface{}{
-					"contents": []interface{}{},
+				"apply_data": map[string]any{
+					"contents": []any{},
 				},
 			},
 		})
@@ -221,7 +221,7 @@ func TestGetApprovalData(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/getapprovalinfo" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["starttime"] == nil {
 			t.Errorf("body.starttime missing")
@@ -229,7 +229,7 @@ func TestGetApprovalData(t *testing.T) {
 		if body["endtime"] == nil {
 			t.Errorf("body.endtime missing")
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":         0,
 			"errmsg":          "ok",
 			"sp_no_list":      []string{"202001010001", "202001010002"},

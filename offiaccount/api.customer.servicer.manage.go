@@ -104,7 +104,7 @@ func (c *Client) AddKFAccount(ctx context.Context, kfAccount, nickname string) (
 	path := fmt.Sprintf("/customservice/kfaccount/add?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"kf_account": kfAccount,
 		"nickname":   nickname,
 	}
@@ -131,7 +131,7 @@ func (c *Client) UpdateKFAccount(ctx context.Context, kfAccount, nickname string
 	path := fmt.Sprintf("/customservice/kfaccount/update?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"kf_account": kfAccount,
 		"nickname":   nickname,
 	}
@@ -156,7 +156,7 @@ func (c *Client) DelKFAccount(ctx context.Context, kfAccount string) (*Resp, err
 	path := fmt.Sprintf("/customservice/kfaccount/del?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"kf_account": kfAccount,
 	}
 
@@ -184,7 +184,7 @@ func (c *Client) InviteKFWorker(ctx context.Context, kfAccount, inviteWX string)
 	path := fmt.Sprintf("/customservice/kfaccount/inviteworker?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"kf_account": kfAccount,
 		"invite_wx":  inviteWX,
 	}

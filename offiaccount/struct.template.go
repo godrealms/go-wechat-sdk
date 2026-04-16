@@ -6,7 +6,7 @@ type SubscribeMessageRequest struct {
 	TemplateID  string                 `json:"template_id"`             // 所需下发的订阅模板id
 	URL         string                 `json:"url,omitempty"`           // 模板跳转链接（可选）
 	MiniProgram *MiniProgram           `json:"miniprogram,omitempty"`   // 跳转小程序时填写（可选）
-	Data        map[string]interface{} `json:"data"`                    // 模板内容
+	Data        map[string]any `json:"data"`                    // 模板内容
 	ClientMsgID string                 `json:"client_msg_id,omitempty"` // 防重入id（可选）
 }
 

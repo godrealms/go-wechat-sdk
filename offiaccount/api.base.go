@@ -27,7 +27,7 @@ func (c *Client) GetStableAccessToken(ctx context.Context, forceRefresh bool) (*
 	if c.Config == nil || c.Config.AppId == "" || c.Config.AppSecret == "" {
 		return nil, fmt.Errorf("offiaccount: AppId and AppSecret are required")
 	}
-	body := map[string]interface{}{
+	body := map[string]any{
 		"grant_type":    "client_credential",
 		"appid":         c.Config.AppId,
 		"secret":        c.Config.AppSecret,
@@ -69,7 +69,7 @@ func (c *Client) CallbackCheck(ctx context.Context, action, checkOperator string
 	query := url.Values{
 		"access_token": {token},
 	}
-	body := map[string]interface{}{
+	body := map[string]any{
 		"action":         action,
 		"check_operator": checkOperator,
 	}

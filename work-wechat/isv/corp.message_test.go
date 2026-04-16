@@ -11,7 +11,7 @@ import (
 
 // msgSendServer returns an httptest server that validates message/send requests.
 // checkBody is called with the decoded JSON body for type-specific assertions.
-func msgSendServer(t *testing.T, checkBody func(m map[string]interface{})) *httptest.Server {
+func msgSendServer(t *testing.T, checkBody func(m map[string]any)) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/cgi-bin/message/send" {
@@ -21,19 +21,19 @@ func msgSendServer(t *testing.T, checkBody func(m map[string]interface{})) *http
 		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
 			t.Errorf("access_token: %q", got)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if checkBody != nil {
 			checkBody(body)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"msgid": "MSG001",
 		})
 	}))
 }
 
 func TestSendText_HappyPath(t *testing.T) {
-	srv := msgSendServer(t, func(m map[string]interface{}) {
+	srv := msgSendServer(t, func(m map[string]any) {
 		if m["msgtype"] != "text" {
 			t.Errorf("msgtype: %v", m["msgtype"])
 		}
@@ -43,7 +43,7 @@ func TestSendText_HappyPath(t *testing.T) {
 		if int(m["agentid"].(float64)) != 1000001 {
 			t.Errorf("agentid: %v", m["agentid"])
 		}
-		text := m["text"].(map[string]interface{})
+		text := m["text"].(map[string]any)
 		if text["content"] != "Hello World" {
 			t.Errorf("text.content: %v", text["content"])
 		}
@@ -67,11 +67,11 @@ func TestSendText_HappyPath(t *testing.T) {
 }
 
 func TestSendTextCard_HappyPath(t *testing.T) {
-	srv := msgSendServer(t, func(m map[string]interface{}) {
+	srv := msgSendServer(t, func(m map[string]any) {
 		if m["msgtype"] != "textcard" {
 			t.Errorf("msgtype: %v", m["msgtype"])
 		}
-		tc := m["textcard"].(map[string]interface{})
+		tc := m["textcard"].(map[string]any)
 		if tc["title"] != "Title1" || tc["description"] != "Desc1" || tc["url"] != "https://example.com" {
 			t.Errorf("textcard: %+v", tc)
 		}
@@ -100,11 +100,11 @@ func TestSendTextCard_HappyPath(t *testing.T) {
 }
 
 func TestSendMarkdown_HappyPath(t *testing.T) {
-	srv := msgSendServer(t, func(m map[string]interface{}) {
+	srv := msgSendServer(t, func(m map[string]any) {
 		if m["msgtype"] != "markdown" {
 			t.Errorf("msgtype: %v", m["msgtype"])
 		}
-		md := m["markdown"].(map[string]interface{})
+		md := m["markdown"].(map[string]any)
 		if md["content"] != "# Title\n> quote" {
 			t.Errorf("markdown.content: %v", md["content"])
 		}
@@ -125,20 +125,20 @@ func TestSendMarkdown_HappyPath(t *testing.T) {
 }
 
 func TestSendNews_MultiArticle(t *testing.T) {
-	srv := msgSendServer(t, func(m map[string]interface{}) {
+	srv := msgSendServer(t, func(m map[string]any) {
 		if m["msgtype"] != "news" {
 			t.Errorf("msgtype: %v", m["msgtype"])
 		}
-		news := m["news"].(map[string]interface{})
-		articles := news["articles"].([]interface{})
+		news := m["news"].(map[string]any)
+		articles := news["articles"].([]any)
 		if len(articles) != 2 {
 			t.Errorf("articles count: %d", len(articles))
 		}
-		a0 := articles[0].(map[string]interface{})
+		a0 := articles[0].(map[string]any)
 		if a0["title"] != "Art1" {
 			t.Errorf("articles[0].title: %v", a0["title"])
 		}
-		a1 := articles[1].(map[string]interface{})
+		a1 := articles[1].(map[string]any)
 		if a1["title"] != "Art2" || a1["picurl"] != "https://img/2.png" {
 			t.Errorf("articles[1]: %+v", a1)
 		}
@@ -164,19 +164,19 @@ func TestSendNews_MultiArticle(t *testing.T) {
 }
 
 func TestSendTemplateCard_TextNotice(t *testing.T) {
-	srv := msgSendServer(t, func(m map[string]interface{}) {
+	srv := msgSendServer(t, func(m map[string]any) {
 		if m["msgtype"] != "template_card" {
 			t.Errorf("msgtype: %v", m["msgtype"])
 		}
-		tc := m["template_card"].(map[string]interface{})
+		tc := m["template_card"].(map[string]any)
 		if tc["card_type"] != "text_notice" {
 			t.Errorf("card_type: %v", tc["card_type"])
 		}
-		mt := tc["main_title"].(map[string]interface{})
+		mt := tc["main_title"].(map[string]any)
 		if mt["title"] != "Urgent" {
 			t.Errorf("main_title.title: %v", mt["title"])
 		}
-		ca := tc["card_action"].(map[string]interface{})
+		ca := tc["card_action"].(map[string]any)
 		if ca["url"] != "https://example.com" {
 			t.Errorf("card_action.url: %v", ca["url"])
 		}
@@ -205,7 +205,7 @@ func TestSendTemplateCard_TextNotice(t *testing.T) {
 }
 
 func TestSendRemainingTypes(t *testing.T) {
-	srv := msgSendServer(t, func(m map[string]interface{}) {
+	srv := msgSendServer(t, func(m map[string]any) {
 		// Just verify msgtype is set — all methods share the same wire pattern.
 		if m["msgtype"] == nil || m["msgtype"] == "" {
 			t.Errorf("msgtype missing")
@@ -239,7 +239,7 @@ func TestSendRemainingTypes(t *testing.T) {
 
 func TestSendMessage_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 40014,
 			"errmsg":  "invalid access_token",
 		})

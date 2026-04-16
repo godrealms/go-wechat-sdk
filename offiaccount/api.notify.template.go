@@ -27,7 +27,7 @@ func (c *Client) AddTemplate(ctx context.Context, templateIdShort string, keywor
 	if err != nil {
 		return nil, err
 	}
-	body := map[string]interface{}{
+	body := map[string]any{
 		"template_id_short": templateIdShort,
 		"keyword_name_list": keywordNameList,
 	}
@@ -65,7 +65,7 @@ func (c *Client) DeleteTemplate(ctx context.Context, templateId string) (*Resp, 
 	if err != nil {
 		return nil, err
 	}
-	body := map[string]interface{}{"template_id": templateId}
+	body := map[string]any{"template_id": templateId}
 	path := fmt.Sprintf("/cgi-bin/template/del_private_template?access_token=%s", token)
 	result := &Resp{}
 	if err = c.doPost(ctx, path, body, result); err != nil {
@@ -112,7 +112,7 @@ func (c *Client) SetIndustry(ctx context.Context, industryId1, industryId2 strin
 	if err != nil {
 		return err
 	}
-	body := map[string]interface{}{
+	body := map[string]any{
 		"industry_id1": industryId1,
 		"industry_id2": industryId2,
 	}

@@ -24,7 +24,7 @@ func TestGetPreAuthCode(t *testing.T) {
 		if got := r.URL.Query().Get("suite_access_token"); got != "STOK" {
 			t.Errorf("token query: %q", got)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"pre_auth_code": "PCODE",
 			"expires_in":    1200,
 		})
@@ -41,7 +41,7 @@ func TestGetPreAuthCode(t *testing.T) {
 }
 
 func TestSetSessionInfo(t *testing.T) {
-	var gotBody map[string]interface{}
+	var gotBody map[string]any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewDecoder(r.Body).Decode(&gotBody)
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
@@ -58,7 +58,7 @@ func TestSetSessionInfo(t *testing.T) {
 	if gotBody["pre_auth_code"] != "PCODE" {
 		t.Errorf("pre_auth_code missing: %+v", gotBody)
 	}
-	sess, ok := gotBody["session_info"].(map[string]interface{})
+	sess, ok := gotBody["session_info"].(map[string]any)
 	if !ok {
 		t.Fatalf("session_info missing: %+v", gotBody)
 	}

@@ -19,7 +19,7 @@ func TestGetJSAPITicket(t *testing.T) {
 		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
 			t.Errorf("access_token: %q", got)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":    0,
 			"errmsg":     "ok",
 			"ticket":     "kgt8ON7yVITDhtdwci0qeT1D",
@@ -55,7 +55,7 @@ func TestGetAgentConfigTicket(t *testing.T) {
 		if got := r.URL.Query().Get("type"); got != "agent_config" {
 			t.Errorf("type: %q", got)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":    0,
 			"errmsg":     "ok",
 			"ticket":     "Hk5MBi7_bfGSG",

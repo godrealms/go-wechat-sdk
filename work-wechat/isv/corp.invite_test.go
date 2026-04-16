@@ -24,7 +24,7 @@ func TestInviteUser(t *testing.T) {
 		if len(body.User) != 2 {
 			t.Errorf("len(body.User): %d", len(body.User))
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":      0,
 			"errmsg":       "ok",
 			"invaliduser":  []string{"lisi"},

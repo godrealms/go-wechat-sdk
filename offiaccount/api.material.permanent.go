@@ -30,7 +30,7 @@ func (c *Client) GetMaterial(ctx context.Context, mediaID string) (*GetMaterialN
 	path := fmt.Sprintf("/cgi-bin/material/get_material?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"media_id": mediaID,
 	}
 
@@ -240,7 +240,7 @@ func (c *Client) DelMaterial(ctx context.Context, mediaID string) (*Resp, error)
 	path := fmt.Sprintf("/cgi-bin/material/del_material?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"media_id": mediaID,
 	}
 

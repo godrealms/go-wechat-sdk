@@ -49,7 +49,7 @@ func TestUploadMedia(t *testing.T) {
 			t.Errorf("file data: got %q, want %q", string(data), fileContent)
 		}
 
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"type":       "image",
 			"media_id":   "MID001",
 			"created_at": "1712900000",
@@ -75,7 +75,7 @@ func TestUploadMedia(t *testing.T) {
 
 func TestUploadMedia_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 40004,
 			"errmsg":  "invalid media type",
 		})

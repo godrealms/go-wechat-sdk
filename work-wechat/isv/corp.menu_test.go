@@ -45,7 +45,7 @@ func TestCreateMenu(t *testing.T) {
 			t.Errorf("button[1].sub_button[0].type: %q", body.Button[1].SubButton[0].Type)
 		}
 
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -89,10 +89,10 @@ func TestGetMenu(t *testing.T) {
 			t.Errorf("agentid: %q", got)
 		}
 
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"button": []map[string]interface{}{
+			"button": []map[string]any{
 				{
 					"type": "click",
 					"name": "Today Music",
@@ -100,7 +100,7 @@ func TestGetMenu(t *testing.T) {
 				},
 				{
 					"name": "Menu",
-					"sub_button": []map[string]interface{}{
+					"sub_button": []map[string]any{
 						{"type": "view", "name": "Search", "url": "https://www.example.com"},
 						{"type": "click", "name": "Like", "key": "V1001_LIKE"},
 					},
@@ -156,7 +156,7 @@ func TestDeleteMenu(t *testing.T) {
 			t.Errorf("agentid: %q", got)
 		}
 
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})

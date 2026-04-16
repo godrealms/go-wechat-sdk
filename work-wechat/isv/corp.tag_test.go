@@ -24,7 +24,7 @@ func TestCreateTag(t *testing.T) {
 		if body.TagName != "DevTeam" {
 			t.Errorf("body.TagName: %q", body.TagName)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 			"tagid":   7,
@@ -58,11 +58,11 @@ func TestGetTagUsers(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/tag/get" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 			"tagname": "DevTeam",
-			"userlist": []map[string]interface{}{
+			"userlist": []map[string]any{
 				{"userid": "zhangsan", "name": "Zhang San"},
 			},
 			"partylist": []int{1, 2},
@@ -108,7 +108,7 @@ func TestAddTagUsers(t *testing.T) {
 		if len(body.UserList) != 2 {
 			t.Errorf("len(body.UserList): %d", len(body.UserList))
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":      0,
 			"errmsg":       "ok",
 			"invalidlist":  "lisi",
@@ -152,7 +152,7 @@ func TestUpdateTag(t *testing.T) {
 		if body.TagName != "QA Team" {
 			t.Errorf("body.TagName: %q", body.TagName)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -183,7 +183,7 @@ func TestDeleteTag(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/tag/delete" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -208,10 +208,10 @@ func TestListTag(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/tag/list" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"taglist": []map[string]interface{}{
+			"taglist": []map[string]any{
 				{"tagid": 1, "tagname": "DevTeam"},
 				{"tagid": 2, "tagname": "QA"},
 			},
@@ -248,7 +248,7 @@ func TestDelTagUsers(t *testing.T) {
 		if body.TagID != 7 {
 			t.Errorf("body.TagID: %d", body.TagID)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":      0,
 			"errmsg":       "ok",
 			"invalidlist":  "",

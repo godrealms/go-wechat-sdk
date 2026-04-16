@@ -17,7 +17,7 @@ func (c *Client) CreateKFSession(ctx context.Context, kfAccount, openID string) 
 	path := fmt.Sprintf("/customservice/kfsession/create?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"kf_account": kfAccount,
 		"openid":     openID,
 	}
@@ -44,7 +44,7 @@ func (c *Client) CloseKFSession(ctx context.Context, kfAccount, openID string) (
 	path := fmt.Sprintf("/customservice/kfsession/close?access_token=%s", token)
 
 	// 构造请求体
-	body := map[string]interface{}{
+	body := map[string]any{
 		"kf_account": kfAccount,
 		"openid":     openID,
 	}

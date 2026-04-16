@@ -18,7 +18,7 @@ func main() {
 			AppID:    "mini_program_appid",
 			PagePath: "pages/index/index",
 		},
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"thing1": offiaccount.ThingData{
 				Value: "订单商品名称",
 			},

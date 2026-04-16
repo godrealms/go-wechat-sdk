@@ -136,7 +136,7 @@ func (c *Client) BatchBlacklist(ctx context.Context, openidList []string) (*Resp
 	path := fmt.Sprintf("/cgi-bin/tags/members/batchblacklist?access_token=%s", token)
 
 	// 构造请求体
-	req := map[string]interface{}{
+	req := map[string]any{
 		"openid_list": openidList,
 	}
 
@@ -160,7 +160,7 @@ func (c *Client) BatchUnblacklist(ctx context.Context, openidList []string) (*Re
 	path := fmt.Sprintf("/cgi-bin/tags/members/batchunblacklist?access_token=%s", token)
 
 	// 构造请求体
-	req := map[string]interface{}{
+	req := map[string]any{
 		"openid_list": openidList,
 	}
 

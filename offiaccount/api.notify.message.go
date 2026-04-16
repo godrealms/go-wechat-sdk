@@ -66,7 +66,7 @@ func (c *Client) GetSpeed(ctx context.Context) (*SpeedResp, error) {
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/speed/get?access_token=%s", token)
 	result := &SpeedResp{}
-	if err = c.doPost(ctx, path, map[string]interface{}{}, result); err != nil {
+	if err = c.doPost(ctx, path, map[string]any{}, result); err != nil {
 		return nil, err
 	}
 	return result, nil
@@ -80,7 +80,7 @@ func (c *Client) GetMassMsg(ctx context.Context, msgId int64) (*MassMsgResp, err
 		return nil, err
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/get?access_token=%s", token)
-	body := map[string]interface{}{"msg_id": msgId}
+	body := map[string]any{"msg_id": msgId}
 	result := &MassMsgResp{}
 	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
@@ -141,7 +141,7 @@ func (c *Client) SetSpeed(ctx context.Context, speed int) (*Resp, error) {
 		return nil, err
 	}
 	path := fmt.Sprintf("/cgi-bin/message/mass/speed/set?access_token=%s", token)
-	body := map[string]interface{}{"speed": speed}
+	body := map[string]any{"speed": speed}
 	result := &Resp{}
 	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err

@@ -16,7 +16,7 @@ func TestSetWorkbenchTemplate(t *testing.T) {
 		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
 			t.Errorf("access_token: %q", got)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int(body["agentid"].(float64)) != 1000001 {
 			t.Errorf("agentid: %v", body["agentid"])
@@ -24,12 +24,12 @@ func TestSetWorkbenchTemplate(t *testing.T) {
 		if body["type"] != "key_data" {
 			t.Errorf("type: %v", body["type"])
 		}
-		kd := body["key_data"].(map[string]interface{})
-		items := kd["items"].([]interface{})
+		kd := body["key_data"].(map[string]any)
+		items := kd["items"].([]any)
 		if len(items) != 2 {
 			t.Errorf("items count: %d", len(items))
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"errcode": 0, "errmsg": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"errcode": 0, "errmsg": "ok"})
 	}))
 	defer srv.Close()
 
@@ -57,16 +57,16 @@ func TestGetWorkbenchTemplate(t *testing.T) {
 		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
 			t.Errorf("access_token: %q", got)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int(body["agentid"].(float64)) != 1000001 {
 			t.Errorf("agentid: %v", body["agentid"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"agentid": 1000001,
 			"type":    "key_data",
-			"key_data": map[string]interface{}{
-				"items": []map[string]interface{}{
+			"key_data": map[string]any{
+				"items": []map[string]any{
 					{"key": "待审批", "data": "2", "jump_url": "https://example.com/1"},
 				},
 			},
@@ -99,7 +99,7 @@ func TestSetWorkbenchData(t *testing.T) {
 		if got := r.URL.Query().Get("access_token"); got != "CTOK" {
 			t.Errorf("access_token: %q", got)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["userid"] != "u1" {
 			t.Errorf("userid: %v", body["userid"])
@@ -107,7 +107,7 @@ func TestSetWorkbenchData(t *testing.T) {
 		if body["type"] != "key_data" {
 			t.Errorf("type: %v", body["type"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"errcode": 0, "errmsg": "ok"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"errcode": 0, "errmsg": "ok"})
 	}))
 	defer srv.Close()
 
