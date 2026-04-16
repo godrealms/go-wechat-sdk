@@ -86,7 +86,7 @@ type Code2SessionResp struct {
 // session_key, and (if applicable) unionid.
 func (c *Client) Code2Session(ctx context.Context, jsCode string) (*Code2SessionResp, error) {
 	if jsCode == "" {
-		return nil, fmt.Errorf("mini_program: jsCode is required")
+		return nil, fmt.Errorf("mini_program: Code2Session: jsCode is required")
 	}
 	q := url.Values{
 		"appid":      {c.cfg.AppId},
@@ -155,6 +155,9 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 
 // SendSubscribeMessage sends a subscription template message to the user identified in body.
 func (c *Client) SendSubscribeMessage(ctx context.Context, body any) error {
+	if body == nil {
+		return fmt.Errorf("mini_program: SendSubscribeMessage: body is required")
+	}
 	token, err := c.AccessToken(ctx)
 	if err != nil {
 		return err

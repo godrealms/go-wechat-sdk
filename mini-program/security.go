@@ -1,6 +1,9 @@
 package mini_program
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // MsgSecCheckReq is the request body for the text content security check API.
 type MsgSecCheckReq struct {
@@ -52,6 +55,15 @@ type MediaCheckAsyncResp struct {
 
 // MsgSecCheck performs a synchronous text content security check.
 func (c *Client) MsgSecCheck(ctx context.Context, req *MsgSecCheckReq) (*MsgSecCheckResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_program: MsgSecCheck: req is required")
+	}
+	if req.Content == "" {
+		return nil, fmt.Errorf("mini_program: MsgSecCheck: req.Content is required")
+	}
+	if req.OpenID == "" {
+		return nil, fmt.Errorf("mini_program: MsgSecCheck: req.OpenID is required")
+	}
 	var resp MsgSecCheckResp
 	if err := c.doPost(ctx, "/wxa/msg_sec_check", req, &resp); err != nil {
 		return nil, err
@@ -62,6 +74,15 @@ func (c *Client) MsgSecCheck(ctx context.Context, req *MsgSecCheckReq) (*MsgSecC
 // MediaCheckAsync submits an image or audio file for asynchronous content security check.
 // Results are delivered via the event callback notification.
 func (c *Client) MediaCheckAsync(ctx context.Context, req *MediaCheckAsyncReq) (*MediaCheckAsyncResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_program: MediaCheckAsync: req is required")
+	}
+	if req.MediaURL == "" {
+		return nil, fmt.Errorf("mini_program: MediaCheckAsync: req.MediaURL is required")
+	}
+	if req.OpenID == "" {
+		return nil, fmt.Errorf("mini_program: MediaCheckAsync: req.OpenID is required")
+	}
 	var resp MediaCheckAsyncResp
 	if err := c.doPost(ctx, "/wxa/media_check_async", req, &resp); err != nil {
 		return nil, err
