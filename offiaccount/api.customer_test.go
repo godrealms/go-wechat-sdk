@@ -42,6 +42,14 @@ func TestGetKFMsgList_Success(t *testing.T) {
 func TestSetKFTyping_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/custom/typing") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["touser"] != "o1" || body["command"] != "Typing" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -117,6 +125,14 @@ func TestCreateKFSession_Success(t *testing.T) {
 func TestCloseKFSession_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/customservice/kfsession/close") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["kf_account"] != "kf1@test" || body["openid"] != "o1" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -157,6 +173,12 @@ func TestGetKFCustomerSession_Success(t *testing.T) {
 func TestGetKFSessionList_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/customservice/kfsession/getsessionlist") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		if r.URL.Query().Get("kf_account") != "kf1@test" {
+			t.Errorf("expected kf_account=kf1@test, got %q", r.URL.Query().Get("kf_account"))
+		}
 		_, _ = w.Write([]byte(`{"sessionlist":[{"openid":"o1","kf_account":"kf1@test","createtime":1234567890}]}`))
 	}))
 	defer srv.Close()
@@ -174,6 +196,9 @@ func TestGetKFSessionList_Success(t *testing.T) {
 func TestGetWaitCaseList_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/customservice/kfsession/getwaitcase") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"count":2,"waitcaselist":[{"latest_time":1000,"openid":"o1"},{"latest_time":2000,"openid":"o2"}]}`))
 	}))
 	defer srv.Close()
@@ -196,6 +221,11 @@ func TestAddKFAccount_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/customservice/kfaccount/add") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["kf_account"] != "kf1@test" || body["nickname"] != "KF One" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -213,6 +243,14 @@ func TestAddKFAccount_Success(t *testing.T) {
 func TestUpdateKFAccount_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/customservice/kfaccount/update") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["kf_account"] != "kf1@test" || body["nickname"] != "KF Updated" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -230,6 +268,14 @@ func TestUpdateKFAccount_Success(t *testing.T) {
 func TestDelKFAccount_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/customservice/kfaccount/del") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["kf_account"] != "kf1@test" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -247,6 +293,14 @@ func TestDelKFAccount_Success(t *testing.T) {
 func TestInviteKFWorker_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/customservice/kfaccount/inviteworker") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["kf_account"] != "kf1@test" || body["invite_wx"] != "wxid_abc" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -264,6 +318,9 @@ func TestInviteKFWorker_Success(t *testing.T) {
 func TestGetOnlineKFList_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/customservice/getonlinekflist") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"kf_online_list":[{"kf_account":"kf1@test","status":1,"kf_id":"1001"}]}`))
 	}))
 	defer srv.Close()
@@ -281,6 +338,9 @@ func TestGetOnlineKFList_Success(t *testing.T) {
 func TestGetKFList_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/customservice/getkflist") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"kf_list":[{"kf_account":"kf1@test","kf_nick":"KF One","kf_id":"1001"}]}`))
 	}))
 	defer srv.Close()

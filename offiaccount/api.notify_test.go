@@ -43,6 +43,14 @@ func TestSendTemplateMessage_Success(t *testing.T) {
 func TestAddTemplate_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/template/api_add_template") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["template_id_short"] != "TM001" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok","template_id":"tmpl_abc"}`))
 	}))
 	defer srv.Close()
@@ -60,6 +68,9 @@ func TestAddTemplate_Success(t *testing.T) {
 func TestDeleteTemplate_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/template/del_private_template") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["template_id"] != "tmpl1" {
@@ -82,6 +93,9 @@ func TestDeleteTemplate_Success(t *testing.T) {
 func TestGetAllTemplates_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/template/get_all_private_template") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"template_list":[{"template_id":"tmpl1","title":"Test"}]}`))
 	}))
 	defer srv.Close()
@@ -99,6 +113,9 @@ func TestGetAllTemplates_Success(t *testing.T) {
 func TestGetIndustry_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/template/get_industry") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"primary_industry":{"first_class":"IT","second_class":"Software"},"secondary_industry":{"first_class":"Finance","second_class":"Banking"}}`))
 	}))
 	defer srv.Close()
@@ -116,6 +133,14 @@ func TestGetIndustry_Success(t *testing.T) {
 func TestSetIndustry_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/template/api_set_industry") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["industry_id1"] != "1" || body["industry_id2"] != "2" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -134,6 +159,11 @@ func TestTemplateSubscribe_Success(t *testing.T) {
 		assertAccessToken(t, r)
 		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/template/subscribe") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["touser"] != "o1" || body["template_id"] != "tmpl1" {
+			t.Errorf("unexpected body: %+v", body)
 		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
@@ -159,6 +189,11 @@ func TestSendNewSubscribeMsg_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/subscribe/bizsend") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["touser"] != "o1" || body["template_id"] != "tmpl1" {
+			t.Errorf("unexpected body: %+v", body)
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -176,6 +211,9 @@ func TestSendNewSubscribeMsg_Success(t *testing.T) {
 func TestGetCategory_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/wxaapi/newtmpl/getcategory") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"data":[{"id":616,"name":"IT科技"}]}`))
 	}))
 	defer srv.Close()
@@ -195,6 +233,9 @@ func TestGetCategory_Success(t *testing.T) {
 func TestGetCurrentAutoReplyInfo_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/get_current_autoreply_info") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"is_add_friend_reply_open":1,"is_autoreply_open":1}`))
 	}))
 	defer srv.Close()
@@ -214,6 +255,9 @@ func TestGetCurrentAutoReplyInfo_Success(t *testing.T) {
 func TestGetSpeed_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/mass/speed/get") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
 		_, _ = w.Write([]byte(`{"speed":3,"realspeed":15}`))
 	}))
 	defer srv.Close()
@@ -231,6 +275,14 @@ func TestGetSpeed_Success(t *testing.T) {
 func TestSetSpeed_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/mass/speed/set") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["speed"] != float64(2) {
+			t.Errorf("unexpected speed: %v", body["speed"])
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -248,6 +300,14 @@ func TestSetSpeed_Success(t *testing.T) {
 func TestGetMassMsg_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/mass/get") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["msg_id"] != float64(1234) {
+			t.Errorf("unexpected msg_id: %v", body["msg_id"])
+		}
 		_, _ = w.Write([]byte(`{"msg_id":1234,"msg_status":"SEND_SUCCESS"}`))
 	}))
 	defer srv.Close()
@@ -265,6 +325,14 @@ func TestGetMassMsg_Success(t *testing.T) {
 func TestDeleteMassMsg_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/mass/delete") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["msg_id"] != float64(1234) {
+			t.Errorf("unexpected msg_id: %v", body["msg_id"])
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok"}`))
 	}))
 	defer srv.Close()
@@ -281,6 +349,11 @@ func TestMassSend_Success(t *testing.T) {
 		assertAccessToken(t, r)
 		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/mass/send") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["msgtype"] != "text" {
+			t.Errorf("unexpected msgtype: %v", body["msgtype"])
 		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok","msg_id":5678,"msg_data_id":9012}`))
 	}))
@@ -302,6 +375,14 @@ func TestMassSend_Success(t *testing.T) {
 func TestSendAll_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
+		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/mass/sendall") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		var body map[string]any
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body["msgtype"] != "text" {
+			t.Errorf("unexpected msgtype: %v", body["msgtype"])
+		}
 		_, _ = w.Write([]byte(`{"errcode":0,"errmsg":"ok","msg_id":1111,"msg_data_id":2222}`))
 	}))
 	defer srv.Close()
