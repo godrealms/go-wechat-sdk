@@ -34,7 +34,7 @@ func TestGetSuiteAccessToken_FirstAndCached(t *testing.T) {
 		if body["suite_id"] != "suite1" || body["suite_ticket"] != "TICKET" {
 			t.Errorf("unexpected body: %+v", body)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"suite_access_token": "STOK",
 			"expires_in":         7200,
 		})
@@ -73,7 +73,7 @@ func TestGetSuiteAccessToken_ExpiredRefreshes(t *testing.T) {
 	var hits int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&hits, 1)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"suite_access_token": "FRESH",
 			"expires_in":         7200,
 		})
@@ -97,7 +97,7 @@ func TestRefreshSuiteToken_Explicit(t *testing.T) {
 	var hits int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&hits, 1)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"suite_access_token": "NEW",
 			"expires_in":         7200,
 		})
@@ -150,7 +150,7 @@ func TestGetSuiteAccessToken_ClampsTinyExpires(t *testing.T) {
 	var hits int32
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		atomic.AddInt32(&hits, 1)
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"suite_access_token": "STOK",
 			"expires_in":         10, // hostile: would normally compute to -290s
 		})
@@ -173,7 +173,7 @@ func TestGetSuiteAccessToken_ClampsTinyExpires(t *testing.T) {
 
 func TestGetSuiteAccessToken_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 40001,
 			"errmsg":  "invalid credential",
 		})

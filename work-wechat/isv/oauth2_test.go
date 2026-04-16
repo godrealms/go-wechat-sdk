@@ -85,7 +85,7 @@ func TestGetUserInfo3rd_Member(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -99,7 +99,7 @@ func TestGetUserInfo3rd_Member(t *testing.T) {
 			if got := r.URL.Query().Get("code"); got != "AUTH1" {
 				t.Errorf("code query: %q", got)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"CorpId":      "wxcorp1",
 				"UserId":      "u1",
 				"DeviceId":    "dev1",
@@ -136,7 +136,7 @@ func TestGetUserInfo3rd_NonMember(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -147,7 +147,7 @@ func TestGetUserInfo3rd_NonMember(t *testing.T) {
 			if got := r.URL.Query().Get("provider_access_token"); got != "PTOK" {
 				t.Errorf("token query: %q", got)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"CorpId": "wxcorp1",
 				"OpenId": "oAbCdEf",
 			})
@@ -174,7 +174,7 @@ func TestGetUserDetail3rd(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -190,7 +190,7 @@ func TestGetUserDetail3rd(t *testing.T) {
 			if body["user_ticket"] != "TICKET1" {
 				t.Errorf("body: %+v", body)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"corpid":   "wxcorp1",
 				"userid":   "u1",
 				"gender":   "1",

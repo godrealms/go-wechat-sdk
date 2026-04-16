@@ -18,7 +18,7 @@ func TestGetKFMsgList_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/customservice/msgrecord/getmsglist") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["starttime"] != float64(1000) || body["endtime"] != float64(2000) {
 			t.Errorf("unexpected body: %+v", body)
@@ -65,7 +65,7 @@ func TestSendKFMessage_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/custom/send") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["touser"] != "o1" || body["msgtype"] != "text" {
 			t.Errorf("unexpected body: %+v", body)
@@ -95,7 +95,7 @@ func TestCreateKFSession_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/customservice/kfsession/create") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["kf_account"] != "kf1@test" || body["openid"] != "o1" {
 			t.Errorf("unexpected body: %+v", body)

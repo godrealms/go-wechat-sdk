@@ -13,7 +13,7 @@ func (c *Client) GetApiQuota(ctx context.Context, cgiPath string) (*ApiQuotaResp
 		return nil, err
 	}
 	path := fmt.Sprintf("/cgi-bin/openapi/quota/get?access_token=%s", token)
-	body := map[string]interface{}{
+	body := map[string]any{
 		"cgi_path": cgiPath,
 	}
 	result := &ApiQuotaResp{}
@@ -31,7 +31,7 @@ func (c *Client) ClearQuota(ctx context.Context) error {
 		return err
 	}
 	path := fmt.Sprintf("/cgi-bin/clear_quota?access_token=%s", token)
-	body := map[string]interface{}{
+	body := map[string]any{
 		"appid": c.Config.AppId,
 	}
 	result := &Resp{}
@@ -50,7 +50,7 @@ func (c *Client) GetRidInfo(ctx context.Context, rid string) (*RidInfoResp, erro
 		return nil, err
 	}
 	path := fmt.Sprintf("/cgi-bin/openapi/rid/get?access_token=%s", token)
-	body := map[string]interface{}{
+	body := map[string]any{
 		"rid": rid,
 	}
 	result := &RidInfoResp{}

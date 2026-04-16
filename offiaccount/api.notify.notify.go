@@ -15,7 +15,7 @@ func (c *Client) DelWxAnewTemplate(ctx context.Context, priTmplId string) error 
 	}
 	path := fmt.Sprintf("/wxaapi/newtmpl/deltemplate?access_token=%s", token)
 	result := &Resp{}
-	if err = c.doPost(ctx, path, map[string]interface{}{"priTmplId": priTmplId}, result); err != nil {
+	if err = c.doPost(ctx, path, map[string]any{"priTmplId": priTmplId}, result); err != nil {
 		return err
 	}
 	return nil
@@ -108,7 +108,7 @@ func (c *Client) AddWxaNewTemplate(ctx context.Context, tid string, kidList []in
 	}
 	path := fmt.Sprintf("/wxaapi/newtmpl/addtemplate?access_token=%s", token)
 	result := &AddWxaNewTemplateResp{}
-	body := map[string]interface{}{"tid": tid, "kidList": kidList, "sceneDesc": sceneDesc}
+	body := map[string]any{"tid": tid, "kidList": kidList, "sceneDesc": sceneDesc}
 	if err = c.doPost(ctx, path, body, result); err != nil {
 		return nil, err
 	}

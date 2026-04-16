@@ -20,11 +20,11 @@ import (
 // unconditionally outside any lock and this assertion would fail.
 func TestGetPermanentCode_SerializesWithCorpRefresh(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token":   "CORP_TOK",
 			"expires_in":     7200,
 			"permanent_code": "PERM",
-			"auth_corp_info": map[string]interface{}{
+			"auth_corp_info": map[string]any{
 				"corpid":    "wxLockedCorp",
 				"corp_name": "ACME",
 			},
@@ -76,20 +76,20 @@ func TestGetPermanentCode_SerializesWithCorpRefresh(t *testing.T) {
 
 func TestGetPermanentCode_StoresAuthorizer(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token":   "CORP_TOK",
 			"expires_in":     7200,
 			"permanent_code": "PERM",
-			"auth_corp_info": map[string]interface{}{
+			"auth_corp_info": map[string]any{
 				"corpid":    "wxcorp1",
 				"corp_name": "ACME",
 			},
-			"auth_info": map[string]interface{}{
-				"agent": []map[string]interface{}{
+			"auth_info": map[string]any{
+				"agent": []map[string]any{
 					{"agentid": 1000001, "name": "HR"},
 				},
 			},
-			"auth_user_info": map[string]interface{}{
+			"auth_user_info": map[string]any{
 				"userid": "admin",
 				"name":   "Admin",
 			},
@@ -125,13 +125,13 @@ func TestGetAuthInfo(t *testing.T) {
 		if body["auth_corpid"] != "wxcorp1" || body["permanent_code"] != "PERM" {
 			t.Errorf("body: %+v", body)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"auth_corp_info": map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"auth_corp_info": map[string]any{
 				"corpid":    "wxcorp1",
 				"corp_name": "ACME",
 			},
-			"auth_info": map[string]interface{}{
-				"agent": []map[string]interface{}{{"agentid": 1}},
+			"auth_info": map[string]any{
+				"agent": []map[string]any{{"agentid": 1}},
 			},
 		})
 	}))
@@ -148,13 +148,13 @@ func TestGetAuthInfo(t *testing.T) {
 
 func TestGetAdminList(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["auth_corpid"] != "wxcorp1" {
 			t.Errorf("body: %+v", body)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
-			"admin": []map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"admin": []map[string]any{
 				{"userid": "u1", "open_userid": "o1", "auth_type": 1},
 			},
 		})

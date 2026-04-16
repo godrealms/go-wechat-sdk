@@ -80,7 +80,7 @@ func TestGetInvoiceInfo_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/card/invoice/reimburse/getinvoiceinfo") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["card_id"] != "card1" {
 			t.Errorf("unexpected card_id: %v", body["card_id"])

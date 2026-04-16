@@ -17,7 +17,7 @@ func TestSendTemplateMessage_Success(t *testing.T) {
 		if !strings.HasSuffix(r.URL.Path, "/cgi-bin/message/template/send") {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["touser"] != "o1" || body["template_id"] != "tmpl1" {
 			t.Errorf("unexpected body: %+v", body)
@@ -60,7 +60,7 @@ func TestAddTemplate_Success(t *testing.T) {
 func TestDeleteTemplate_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assertAccessToken(t, r)
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["template_id"] != "tmpl1" {
 			t.Errorf("unexpected template_id: %v", body["template_id"])

@@ -42,7 +42,7 @@ func TestCorpClient_DoPost_TokenInjection(t *testing.T) {
 		if body["key"] != "val" {
 			t.Errorf("body: %+v", body)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"result": "ok",
 		})
 	}))
@@ -72,7 +72,7 @@ func TestCorpClient_DoGet_TokenInjection(t *testing.T) {
 		if got := r.URL.Query().Get("extra"); got != "123" {
 			t.Errorf("extra: %q", got)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"data": "hello",
 		})
 	}))

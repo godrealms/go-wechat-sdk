@@ -22,7 +22,7 @@ func TestGetCorpToken(t *testing.T) {
 		if body["auth_corpid"] != "wxcorp1" || body["permanent_code"] != "PERM" {
 			t.Errorf("body: %+v", body)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"access_token": "CTOK1",
 			"expires_in":   7200,
 		})
@@ -43,7 +43,7 @@ func TestCorpClient_AccessTokenLifecycle(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/cgi-bin/service/get_corp_token" {
 			atomic.AddInt32(&hits, 1)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"access_token": "CTOK_FRESH",
 				"expires_in":   7200,
 			})
@@ -79,7 +79,7 @@ func TestCorpClient_AccessTokenSingleFlight(t *testing.T) {
 		if r.URL.Path == "/cgi-bin/service/get_corp_token" {
 			atomic.AddInt32(&hits, 1)
 			time.Sleep(20 * time.Millisecond) // simulate network latency
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"access_token": "CTOK",
 				"expires_in":   7200,
 			})
@@ -116,7 +116,7 @@ func TestCorpClient_Refresh(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/cgi-bin/service/get_corp_token" {
 			atomic.AddInt32(&hits, 1)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"access_token": "CTOK_NEW",
 				"expires_in":   7200,
 			})
@@ -148,7 +148,7 @@ func TestRefreshAll(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/cgi-bin/service/get_corp_token" {
 			atomic.AddInt32(&hits, 1)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"access_token": "X",
 				"expires_in":   7200,
 			})

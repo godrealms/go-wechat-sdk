@@ -100,7 +100,7 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 // ---- shared HTTP helpers ----
 
 // doPost 发送 JSON POST 到 baseURL + path,query 自动注入 suite_access_token。
-func (c *Client) doPost(ctx context.Context, path string, body, out interface{}) error {
+func (c *Client) doPost(ctx context.Context, path string, body, out any) error {
 	tok, err := c.GetSuiteAccessToken(ctx)
 	if err != nil {
 		return err
@@ -110,7 +110,7 @@ func (c *Client) doPost(ctx context.Context, path string, body, out interface{})
 }
 
 // doGet 发送 GET 到 baseURL + path,query 自动注入 suite_access_token。
-func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out interface{}) error {
+func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out any) error {
 	tok, err := c.GetSuiteAccessToken(ctx)
 	if err != nil {
 		return err
@@ -124,7 +124,7 @@ func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out i
 }
 
 // doPostRaw 不自动获取 suite_token,query 由调用方完全控制。
-func (c *Client) doPostRaw(ctx context.Context, path string, query url.Values, body, out interface{}) error {
+func (c *Client) doPostRaw(ctx context.Context, path string, query url.Values, body, out any) error {
 	var buf io.Reader
 	if body != nil {
 		raw, err := json.Marshal(body)
@@ -136,7 +136,7 @@ func (c *Client) doPostRaw(ctx context.Context, path string, query url.Values, b
 	return c.doRequestRaw(ctx, http.MethodPost, path, query, buf, out)
 }
 
-func (c *Client) doRequestRaw(ctx context.Context, method, path string, query url.Values, body io.Reader, out interface{}) error {
+func (c *Client) doRequestRaw(ctx context.Context, method, path string, query url.Values, body io.Reader, out any) error {
 	u := c.baseURL + path
 	if len(query) > 0 {
 		u += "?" + query.Encode()
@@ -167,7 +167,7 @@ func (c *Client) doRequestRaw(ctx context.Context, method, path string, query ur
 
 // decodeRaw delegates to utils.DecodeEnvelope for two-stage JSON decode:
 // check errcode first, then unmarshal into out.
-func decodeRaw(path string, raw []byte, out interface{}) error {
+func decodeRaw(path string, raw []byte, out any) error {
 	return utils.DecodeEnvelope("isv", path, raw, out, func(code int, msg, _ string) error {
 		return &WeixinError{ErrCode: code, ErrMsg: msg}
 	})

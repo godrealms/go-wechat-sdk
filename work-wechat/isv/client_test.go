@@ -102,7 +102,7 @@ func TestNewClient_Defaults(t *testing.T) {
 
 func TestDoPost_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 42001,
 			"errmsg":  "access_token expired",
 		})

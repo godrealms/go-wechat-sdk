@@ -13,7 +13,7 @@ func TestGetLoginInfo_Admin(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -26,20 +26,20 @@ func TestGetLoginInfo_Admin(t *testing.T) {
 			if body["auth_code"] != "AUTH1" {
 				t.Errorf("auth_code body: %+v", body)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"usertype": 1,
-				"user_info": map[string]interface{}{
+				"user_info": map[string]any{
 					"userid":      "admin1",
 					"open_userid": "oadmin1",
 					"name":        "Admin",
 					"avatar":      "http://img/a.png",
 				},
-				"corp_info": map[string]interface{}{"corpid": "wxcorp1"},
-				"agent": []map[string]interface{}{
+				"corp_info": map[string]any{"corpid": "wxcorp1"},
+				"agent": []map[string]any{
 					{"agentid": 1000001, "auth_type": 1},
 				},
-				"auth_info": map[string]interface{}{
-					"department": []map[string]interface{}{
+				"auth_info": map[string]any{
+					"department": []map[string]any{
 						{"id": 1, "writable": true},
 						{"id": 2, "writable": false},
 					},
@@ -77,20 +77,20 @@ func TestGetLoginInfo_Member(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
 		case "/cgi-bin/service/get_login_info":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"usertype": 2,
-				"user_info": map[string]interface{}{
+				"user_info": map[string]any{
 					"userid":      "u1",
 					"open_userid": "ou1",
 					"name":        "Alice",
 				},
-				"corp_info": map[string]interface{}{"corpid": "wxcorp1"},
-				"agent": []map[string]interface{}{
+				"corp_info": map[string]any{"corpid": "wxcorp1"},
+				"agent": []map[string]any{
 					{"agentid": 1000001, "auth_type": 0},
 				},
 			})
@@ -115,12 +115,12 @@ func TestGetLoginInfo_WeixinError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
 		case "/cgi-bin/service/get_login_info":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"errcode": 40029,
 				"errmsg":  "invalid code",
 			})
@@ -143,7 +143,7 @@ func TestGetRegisterCode_HappyPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -156,7 +156,7 @@ func TestGetRegisterCode_HappyPath(t *testing.T) {
 			if body["template_id"] != "tmpl1" || body["corp_name"] != "ACME" || body["state"] != "s1" {
 				t.Errorf("body: %+v", body)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"register_code": "REG123",
 				"expires_in":    604800,
 			})
@@ -182,12 +182,12 @@ func TestGetRegisterCode_NilRequest(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
 		case "/cgi-bin/service/get_register_code":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"register_code": "REG_EMPTY",
 				"expires_in":    3600,
 			})
@@ -209,7 +209,7 @@ func TestGetRegistrationInfo_HappyPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -219,24 +219,24 @@ func TestGetRegistrationInfo_HappyPath(t *testing.T) {
 			if body["register_code"] != "REG123" {
 				t.Errorf("body: %+v", body)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
-				"corp_info": map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"corp_info": map[string]any{
 					"corpid":        "wxcorp1",
 					"corp_name":     "ACME",
 					"corp_user_max": 200,
 					"subject_type":  1,
 					"corp_industry": "Tech",
 				},
-				"auth_user_info": map[string]interface{}{
+				"auth_user_info": map[string]any{
 					"userid": "admin1",
 					"name":   "Root",
 				},
-				"contact_sync": map[string]interface{}{
+				"contact_sync": map[string]any{
 					"access_token": "CTOK",
 					"expires_in":   7200,
 				},
-				"auth_info": map[string]interface{}{
-					"agent": []map[string]interface{}{
+				"auth_info": map[string]any{
+					"agent": []map[string]any{
 						{"agentid": 1000001, "name": "HR"},
 					},
 				},

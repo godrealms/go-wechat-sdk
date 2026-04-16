@@ -11,7 +11,7 @@ import (
 )
 
 // doUpload sends a multipart/form-data POST with access_token injected.
-func (cc *CorpClient) doUpload(ctx context.Context, path string, extra url.Values, fieldName, fileName string, fileData io.Reader, out interface{}) error {
+func (cc *CorpClient) doUpload(ctx context.Context, path string, extra url.Values, fieldName, fileName string, fileData io.Reader, out any) error {
 	tok, err := cc.AccessToken(ctx)
 	if err != nil {
 		return err

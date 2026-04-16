@@ -36,7 +36,7 @@ func TestCorpIDToOpenCorpID(t *testing.T) {
 			if body["corpid"] != "wxprov" || body["provider_secret"] != "PSEC" {
 				t.Errorf("provider token body: %+v", body)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
@@ -49,7 +49,7 @@ func TestCorpIDToOpenCorpID(t *testing.T) {
 			if body["corpid"] != "wxcorp1" {
 				t.Errorf("body: %+v", body)
 			}
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"open_corpid": "openWx1",
 			})
 		default:
@@ -75,12 +75,12 @@ func TestUserIDToOpenUserID(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/cgi-bin/service/get_provider_token":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "PTOK",
 				"expires_in":            7200,
 			})
 		case "/cgi-bin/service/batch/userid_to_openuserid":
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"open_userid_list": []map[string]string{
 					{"userid": "u1", "open_userid": "o1"},
 				},
@@ -110,7 +110,7 @@ func TestGetProviderAccessToken_Exposed(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/service/get_provider_token" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"provider_access_token": "PTOK_PUB",
 			"expires_in":            7200,
 		})
@@ -144,13 +144,13 @@ func TestProviderTokenExpiredRefresh(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/cgi-bin/service/get_provider_token" {
 			atomic.AddInt32(&providerHits, 1)
-			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]any{
 				"provider_access_token": "FRESH",
 				"expires_in":            7200,
 			})
 			return
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{"open_corpid": "o1"})
+		_ = json.NewEncoder(w).Encode(map[string]any{"open_corpid": "o1"})
 	}))
 	defer srv.Close()
 

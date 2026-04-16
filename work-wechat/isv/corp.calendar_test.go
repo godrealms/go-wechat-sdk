@@ -19,16 +19,16 @@ func TestCreateCalendar(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/calendar/add" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		cal := body["calendar"].(map[string]interface{})
+		cal := body["calendar"].(map[string]any)
 		if cal["organizer"] != "user1" {
 			t.Errorf("organizer: %v", cal["organizer"])
 		}
 		if cal["summary"] != "Team Meeting" {
 			t.Errorf("summary: %v", cal["summary"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 			"cal_id":  "cal-xxx",
@@ -62,13 +62,13 @@ func TestUpdateCalendar(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/calendar/update" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		cal := body["calendar"].(map[string]interface{})
+		cal := body["calendar"].(map[string]any)
 		if cal["cal_id"] != "cal-001" {
 			t.Errorf("cal_id: %v", cal["cal_id"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -99,16 +99,16 @@ func TestGetCalendar(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/calendar/get" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		ids := body["cal_id_list"].([]interface{})
+		ids := body["cal_id_list"].([]any)
 		if len(ids) != 1 || ids[0] != "cal-001" {
 			t.Errorf("cal_id_list: %v", ids)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"calendar_list": []map[string]interface{}{
+			"calendar_list": []map[string]any{
 				{
 					"cal_id":    "cal-001",
 					"organizer": "user1",
@@ -147,12 +147,12 @@ func TestDeleteCalendar(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/calendar/del" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["cal_id"] != "cal-001" {
 			t.Errorf("cal_id: %v", body["cal_id"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -177,9 +177,9 @@ func TestCreateSchedule(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/schedule/add" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		sch := body["schedule"].(map[string]interface{})
+		sch := body["schedule"].(map[string]any)
 		if sch["organizer"] != "user1" {
 			t.Errorf("organizer: %v", sch["organizer"])
 		}
@@ -192,7 +192,7 @@ func TestCreateSchedule(t *testing.T) {
 		if int64(sch["end_time"].(float64)) != 1700003600 {
 			t.Errorf("end_time: %v", sch["end_time"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":     0,
 			"errmsg":      "ok",
 			"schedule_id": "sch-xxx",
@@ -228,13 +228,13 @@ func TestUpdateSchedule(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/schedule/update" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		sch := body["schedule"].(map[string]interface{})
+		sch := body["schedule"].(map[string]any)
 		if sch["schedule_id"] != "sch-001" {
 			t.Errorf("schedule_id: %v", sch["schedule_id"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -267,16 +267,16 @@ func TestGetSchedule(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/schedule/get" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		ids := body["schedule_id_list"].([]interface{})
+		ids := body["schedule_id_list"].([]any)
 		if len(ids) != 1 || ids[0] != "sch-001" {
 			t.Errorf("schedule_id_list: %v", ids)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"schedule_list": []map[string]interface{}{
+			"schedule_list": []map[string]any{
 				{
 					"schedule_id": "sch-001",
 					"organizer":   "user1",
@@ -317,12 +317,12 @@ func TestDeleteSchedule(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/schedule/del" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["schedule_id"] != "sch-001" {
 			t.Errorf("schedule_id: %v", body["schedule_id"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -347,15 +347,15 @@ func TestGetScheduleByCalendar(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/oa/schedule/get_by_calendar" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["cal_id"] != "cal-001" {
 			t.Errorf("cal_id: %v", body["cal_id"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"schedule_list": []map[string]interface{}{
+			"schedule_list": []map[string]any{
 				{
 					"schedule_id": "sch-001",
 					"organizer":   "user1",

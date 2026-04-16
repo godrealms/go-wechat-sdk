@@ -22,7 +22,7 @@ func TestGetAgent(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/agent/get" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":              0,
 			"errmsg":               "ok",
 			"agentid":              1000002,
@@ -33,15 +33,15 @@ func TestGetAgent(t *testing.T) {
 			"redirect_domain":      "example.com",
 			"isreportenter":        1,
 			"report_location_flag": 0,
-			"allow_userinfos": map[string]interface{}{
-				"user": []map[string]interface{}{
+			"allow_userinfos": map[string]any{
+				"user": []map[string]any{
 					{"userid": "zhangsan"},
 				},
 			},
-			"allow_partys": map[string]interface{}{
+			"allow_partys": map[string]any{
 				"partyid": []int{1, 2},
 			},
-			"allow_tags": map[string]interface{}{
+			"allow_tags": map[string]any{
 				"tagid": []int{10},
 			},
 		})
@@ -96,7 +96,7 @@ func TestSetAgent(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/agent/set" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int(body["agentid"].(float64)) != 1000002 {
 			t.Errorf("body.agentid: %v", body["agentid"])
@@ -114,7 +114,7 @@ func TestSetAgent(t *testing.T) {
 		} else if int(val.(float64)) != 0 {
 			t.Errorf("body.isreportenter: %v", val)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})

@@ -46,7 +46,7 @@ func main() {
 	template := &offiaccount.SubscribeMessageRequest{
 		ToUser:     "user_openid", // 替换为实际的用户 openid
 		TemplateID: "template_id", // 替换为实际的模板 ID
-		Data: map[string]interface{}{
+		Data: map[string]any{
 			"first": map[string]string{
 				"value": "恭喜你购买成功！",
 			},

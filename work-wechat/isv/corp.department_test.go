@@ -27,7 +27,7 @@ func TestCreateDepartment(t *testing.T) {
 		if body.ParentID != 1 {
 			t.Errorf("body.ParentID: %d", body.ParentID)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 			"id":      42,
@@ -62,10 +62,10 @@ func TestListDepartment(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/department/list" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"department": []map[string]interface{}{
+			"department": []map[string]any{
 				{"id": 1, "name": "Root", "parentid": 0},
 				{"id": 2, "name": "Tech", "parentid": 1},
 			},
@@ -103,7 +103,7 @@ func TestDeleteDepartment(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/department/delete" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -136,7 +136,7 @@ func TestUpdateDepartment(t *testing.T) {
 		if body.Name != "Engineering" {
 			t.Errorf("body.Name: %q", body.Name)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})

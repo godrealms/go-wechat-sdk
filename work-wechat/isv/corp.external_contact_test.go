@@ -22,15 +22,15 @@ func TestGetExternalContact(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/get" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"external_contact": map[string]interface{}{
+			"external_contact": map[string]any{
 				"external_userid": "wmXXX",
 				"name":            "张三",
 				"type":            1,
 			},
-			"follow_user": []map[string]interface{}{
+			"follow_user": []map[string]any{
 				{
 					"userid":     "zhangsan",
 					"remark":     "备注",
@@ -74,7 +74,7 @@ func TestListExternalContact(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/list" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":         0,
 			"errmsg":          "ok",
 			"external_userid": []string{"wmXXX", "wmYYY"},
@@ -109,23 +109,23 @@ func TestBatchGetExternalContactByUser(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/batch/get_by_user" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		userIDList, ok := body["userid_list"].([]interface{})
+		userIDList, ok := body["userid_list"].([]any)
 		if !ok || len(userIDList) == 0 {
 			t.Error("body.userid_list missing or empty")
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"external_contact_list": []map[string]interface{}{
+			"external_contact_list": []map[string]any{
 				{
-					"external_contact": map[string]interface{}{
+					"external_contact": map[string]any{
 						"external_userid": "wmXXX",
 						"name":            "张三",
 						"type":            1,
 					},
-					"follow_user": []map[string]interface{}{},
+					"follow_user": []map[string]any{},
 				},
 			},
 			"next_cursor": "CURSOR123",
@@ -163,7 +163,7 @@ func TestRemarkExternalContact(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/remark" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["userid"] != "zhangsan" {
 			t.Errorf("body.userid: %v", body["userid"])
@@ -174,7 +174,7 @@ func TestRemarkExternalContact(t *testing.T) {
 		if body["remark"] != "新备注" {
 			t.Errorf("body.remark: %v", body["remark"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -203,14 +203,14 @@ func TestGetCorpTagList(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/get_corp_tag_list" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"tag_group": []map[string]interface{}{
+			"tag_group": []map[string]any{
 				{
 					"group_id":   "GROUP001",
 					"group_name": "重要客户",
-					"tag": []map[string]interface{}{
+					"tag": []map[string]any{
 						{"id": "TAG001", "name": "VIP", "order": 1},
 						{"id": "TAG002", "name": "潜力", "order": 2},
 					},
@@ -253,18 +253,18 @@ func TestAddCorpTag(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/add_corp_tag" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["group_name"] != "新标签组" {
 			t.Errorf("body.group_name: %v", body["group_name"])
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"tag_group": map[string]interface{}{
+			"tag_group": map[string]any{
 				"group_id":   "NEWGROUP001",
 				"group_name": "新标签组",
-				"tag": []map[string]interface{}{
+				"tag": []map[string]any{
 					{"id": "NEWTAG001", "name": "新标签", "order": 1},
 				},
 			},
@@ -304,7 +304,7 @@ func TestEditCorpTag(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/edit_corp_tag" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["id"] != "TAG001" {
 			t.Errorf("body.id: %v", body["id"])
@@ -316,7 +316,7 @@ func TestEditCorpTag(t *testing.T) {
 		} else if int(val.(float64)) != 0 {
 			t.Errorf("body.order: %v", val)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -346,13 +346,13 @@ func TestDelCorpTag(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/del_corp_tag" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
-		tagIDs, ok := body["tag_id"].([]interface{})
+		tagIDs, ok := body["tag_id"].([]any)
 		if !ok || len(tagIDs) == 0 {
 			t.Error("body.tag_id missing or empty")
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -379,7 +379,7 @@ func TestMarkTag(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/mark_tag" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if body["userid"] != "zhangsan" {
 			t.Errorf("body.userid: %v", body["userid"])
@@ -387,15 +387,15 @@ func TestMarkTag(t *testing.T) {
 		if body["external_userid"] != "wmXXX" {
 			t.Errorf("body.external_userid: %v", body["external_userid"])
 		}
-		addTags, ok := body["add_tag"].([]interface{})
+		addTags, ok := body["add_tag"].([]any)
 		if !ok || len(addTags) == 0 {
 			t.Error("body.add_tag missing or empty")
 		}
-		removeTags, ok := body["remove_tag"].([]interface{})
+		removeTags, ok := body["remove_tag"].([]any)
 		if !ok || len(removeTags) == 0 {
 			t.Error("body.remove_tag missing or empty")
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -425,7 +425,7 @@ func TestGetFollowUserList(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/externalcontact/get_follow_user_list" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":     0,
 			"errmsg":      "ok",
 			"follow_user": []string{"zhangsan", "lisi"},

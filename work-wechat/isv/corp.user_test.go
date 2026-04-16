@@ -27,7 +27,7 @@ func TestCreateUser(t *testing.T) {
 		if body.Name != "Zhang San" {
 			t.Errorf("body.Name: %q", body.Name)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -59,7 +59,7 @@ func TestGetUser(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/user/get" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode":    0,
 			"errmsg":     "ok",
 			"userid":     "zhangsan",
@@ -103,10 +103,10 @@ func TestListUserSimple(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/user/simplelist" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"userlist": []map[string]interface{}{
+			"userlist": []map[string]any{
 				{"userid": "zhangsan", "name": "Zhang San", "department": []int{1}},
 			},
 		})
@@ -143,10 +143,10 @@ func TestListUserDetail(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/user/list" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"userlist": []map[string]interface{}{
+			"userlist": []map[string]any{
 				{"userid": "lisi", "name": "Li Si", "department": []int{2}, "status": 1},
 			},
 		})
@@ -185,7 +185,7 @@ func TestUpdateUser(t *testing.T) {
 		if body.UserID != "zhangsan" {
 			t.Errorf("body.UserID: %q", body.UserID)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})
@@ -216,7 +216,7 @@ func TestDeleteUser(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/user/delete" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
 		})

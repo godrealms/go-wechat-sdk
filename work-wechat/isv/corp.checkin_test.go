@@ -19,7 +19,7 @@ func TestGetCheckinData(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/checkin/getcheckindata" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int(body["opencheckindatatype"].(float64)) != 3 {
 			t.Errorf("opencheckindatatype: %v", body["opencheckindatatype"])
@@ -30,14 +30,14 @@ func TestGetCheckinData(t *testing.T) {
 		if int64(body["endtime"].(float64)) != 1609516800 {
 			t.Errorf("endtime: %v", body["endtime"])
 		}
-		users := body["useridlist"].([]interface{})
+		users := body["useridlist"].([]any)
 		if len(users) != 1 || users[0] != "user1" {
 			t.Errorf("useridlist: %v", users)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"checkindata": []map[string]interface{}{
+			"checkindata": []map[string]any{
 				{
 					"userid":       "user1",
 					"groupname":    "标准打卡",
@@ -88,22 +88,22 @@ func TestGetCheckinOption(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/checkin/getcheckinoption" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int64(body["datetime"].(float64)) != 1609430400 {
 			t.Errorf("datetime: %v", body["datetime"])
 		}
-		users := body["useridlist"].([]interface{})
+		users := body["useridlist"].([]any)
 		if len(users) != 1 || users[0] != "user1" {
 			t.Errorf("useridlist: %v", users)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"info": []map[string]interface{}{
+			"info": []map[string]any{
 				{
 					"userid": "user1",
-					"group": map[string]interface{}{
+					"group": map[string]any{
 						"groupid":   101,
 						"groupname": "研发组",
 						"grouptype": 1,
@@ -151,7 +151,7 @@ func TestGetCheckinDayData(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/checkin/getcheckin_daydata" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int64(body["starttime"].(float64)) != 1609430400 {
 			t.Errorf("starttime: %v", body["starttime"])
@@ -159,21 +159,21 @@ func TestGetCheckinDayData(t *testing.T) {
 		if int64(body["endtime"].(float64)) != 1609516800 {
 			t.Errorf("endtime: %v", body["endtime"])
 		}
-		users := body["useridlist"].([]interface{})
+		users := body["useridlist"].([]any)
 		if len(users) != 1 || users[0] != "user1" {
 			t.Errorf("useridlist: %v", users)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"datas": []map[string]interface{}{
+			"datas": []map[string]any{
 				{
-					"base_info": map[string]interface{}{
+					"base_info": map[string]any{
 						"date":   1609430400,
 						"name":   "张三",
 						"acctid": "user1",
 					},
-					"summary_info": map[string]interface{}{
+					"summary_info": map[string]any{
 						"checkin_count":     2,
 						"regular_work_sec":  28800,
 						"standard_work_sec": 28800,
@@ -225,7 +225,7 @@ func TestGetCheckinMonthData(t *testing.T) {
 		if r.URL.Path != "/cgi-bin/checkin/getcheckin_monthdata" {
 			t.Errorf("path: %s", r.URL.Path)
 		}
-		var body map[string]interface{}
+		var body map[string]any
 		_ = json.NewDecoder(r.Body).Decode(&body)
 		if int64(body["starttime"].(float64)) != 1609430400 {
 			t.Errorf("starttime: %v", body["starttime"])
@@ -233,21 +233,21 @@ func TestGetCheckinMonthData(t *testing.T) {
 		if int64(body["endtime"].(float64)) != 1612108800 {
 			t.Errorf("endtime: %v", body["endtime"])
 		}
-		users := body["useridlist"].([]interface{})
+		users := body["useridlist"].([]any)
 		if len(users) != 1 || users[0] != "user1" {
 			t.Errorf("useridlist: %v", users)
 		}
-		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"errcode": 0,
 			"errmsg":  "ok",
-			"datas": []map[string]interface{}{
+			"datas": []map[string]any{
 				{
-					"base_info": map[string]interface{}{
+					"base_info": map[string]any{
 						"date":   1609430400,
 						"name":   "张三",
 						"acctid": "user1",
 					},
-					"summary_info": map[string]interface{}{
+					"summary_info": map[string]any{
 						"work_days":        22,
 						"regular_work_sec": 633600,
 						"except_days":      1,
