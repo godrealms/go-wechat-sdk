@@ -2,6 +2,7 @@ package isv
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"strconv"
 )
@@ -15,22 +16,34 @@ func boolToStr(b bool) string {
 
 // CreateUser creates a user on behalf of the authorized enterprise.
 func (cc *CorpClient) CreateUser(ctx context.Context, req *CreateUserReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: CreateUser: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/user/create", req, nil)
 }
 
 // UpdateUser updates a user on behalf of the authorized enterprise.
 func (cc *CorpClient) UpdateUser(ctx context.Context, req *UpdateUserReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: UpdateUser: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/user/update", req, nil)
 }
 
 // DeleteUser deletes a user by userid on behalf of the authorized enterprise.
 func (cc *CorpClient) DeleteUser(ctx context.Context, userID string) error {
+	if err := requireNonEmpty("DeleteUser", "userID", userID); err != nil {
+		return err
+	}
 	extra := url.Values{"userid": {userID}}
 	return cc.doGet(ctx, "/cgi-bin/user/delete", extra, nil)
 }
 
 // GetUser retrieves detailed user info by userid.
 func (cc *CorpClient) GetUser(ctx context.Context, userID string) (*UserDetail, error) {
+	if err := requireNonEmpty("GetUser", "userID", userID); err != nil {
+		return nil, err
+	}
 	extra := url.Values{"userid": {userID}}
 	var resp UserDetail
 	if err := cc.doGet(ctx, "/cgi-bin/user/get", extra, &resp); err != nil {

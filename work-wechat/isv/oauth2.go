@@ -62,6 +62,9 @@ func (c *Client) OAuth2URL(redirectURI, state string, opts ...OAuth2Option) stri
 // 使用 provider_access_token。
 // 返回的 UserTicket 可继续调用 GetUserDetail3rd 换取敏感详情。
 func (c *Client) GetUserInfo3rd(ctx context.Context, authCode string) (*UserInfo3rdResp, error) {
+	if err := requireNonEmpty("GetUserInfo3rd", "authCode", authCode); err != nil {
+		return nil, err
+	}
 	extra := url.Values{"code": {authCode}}
 	var resp UserInfo3rdResp
 	if err := c.providerDoGet(ctx, "/cgi-bin/service/auth/getuserinfo3rd", extra, &resp); err != nil {
@@ -74,6 +77,9 @@ func (c *Client) GetUserInfo3rd(ctx context.Context, authCode string) (*UserInfo
 // 接口:POST /cgi-bin/service/auth/getuserdetail3rd,body 为 {"user_ticket": "..."}。
 // 注意:此接口对敏感字段有调用者备案要求,调用前请确认合规。
 func (c *Client) GetUserDetail3rd(ctx context.Context, userTicket string) (*UserDetail3rdResp, error) {
+	if err := requireNonEmpty("GetUserDetail3rd", "userTicket", userTicket); err != nil {
+		return nil, err
+	}
 	body := map[string]string{"user_ticket": userTicket}
 	var resp UserDetail3rdResp
 	if err := c.providerDoPost(ctx, "/cgi-bin/service/auth/getuserdetail3rd", body, &resp); err != nil {

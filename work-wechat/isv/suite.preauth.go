@@ -2,6 +2,7 @@ package isv
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 )
 
@@ -16,6 +17,12 @@ func (c *Client) GetPreAuthCode(ctx context.Context) (*PreAuthCodeResp, error) {
 
 // SetSessionInfo 为指定 pre_auth_code 绑定授权会话配置。
 func (c *Client) SetSessionInfo(ctx context.Context, preAuthCode string, info *SessionInfo) error {
+	if err := requireNonEmpty("SetSessionInfo", "preAuthCode", preAuthCode); err != nil {
+		return err
+	}
+	if info == nil {
+		return fmt.Errorf("isv: SetSessionInfo: info is required")
+	}
 	body := map[string]interface{}{
 		"pre_auth_code": preAuthCode,
 		"session_info":  info,

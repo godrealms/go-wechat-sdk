@@ -57,7 +57,18 @@ func (cc *CorpClient) doUpload(ctx context.Context, path string, extra url.Value
 }
 
 // UploadMedia uploads a temporary media file (image, voice, video, or file).
+// mediaType must be one of: "image", "voice", "video", "file" — the WeCom
+// (企业微信) accepted set, which differs from mini-program (no "thumb").
 func (cc *CorpClient) UploadMedia(ctx context.Context, mediaType, fileName string, fileData io.Reader) (*UploadMediaResp, error) {
+	if _, ok := validWWMediaTypes[mediaType]; !ok {
+		return nil, fmt.Errorf("isv: UploadMedia: mediaType must be one of image/voice/video/file, got %q", mediaType)
+	}
+	if fileName == "" {
+		return nil, fmt.Errorf("isv: UploadMedia: fileName is required")
+	}
+	if fileData == nil {
+		return nil, fmt.Errorf("isv: UploadMedia: fileData is required")
+	}
 	extra := url.Values{"type": {mediaType}}
 	var resp UploadMediaResp
 	if err := cc.doUpload(ctx, "/cgi-bin/media/upload", extra, "media", fileName, fileData, &resp); err != nil {
