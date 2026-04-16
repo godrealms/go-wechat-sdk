@@ -96,6 +96,9 @@ func (c *Client) providerDoGet(ctx context.Context, path string, extra url.Value
 
 // CorpIDToOpenCorpID 把企业 corpid 转换成跨服务商匿名的 open_corpid。
 func (c *Client) CorpIDToOpenCorpID(ctx context.Context, corpID string) (string, error) {
+	if err := requireNonEmpty("CorpIDToOpenCorpID", "corpID", corpID); err != nil {
+		return "", err
+	}
 	body := map[string]string{"corpid": corpID}
 	var resp struct {
 		OpenCorpID string `json:"open_corpid"`
@@ -108,6 +111,12 @@ func (c *Client) CorpIDToOpenCorpID(ctx context.Context, corpID string) (string,
 
 // UserIDToOpenUserID 批量把 userid 转换为跨服务商匿名的 open_userid。
 func (c *Client) UserIDToOpenUserID(ctx context.Context, corpID string, userIDs []string) (*UserIDConvertResp, error) {
+	if err := requireNonEmpty("UserIDToOpenUserID", "corpID", corpID); err != nil {
+		return nil, err
+	}
+	if len(userIDs) == 0 {
+		return nil, fmt.Errorf("isv: UserIDToOpenUserID: userIDs is required")
+	}
 	body := map[string]interface{}{
 		"auth_corpid": corpID,
 		"userid_list": userIDs,

@@ -2,11 +2,15 @@ package isv
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 )
 
 // GetExternalContact retrieves the details of an external contact by their user ID.
 func (cc *CorpClient) GetExternalContact(ctx context.Context, externalUserID string) (*GetExternalContactResp, error) {
+	if err := requireNonEmpty("GetExternalContact", "externalUserID", externalUserID); err != nil {
+		return nil, err
+	}
 	extra := url.Values{"external_userid": {externalUserID}}
 	var resp GetExternalContactResp
 	if err := cc.doGet(ctx, "/cgi-bin/externalcontact/get", extra, &resp); err != nil {
@@ -17,6 +21,9 @@ func (cc *CorpClient) GetExternalContact(ctx context.Context, externalUserID str
 
 // ListExternalContact retrieves the list of external contacts for a given internal user.
 func (cc *CorpClient) ListExternalContact(ctx context.Context, userID string) (*ListExternalContactResp, error) {
+	if err := requireNonEmpty("ListExternalContact", "userID", userID); err != nil {
+		return nil, err
+	}
 	extra := url.Values{"userid": {userID}}
 	var resp ListExternalContactResp
 	if err := cc.doGet(ctx, "/cgi-bin/externalcontact/list", extra, &resp); err != nil {
@@ -27,6 +34,9 @@ func (cc *CorpClient) ListExternalContact(ctx context.Context, userID string) (*
 
 // BatchGetExternalContactByUser retrieves external contact details in bulk for multiple internal users.
 func (cc *CorpClient) BatchGetExternalContactByUser(ctx context.Context, req *BatchGetExternalContactReq) (*BatchGetExternalContactResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("isv: BatchGetExternalContactByUser: req is required")
+	}
 	var resp BatchGetExternalContactResp
 	if err := cc.doPost(ctx, "/cgi-bin/externalcontact/batch/get_by_user", req, &resp); err != nil {
 		return nil, err
@@ -36,6 +46,9 @@ func (cc *CorpClient) BatchGetExternalContactByUser(ctx context.Context, req *Ba
 
 // RemarkExternalContact updates the remark information for an external contact.
 func (cc *CorpClient) RemarkExternalContact(ctx context.Context, req *RemarkExternalContactReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: RemarkExternalContact: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/externalcontact/remark", req, nil)
 }
 
@@ -50,6 +63,9 @@ func (cc *CorpClient) GetCorpTagList(ctx context.Context, req *GetCorpTagListReq
 
 // AddCorpTag adds enterprise customer tags.
 func (cc *CorpClient) AddCorpTag(ctx context.Context, req *AddCorpTagReq) (*AddCorpTagResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("isv: AddCorpTag: req is required")
+	}
 	var resp AddCorpTagResp
 	if err := cc.doPost(ctx, "/cgi-bin/externalcontact/add_corp_tag", req, &resp); err != nil {
 		return nil, err
@@ -59,16 +75,25 @@ func (cc *CorpClient) AddCorpTag(ctx context.Context, req *AddCorpTagReq) (*AddC
 
 // EditCorpTag edits an enterprise customer tag.
 func (cc *CorpClient) EditCorpTag(ctx context.Context, req *EditCorpTagReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: EditCorpTag: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/externalcontact/edit_corp_tag", req, nil)
 }
 
 // DelCorpTag deletes enterprise customer tags.
 func (cc *CorpClient) DelCorpTag(ctx context.Context, req *DelCorpTagReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: DelCorpTag: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/externalcontact/del_corp_tag", req, nil)
 }
 
 // MarkTag adds or removes enterprise tags on an external contact.
 func (cc *CorpClient) MarkTag(ctx context.Context, req *MarkTagReq) error {
+	if req == nil {
+		return fmt.Errorf("isv: MarkTag: req is required")
+	}
 	return cc.doPost(ctx, "/cgi-bin/externalcontact/mark_tag", req, nil)
 }
 

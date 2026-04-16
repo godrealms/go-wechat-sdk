@@ -83,7 +83,7 @@ func TestUploadMedia_WeixinError(t *testing.T) {
 	defer srv.Close()
 
 	cc := newTestCorpClient(t, srv.URL)
-	_, err := cc.UploadMedia(context.Background(), "bad", "test.png", strings.NewReader("data"))
+	_, err := cc.UploadMedia(context.Background(), "image", "test.png", strings.NewReader("data"))
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
