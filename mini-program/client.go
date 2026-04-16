@@ -15,7 +15,6 @@ import (
 	"context"
 	"fmt"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
@@ -30,12 +29,9 @@ type Config struct {
 // Client is the Mini Program server-side client. It caches the access_token in-process
 // and refreshes it automatically 60 s before expiry. Safe for concurrent use.
 type Client struct {
-	cfg  Config
-	http *utils.HTTP
-
-	mu          sync.RWMutex
-	accessToken string
-	expiresAt   time.Time
+	cfg   Config
+	http  *utils.HTTP
+	cache *utils.TokenCache
 
 	tokenSource TokenSource
 }
@@ -67,6 +63,7 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 	if c.tokenSource == nil && cfg.AppSecret == "" {
 		return nil, fmt.Errorf("mini_program: AppSecret is required when no TokenSource is injected")
 	}
+	c.cache = utils.NewTokenCache("mini_program", c.fetchToken)
 	return c, nil
 }
 
@@ -111,24 +108,9 @@ type accessTokenResp struct {
 	ErrMsg      string `json:"errmsg,omitempty"`
 }
 
-// AccessToken returns a valid global access_token, refreshing it when fewer than
-// 60 seconds remain before expiry. When a TokenSource is injected, delegates to it.
-func (c *Client) AccessToken(ctx context.Context) (string, error) {
-	if c.tokenSource != nil {
-		return c.tokenSource.AccessToken(ctx)
-	}
-	c.mu.RLock()
-	if c.accessToken != "" && time.Now().Before(c.expiresAt) {
-		t := c.accessToken
-		c.mu.RUnlock()
-		return t, nil
-	}
-	c.mu.RUnlock()
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.accessToken != "" && time.Now().Before(c.expiresAt) {
-		return c.accessToken, nil
-	}
+// fetchToken issues the /cgi-bin/token HTTP call. It is passed to TokenCache
+// as the refresh callback and is not called directly.
+func (c *Client) fetchToken(ctx context.Context) (string, int64, error) {
 	q := url.Values{
 		"grant_type": {"client_credential"},
 		"appid":      {c.cfg.AppId},
@@ -136,21 +118,21 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 	}
 	out := &accessTokenResp{}
 	if err := c.http.Get(ctx, "/cgi-bin/token", q, out); err != nil {
-		return "", fmt.Errorf("mini_program: fetch token: %w", err)
+		return "", 0, fmt.Errorf("mini_program: fetch token: %w", err)
 	}
 	if out.ErrCode != 0 {
-		return "", &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
+		return "", 0, &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
 	}
-	if out.AccessToken == "" {
-		return "", fmt.Errorf("mini_program: empty access_token")
+	return out.AccessToken, out.ExpiresIn, nil
+}
+
+// AccessToken returns a valid global access_token, refreshing it when fewer than
+// 60 seconds remain before expiry. When a TokenSource is injected, delegates to it.
+func (c *Client) AccessToken(ctx context.Context) (string, error) {
+	if c.tokenSource != nil {
+		return c.tokenSource.AccessToken(ctx)
 	}
-	c.accessToken = out.AccessToken
-	ttl := out.ExpiresIn - 60
-	if ttl < 60 {
-		ttl = 60 // safety floor: never cache a token for less than 60s.
-	}
-	c.expiresAt = time.Now().Add(time.Duration(ttl) * time.Second)
-	return c.accessToken, nil
+	return c.cache.Get(ctx)
 }
 
 // SendSubscribeMessage sends a subscription template message to the user identified in body.
