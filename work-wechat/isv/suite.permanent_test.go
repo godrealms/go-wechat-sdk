@@ -9,6 +9,71 @@ import (
 	"time"
 )
 
+// TestGetPermanentCode_SerializesWithCorpRefresh is a concurrency regression
+// guard for audit Batch 3. GetPermanentCode must acquire the same per-corpID
+// mutex that CorpClient.refreshLocked holds, so that an in-flight corp_token
+// refresh cannot clobber a freshly-obtained permanent_code record.
+//
+// The test holds the per-corpID mutex before calling GetPermanentCode and
+// asserts that the call blocks waiting on the mutex — proving the store
+// write is inside the critical section. Pre-fix, the PutAuthorizer happened
+// unconditionally outside any lock and this assertion would fail.
+func TestGetPermanentCode_SerializesWithCorpRefresh(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token":   "CORP_TOK",
+			"expires_in":     7200,
+			"permanent_code": "PERM",
+			"auth_corp_info": map[string]interface{}{
+				"corpid":    "wxLockedCorp",
+				"corp_name": "ACME",
+			},
+		})
+	}))
+	defer srv.Close()
+
+	c := newTestISVClient(t, srv.URL)
+	_ = c.store.PutSuiteToken(context.Background(), "suite1", "STOK", time.Now().Add(time.Hour))
+
+	// Pre-hold the per-corpID mutex for the corp the server will return.
+	lock := c.lockFor("wxLockedCorp")
+	lock.Lock()
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := c.GetPermanentCode(context.Background(), "auth_code_xyz")
+		done <- err
+	}()
+
+	select {
+	case err := <-done:
+		lock.Unlock()
+		t.Fatalf("GetPermanentCode returned while corp mutex was held (err=%v) — the store write is NOT inside the per-corpID critical section", err)
+	case <-time.After(200 * time.Millisecond):
+		// expected: blocked on mutex
+	}
+
+	lock.Unlock()
+
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("GetPermanentCode failed after mutex released: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("GetPermanentCode did not complete after mutex was released")
+	}
+
+	// Verify fresh tokens landed in the store.
+	got, err := c.store.GetAuthorizer(context.Background(), "suite1", "wxLockedCorp")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.PermanentCode != "PERM" || got.CorpAccessToken != "CORP_TOK" {
+		t.Fatalf("stored: %+v", got)
+	}
+}
+
 func TestGetPermanentCode_StoresAuthorizer(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]interface{}{
