@@ -1,6 +1,13 @@
 package offiaccount
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
+)
+
+// Compile-time check: *WeixinError must implement utils.WechatAPIError.
+var _ utils.WechatAPIError = (*WeixinError)(nil)
 
 // WeixinError wraps a non-zero WeChat errcode returned by any API endpoint.
 // It implements the error interface and can be inspected with errors.As.

@@ -1,6 +1,13 @@
 package mini_program
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
+)
+
+// Compile-time check: *APIError must implement utils.WechatAPIError.
+var _ utils.WechatAPIError = (*APIError)(nil)
 
 // APIError represents a WeChat Mini Program API business error (errcode != 0).
 type APIError struct {

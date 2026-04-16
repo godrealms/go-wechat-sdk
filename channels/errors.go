@@ -1,6 +1,13 @@
 package channels
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
+)
+
+// Compile-time check: *APIError must implement utils.WechatAPIError.
+var _ utils.WechatAPIError = (*APIError)(nil)
 
 // APIError wraps a WeChat Channels API error with the request path, errcode, and errmsg.
 type APIError struct {

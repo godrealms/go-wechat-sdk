@@ -1,6 +1,13 @@
 package mini_store
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
+)
+
+// Compile-time check: *APIError must implement utils.WechatAPIError.
+var _ utils.WechatAPIError = (*APIError)(nil)
 
 // APIError represents a WeChat Mini Store API business error. Callers can use
 // errors.As to distinguish API errcode failures from network/transport errors.
