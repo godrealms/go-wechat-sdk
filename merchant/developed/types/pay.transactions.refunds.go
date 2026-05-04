@@ -16,7 +16,7 @@ type RefundFrom struct {
 	//	UNAVAILABLE : 不可用余额
 	Account string `json:"account"`
 	//【出资金额】对应账户出资金额
-	Amount int `json:"amount"`
+	Amount int64 `json:"amount"`
 }
 
 // Refunds

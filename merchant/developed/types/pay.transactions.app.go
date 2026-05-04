@@ -9,18 +9,23 @@ import (
 )
 
 // Amount describes the monetary value and currency of a transaction.
+//
+// All amount fields are int64 (changed from int in batch19) so 32-bit
+// builds do not silently overflow at ~21 million CNY. WeChat encodes amounts
+// as integers in the smallest currency unit (fen for CNY); int64 covers
+// >9 quintillion fen, well past any realistic transaction.
 type Amount struct {
 	//【总金额】 订单总金额，单位为分，整型。
 	//	示例：1元应填写 100
-	Total int `json:"total,omitempty"`
+	Total int64 `json:"total,omitempty"`
 	//【货币类型】符合ISO 4217标准的三位字母代码，固定传：CNY，代表人民币。
 	Currency string `json:"currency,omitempty"`
 	//【用户支付金额】用户实际支付金额，整型，单位为分，用户支付金额=总金额-代金券金额。
-	PayerTotal int `json:"payer_total,omitempty"`
+	PayerTotal int64 `json:"payer_total,omitempty"`
 	//【用户支付币种】 订单支付成功后固定返回：CNY，代表人民币。
 	PayerCurrency string `json:"payer_currency,omitempty"`
 	//【退款金额】 退款金额，币种的最小单位，只能为整数，不能超过原订单支付金额。
-	Refund int `json:"refund,omitempty"`
+	Refund int64 `json:"refund,omitempty"`
 	//【退款出资账户及金额】退款需从指定账户出资时，可传递该参数以指定出资金额（币种最小单位，仅限整数）。
 	//	多账户出资退款需满足：1、未开通退款支出分离功能；2、订单为待分账或分账中的分账订单。
 	//	传递参数需确保：1、基本账户可用与不可用余额之和等于退款金额；2、账户类型不重复。不符条件将返回错误。
@@ -29,19 +34,19 @@ type Amount struct {
 	//	例如在一个10元的订单中，用户使用了2元的全场代金券，若商户申请退款5元，则用户将收到4元的现金退款(即该字段所示金额)和1元的代金券退款。
 	//	注：部分退款用户无法继续使用代金券，只有在订单全额退款且代金券未过期的情况下，且全场券属于银行立减金用户才能继续使用代金券。
 	//	详情参考含优惠退款说明。
-	PayerRefund int `json:"payer_refund,omitempty"`
+	PayerRefund int64 `json:"payer_refund,omitempty"`
 	//【应结退款金额】 去掉免充值代金券退款金额后的退款金额，整型，单位为分，
 	//	例如10元订单用户使用了2元全场代金券(一张免充值1元 + 一张预充值1元)，商户申请退款5元，则该金额为 退款金额5元 - 0.5元免充值代金券退款金额 = 4.5元。
-	SettlementRefund int `json:"settlement_refund,omitempty"`
+	SettlementRefund int64 `json:"settlement_refund,omitempty"`
 	//【应结订单金额】去除免充值代金券金额后的订单金额，整型，单位为分，
 	//	例如10元订单用户使用了2元全场代金券(一张免充值1元 + 一张预充值1元)，则该金额为 订单金额10元 - 免充值代金券金额1元 = 9元。
-	SettlementTotal int `json:"settlement_total,omitempty"`
+	SettlementTotal int64 `json:"settlement_total,omitempty"`
 	//【优惠退款金额】 申请退款后用户收到的代金券退款金额，整型，单位为分，
 	//	例如10元订单用户使用了2元全场代金券，商户申请退款5元，用户收到的是4元现金 + 1元代金券退款金额(该字段) 。
-	DiscountRefund int `json:"discount_refund,omitempty"`
+	DiscountRefund int64 `json:"discount_refund,omitempty"`
 	//【手续费退款金额】 订单退款时退还的手续费金额，整型，单位为分，
 	//	例如一笔100元的订单收了0.6元手续费，商户申请退款50元，该金额为等比退还的0.3元手续费。
-	RefundFee int `json:"refund_fee,omitempty"`
+	RefundFee int64 `json:"refund_fee,omitempty"`
 }
 
 // GoodsDetail
@@ -61,13 +66,13 @@ type GoodsDetail struct {
 	Quantity int `json:"quantity"`
 	//【商品单价】整型，单位为：分。
 	//	如果商户有优惠，需传输商户优惠后的单价(例如：用户对一笔100元的订单使用了商场发的纸质优惠券100-50，则活动商品的单价应为原单价-50)
-	UnitPrice int `json:"unit_price"`
+	UnitPrice int64 `json:"unit_price"`
 	//【商品优惠金额】 商品优惠金额。
-	DiscountAmount int `json:"discount_amount,omitempty"`
+	DiscountAmount int64 `json:"discount_amount,omitempty"`
 	//【商品备注】 商品备注。创券商户在商户平台创建单品券时，若设置了商品备注则会返回。
 	GoodsRemark string `json:"goods_remark,omitempty"`
 	//【商品退款金额】 商品退款金额，单位为分
-	RefundAmount int `json:"refund_amount,omitempty"`
+	RefundAmount int64 `json:"refund_amount,omitempty"`
 	//【商品退货数量】 对应商品的退货数量
 	RefundQuantity int `json:"refund_quantity,omitempty"`
 }
@@ -79,7 +84,7 @@ type Detail struct {
 	//	1、商户侧一张小票订单可能被分多次支付，订单原价用于记录整张小票的交易金额。
 	//	2、当订单原价与支付金额不相等，则不享受优惠。
 	//	3、该字段主要用于防止同一张小票分多次支付，以享受多次优惠的情况，正常支付订单不必上传此参数。
-	CostPrice int `json:"cost_price"`
+	CostPrice int64 `json:"cost_price"`
 	//【商品小票ID】 商家小票ID
 	InvoiceId string `json:"invoice_id"`
 	//【单品列表】 单品列表信息

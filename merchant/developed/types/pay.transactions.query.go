@@ -48,30 +48,30 @@ type PromotionDetail struct {
 	//	2、NOCASH：免充值-不带有结算资金的代金券，无资金结算给订单收款商户。
 	Type string `json:"type,omitempty"`
 	//【优惠券面额】代金券优惠的金额。
-	Amount int `json:"amount,omitempty"`
+	Amount int64 `json:"amount,omitempty"`
 	//【活动ID】单张代金券所对应的批次号
 	StockId string `json:"stock_id,omitempty"`
 	//【微信出资】 代金券有三种出资类型：微信出资、商户出资和其他出资。本参数将返回选择“微信出资类型”时的优惠券面额。
 	//	1、创建代金券后默认为商户出资类型。如需使用其他两种类型，请与相关行业运营进行沟通。
 	//	2、在 wechatpay_contribute、merchant_contribute 和 other_contribute 这三个字段中，仅有一个字段会返回出资金额。
 	//	具体返回哪个字段取决于代金券批次的配置。
-	WechatpayContribute int `json:"wechatpay_contribute,omitempty"`
+	WechatpayContribute int64 `json:"wechatpay_contribute,omitempty"`
 	//【商户出资】代金券有三种出资类型：微信出资、商户出资和其他出资。本参数将返回选择“商户出资类型”时的优惠券面额。
 	//	1、创建代金券后默认为商户出资类型。如需使用其他两种类型，请与相关行业运营进行沟通。
 	//	2、在 wechatpay_contribute、merchant_contribute 和 other_contribute 这三个字段中，仅有一个字段会返回出资金额。
 	//	具体返回哪个字段取决于代金券批次的配置。
-	MerchantContribute int `json:"merchant_contribute,omitempty"`
+	MerchantContribute int64 `json:"merchant_contribute,omitempty"`
 	//【其他出资】代金券有三种出资类型：微信出资、商户出资和其他出资。本参数将返回选择“其他出资类型”时的优惠券面额。
 	//	1、创建代金券后默认为商户出资类型。如需使用其他两种类型，请与相关行业运营进行沟通。
 	//	2、在 wechatpay_contribute、merchant_contribute 和 other_contribute 这三个字段中，仅有一个字段会返回出资金额。
 	//	具体返回哪个字段取决于代金券批次的配置。
-	OtherContribute int `json:"other_contribute,omitempty"`
+	OtherContribute int64 `json:"other_contribute,omitempty"`
 	//【优惠币种】 代金券金额所对应的货币种类：固定为：CNY，人民币。
 	Currency string `json:"currency,omitempty"`
 	//【单品列表】 单品列表。scope为SINGLE（单品优惠）时返回该参数
 	GoodsDetail  []*GoodsDetail `json:"goods_detail,omitempty"`
 	PromotionId  string         `json:"promotion_id,omitempty"`
-	RefundAmount int            `json:"refund_amount,omitempty"`
+	RefundAmount int64          `json:"refund_amount,omitempty"`
 }
 
 // QueryResponse 微信支付订单号查询订单
