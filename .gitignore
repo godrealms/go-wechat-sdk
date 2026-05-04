@@ -23,3 +23,20 @@ go.work.sum
 
 # env file
 .env
+
+# macOS metadata
+.DS_Store
+
+# Editor / IDE
+.idea/
+.vscode/
+
+# Local agent / tool state
+.claude/
+.claire/
+
+# Local example builds (committed examples live under <pkg>/example/)
+/example
+
+# Coverage profile
+coverage.out
