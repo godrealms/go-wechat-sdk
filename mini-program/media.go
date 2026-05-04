@@ -47,10 +47,10 @@ func (c *Client) UploadTempMedia(ctx context.Context, mediaType, fileName string
 	w := multipart.NewWriter(&buf)
 	fw, err := w.CreateFormFile("media", fileName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mini_program: create multipart form file: %w", err)
 	}
 	if _, err := io.Copy(fw, fileData); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("mini_program: copy media into multipart writer: %w", err)
 	}
 	if err := w.Close(); err != nil {
 		return nil, fmt.Errorf("mini_program: close multipart writer: %w", err)

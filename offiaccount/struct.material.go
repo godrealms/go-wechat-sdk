@@ -147,7 +147,7 @@ func (r *AddNewsMaterialRequest) Validate() error {
 
 	for i, article := range r.Articles {
 		if err := article.Validate(); err != nil {
-			return fmt.Errorf("第%d条图文消息验证失败: %v", i+1, err)
+			return fmt.Errorf("第%d条图文消息验证失败: %w", i+1, err)
 		}
 	}
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	mini_program "github.com/godrealms/go-wechat-sdk/mini-program"
 	"github.com/godrealms/go-wechat-sdk/offiaccount"
@@ -33,27 +32,24 @@ func (a *AuthorizerClient) MiniProgramClient(opts ...mini_program.Option) (*mini
 
 // RefreshAll 对 Store 中所有已登记的 authorizer 调用 Refresh。
 // 用于启动预热或外部 cron 触发。单个 appid 失败不中断循环，
-// 所有错误汇总后以多行错误字符串返回。
+// 所有错误通过 errors.Join 合并后返回，调用方可用 errors.Is /
+// errors.As 检查每个底层错误（如 ErrAuthorizerRevoked）。
 func (c *Client) RefreshAll(ctx context.Context) error {
 	ctx = touchContext(ctx)
 	ids, err := c.store.ListAuthorizerAppIDs(ctx)
 	if err != nil {
 		return fmt.Errorf("oplatform: list authorizers: %w", err)
 	}
-	var errs []string
+	var errs []error
 	for _, id := range ids {
 		auth := c.Authorizer(id)
 		if err := auth.Refresh(ctx); err != nil {
-			if errors.Is(err, ErrAuthorizerRevoked) {
-				errs = append(errs, fmt.Sprintf("%s: revoked", id))
-				continue
-			}
-			errs = append(errs, fmt.Sprintf("%s: %v", id, err))
+			errs = append(errs, fmt.Errorf("%s: %w", id, err))
 		}
 	}
 	if len(errs) > 0 {
-		return fmt.Errorf("oplatform: RefreshAll had %d failures:\n%s",
-			len(errs), strings.Join(errs, "\n"))
+		return fmt.Errorf("oplatform: RefreshAll had %d failures: %w",
+			len(errs), errors.Join(errs...))
 	}
 	return nil
 }

@@ -20,7 +20,7 @@ func SignSHA256WithRSA(source string, privateKey *rsa.PrivateKey) (signature str
 	hashed := h.Sum(nil)
 	signatureByte, err := rsa.SignPKCS1v15(rand.Reader, privateKey, crypto.SHA256, hashed)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("rsa sign: %w", err)
 	}
 	return base64.StdEncoding.EncodeToString(signatureByte), nil
 }

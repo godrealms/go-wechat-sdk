@@ -21,7 +21,7 @@ func LoadCertificate(certificateStr string) (certificate *x509.Certificate, err 
 	}
 	certificate, err = x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("parse certificate err: %s", err.Error())
+		return nil, fmt.Errorf("parse certificate: %w", err)
 	}
 	return certificate, nil
 }
@@ -37,7 +37,7 @@ func LoadPrivateKey(privateKeyStr string) (privateKey *rsa.PrivateKey, err error
 	case "PRIVATE KEY":
 		key, err := x509.ParsePKCS8PrivateKey(block.Bytes)
 		if err != nil {
-			return nil, fmt.Errorf("parse pkcs8 private key err: %s", err.Error())
+			return nil, fmt.Errorf("parse pkcs8 private key: %w", err)
 		}
 		k, ok := key.(*rsa.PrivateKey)
 		if !ok {
@@ -47,7 +47,7 @@ func LoadPrivateKey(privateKeyStr string) (privateKey *rsa.PrivateKey, err error
 	case "RSA PRIVATE KEY":
 		k, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {
-			return nil, fmt.Errorf("parse pkcs1 private key err: %s", err.Error())
+			return nil, fmt.Errorf("parse pkcs1 private key: %w", err)
 		}
 		return k, nil
 	default:
@@ -66,7 +66,7 @@ func LoadPublicKey(publicKeyStr string) (publicKey *rsa.PublicKey, err error) {
 	}
 	key, err := x509.ParsePKIXPublicKey(block.Bytes)
 	if err != nil {
-		return nil, fmt.Errorf("parse public key err: %s", err.Error())
+		return nil, fmt.Errorf("parse public key: %w", err)
 	}
 	pub, ok := key.(*rsa.PublicKey)
 	if !ok {
@@ -79,7 +79,7 @@ func LoadPublicKey(publicKeyStr string) (publicKey *rsa.PublicKey, err error) {
 func LoadCertificateWithPath(path string) (certificate *x509.Certificate, err error) {
 	certificateBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read certificate pem file err: %s", err.Error())
+		return nil, fmt.Errorf("read certificate pem file: %w", err)
 	}
 	return LoadCertificate(string(certificateBytes))
 }
@@ -88,7 +88,7 @@ func LoadCertificateWithPath(path string) (certificate *x509.Certificate, err er
 func LoadPrivateKeyWithPath(path string) (privateKey *rsa.PrivateKey, err error) {
 	privateKeyBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read private pem file err: %s", err.Error())
+		return nil, fmt.Errorf("read private pem file: %w", err)
 	}
 	return LoadPrivateKey(string(privateKeyBytes))
 }
@@ -97,7 +97,7 @@ func LoadPrivateKeyWithPath(path string) (privateKey *rsa.PrivateKey, err error)
 func LoadPublicKeyWithPath(path string) (publicKey *rsa.PublicKey, err error) {
 	publicKeyBytes, err := os.ReadFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("read public key pem file err: %s", err.Error())
+		return nil, fmt.Errorf("read public key pem file: %w", err)
 	}
 	return LoadPublicKey(string(publicKeyBytes))
 }

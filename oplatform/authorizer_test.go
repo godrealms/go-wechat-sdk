@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -329,5 +330,43 @@ func TestClient_RefreshAll(t *testing.T) {
 	}
 	if got := atomic.LoadInt32(&refreshCalls); got != 2 {
 		t.Errorf("expected 2 refreshes, got %d", got)
+	}
+}
+
+// TestClient_RefreshAll_PartialFailure_PreservesErrorChain verifies that when
+// individual authorizers fail, callers can still inspect the underlying
+// errors with errors.Is — which was not possible while RefreshAll formatted
+// failures into a flat string with strings.Join. This is the consumer-visible
+// payoff of the M11 refactor to errors.Join.
+func TestClient_RefreshAll_PartialFailure_PreservesErrorChain(t *testing.T) {
+	var refreshCalls int32
+	mux := http.NewServeMux()
+	mux.HandleFunc("/cgi-bin/component/api_component_token", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"component_access_token":"CTOK","expires_in":7200}`))
+	})
+	mux.HandleFunc("/cgi-bin/component/api_authorizer_token", func(w http.ResponseWriter, r *http.Request) {
+		// Both authorizers' refresh attempts return errcode 61023 → ErrAuthorizerRevoked.
+		atomic.AddInt32(&refreshCalls, 1)
+		_, _ = w.Write([]byte(`{"errcode":61023,"errmsg":"refresh_token has expired"}`))
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	store := NewMemoryStore()
+	_ = store.SetVerifyTicket(context.Background(), "TICKET")
+	_ = store.SetAuthorizer(context.Background(), "wxA", AuthorizerTokens{
+		AccessToken: "old", RefreshToken: "R", ExpireAt: time.Now().Add(-time.Minute), // expired forces refresh
+	})
+	c := newTestClient(t, srv.URL, WithStore(store))
+
+	err := c.RefreshAll(context.Background())
+	if err == nil {
+		t.Fatal("expected error from RefreshAll when refresh fails")
+	}
+	if !errors.Is(err, ErrAuthorizerRevoked) {
+		t.Errorf("errors.Is should unwrap RefreshAll's joined error to ErrAuthorizerRevoked, got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "wxA") {
+		t.Errorf("error should mention failing appid wxA, got: %v", err)
 	}
 }

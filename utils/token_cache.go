@@ -69,7 +69,7 @@ func (tc *TokenCache) Get(ctx context.Context) (string, error) {
 
 	token, expiresIn, err := tc.fetch(ctx)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("%s: fetch token: %w", tc.pkg, err)
 	}
 	if token == "" {
 		return "", fmt.Errorf("%s: empty access_token", tc.pkg)
