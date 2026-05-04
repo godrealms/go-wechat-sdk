@@ -6,7 +6,6 @@ package mini_store
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"time"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
@@ -18,10 +17,10 @@ type Config struct {
 	AppSecret string
 }
 
-// TokenSource is an injectable access_token provider.
-type TokenSource interface {
-	AccessToken(ctx context.Context) (string, error)
-}
+// TokenSource is an injectable access_token provider. Aliased to
+// utils.TokenSource so a single implementation works across every
+// WeChat-product Client.
+type TokenSource = utils.TokenSource
 
 // Client manages the Mini Store API. Safe for concurrent use.
 type Client struct {
@@ -64,29 +63,13 @@ func NewClient(cfg Config, opts ...Option) (*Client, error) {
 // HTTP returns the underlying HTTP client for custom requests.
 func (c *Client) HTTP() *utils.HTTP { return c.http }
 
-type accessTokenResp struct {
-	AccessToken string `json:"access_token"`
-	ExpiresIn   int64  `json:"expires_in"`
-	ErrCode     int    `json:"errcode,omitempty"`
-	ErrMsg      string `json:"errmsg,omitempty"`
-}
-
-// fetchToken issues the /cgi-bin/token HTTP call. It is passed to TokenCache
-// as the refresh callback and is not called directly.
+// fetchToken delegates to utils.FetchAccessToken; the closure produces
+// a package-typed *APIError on errcode failures.
 func (c *Client) fetchToken(ctx context.Context) (string, int64, error) {
-	q := url.Values{
-		"grant_type": {"client_credential"},
-		"appid":      {c.cfg.AppId},
-		"secret":     {c.cfg.AppSecret},
-	}
-	out := &accessTokenResp{}
-	if err := c.http.Get(ctx, "/cgi-bin/token", q, out); err != nil {
-		return "", 0, fmt.Errorf("mini_store: fetch token: %w", err)
-	}
-	if out.ErrCode != 0 {
-		return "", 0, &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/token"}
-	}
-	return out.AccessToken, out.ExpiresIn, nil
+	return utils.FetchAccessToken(ctx, c.http, c.cfg.AppId, c.cfg.AppSecret,
+		func(code int, msg, path string) error {
+			return &APIError{ErrCode: code, ErrMsg: msg, Path: path}
+		})
 }
 
 // AccessToken returns a valid access_token, refreshing 60 s before expiry.

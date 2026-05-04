@@ -1,7 +1,6 @@
 package offiaccount
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -20,77 +19,81 @@ import (
 //   - 视频素材：第二个返回值非 nil
 //   - 图片 / 语音 / 其他二进制素材：第三个返回值是原始字节
 //
-// 如果服务端返回 errcode 非 0，直接返回 *WeixinError。
+// 如果服务端返回 errcode 非 0，返回 *WeixinError。
+//
+// 实现走 c.Https.DoRequestWithRawResponse + c.doWithRetry，因此享受 SDK
+// 的 logger 凭据脱敏、响应体大小上限和 40001 自愈重试,与其他 API 方法
+// 保持一致。
 func (c *Client) GetMaterial(ctx context.Context, mediaID string) (*GetMaterialNewsResult, *GetMaterialVideoResult, []byte, error) {
+	if mediaID == "" {
+		return nil, nil, nil, fmt.Errorf("offiaccount: GetMaterial: mediaID is required")
+	}
 	token, err := c.AccessTokenE(ctx)
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	// 构造请求URL
+	body := map[string]any{"media_id": mediaID}
+	rawBody, err := json.Marshal(body)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("offiaccount: GetMaterial: marshal request body: %w", err)
+	}
+	headers := http.Header{"Content-Type": []string{"application/json"}}
 	path := fmt.Sprintf("/cgi-bin/material/get_material?access_token=%s", token)
 
-	// 构造请求体
-	body := map[string]any{
-		"media_id": mediaID,
-	}
+	var (
+		news   *GetMaterialNewsResult
+		video  *GetMaterialVideoResult
+		binary []byte
+	)
 
-	// 直接发送POST请求获取响应数据
-	fullURL := c.Https.BaseURL + path
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("marshal request body failed: %w", err)
-	}
+	err = c.doWithRetry(ctx, &path, nil, func() error {
+		// Reset captures so a self-heal retry starts clean.
+		news, video, binary = nil, nil, nil
+		_, _, respBody, derr := c.Https.DoRequestWithRawResponse(ctx, http.MethodPost, path, nil, rawBody, headers)
+		if derr != nil {
+			return derr
+		}
 
-	// 创建请求
-	req, err := http.NewRequestWithContext(ctx, "POST", fullURL, bytes.NewReader(jsonBody))
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("create request failed: %w", err)
-	}
+		// WeChat returns binary for image/voice/thumb but always JSON for
+		// errors. Probe by first byte: if it isn't '{' the body is
+		// definitely binary (no JSON object can start with another byte).
+		if len(respBody) == 0 || respBody[0] != '{' {
+			binary = respBody
+			return nil
+		}
 
-	// 设置请求头
-	req.Header.Set("Content-Type", "application/json")
-
-	// 发送请求
-	resp, err := c.Https.Client.Do(req)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("send request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// 读取响应体
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("read response body failed: %w", err)
-	}
-
-	// 检查响应状态码
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, nil, nil, fmt.Errorf("request failed with status code %d: %s", resp.StatusCode, string(respBody))
-	}
-
-	// 先探测 errcode：对于非图文/视频素材，微信可能返回图片/语音原始二进制，
-	// 但当出错时一定是 JSON {errcode, errmsg}。只有在看起来是 JSON 时才尝试解析。
-	if len(respBody) > 0 && respBody[0] == '{' {
+		// Body looks like JSON. Decode the envelope first; a parse failure
+		// here is a real problem (a status-200 body that says it's JSON but
+		// isn't), not "treat as binary" — surface it.
 		var probe Resp
-		if err = json.Unmarshal(respBody, &probe); err == nil && probe.ErrCode != 0 {
-			return nil, nil, nil, &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}
+		if uerr := json.Unmarshal(respBody, &probe); uerr != nil {
+			return fmt.Errorf("offiaccount: GetMaterial: malformed JSON response: %w", uerr)
+		}
+		if probe.ErrCode != 0 {
+			return &WeixinError{ErrCode: probe.ErrCode, ErrMsg: probe.ErrMsg}
 		}
 
-		// 尝试解析为图文素材
+		// errcode is zero — distinguish news vs. video by their distinguishing fields.
 		var newsResult GetMaterialNewsResult
-		if err = json.Unmarshal(respBody, &newsResult); err == nil && len(newsResult.NewsItem) > 0 {
-			return &newsResult, nil, nil, nil
+		if uerr := json.Unmarshal(respBody, &newsResult); uerr == nil && len(newsResult.NewsItem) > 0 {
+			news = &newsResult
+			return nil
 		}
-
-		// 尝试解析为视频素材
 		var videoResult GetMaterialVideoResult
-		if err = json.Unmarshal(respBody, &videoResult); err == nil && videoResult.Title != "" {
-			return nil, &videoResult, nil, nil
+		if uerr := json.Unmarshal(respBody, &videoResult); uerr == nil && videoResult.Title != "" {
+			video = &videoResult
+			return nil
 		}
-	}
 
-	// 图片 / 语音 / 缩略图等二进制素材：返回原始数据
-	return nil, nil, respBody, nil
+		// JSON envelope with no recognised payload — return raw bytes for
+		// callers who want to inspect them (extremely rare).
+		binary = respBody
+		return nil
+	})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return news, video, binary, nil
 }
 
 // GetMaterialCount 获取素材总数
