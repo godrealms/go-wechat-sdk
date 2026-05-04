@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+	"path/filepath"
 )
 
 // UploadTempMedia 上传临时素材
@@ -39,21 +39,15 @@ func (c *Client) UploadTempMedia(ctx context.Context, mediaType TempMediaType, f
 
 // UploadTempMediaByPath 通过文件路径上传临时素材
 // mediaType: 媒体文件类型
-// filepath: 媒体文件路径
-func (c *Client) UploadTempMediaByPath(ctx context.Context, mediaType TempMediaType, filepath string) (*UploadTempMediaResult, error) {
-	// 打开文件
-	file, err := os.Open(filepath)
+// filePath: 媒体文件路径
+func (c *Client) UploadTempMediaByPath(ctx context.Context, mediaType TempMediaType, filePath string) (*UploadTempMediaResult, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("offiaccount: UploadTempMediaByPath: open file: %w", err)
 	}
 	defer file.Close()
 
-	// 获取文件名
-	parts := strings.Split(filepath, "/")
-	filename := parts[len(parts)-1]
-
-	// 上传临时素材
-	return c.UploadTempMedia(ctx, mediaType, filename, file)
+	return c.UploadTempMedia(ctx, mediaType, filepath.Base(filePath), file)
 }
 
 // GetTempMedia 获取临时素材

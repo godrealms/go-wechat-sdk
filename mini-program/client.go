@@ -140,21 +140,12 @@ func (c *Client) SendSubscribeMessage(ctx context.Context, body any) error {
 	if body == nil {
 		return fmt.Errorf("mini_program: SendSubscribeMessage: body is required")
 	}
-	token, err := c.AccessToken(ctx)
-	if err != nil {
-		return err
-	}
-	q := url.Values{"access_token": {token}}
+	// Route through doPost so this method participates in the same envelope/
+	// errcode handling as every other POST in the package, instead of
+	// hand-rolling the access_token query and a one-off ErrCode check.
 	out := struct {
 		ErrCode int    `json:"errcode"`
 		ErrMsg  string `json:"errmsg"`
 	}{}
-	path := "/cgi-bin/message/subscribe/send?" + q.Encode()
-	if err := c.http.Post(ctx, path, body, &out); err != nil {
-		return err
-	}
-	if out.ErrCode != 0 {
-		return &APIError{ErrCode: out.ErrCode, ErrMsg: out.ErrMsg, Path: "/cgi-bin/message/subscribe/send"}
-	}
-	return nil
+	return c.doPost(ctx, "/cgi-bin/message/subscribe/send", body, &out)
 }

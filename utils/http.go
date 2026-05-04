@@ -84,13 +84,20 @@ func (nopLogger) Debugf(string, ...any) {}
 
 // HTTP is a thin JSON-over-HTTP client used by all SDK packages.
 // It stores a base URL and optional default headers so callers never
-// repeat boilerplate. Safe for concurrent use after construction.
+// repeat boilerplate. Safe for concurrent USE (Get/Post/etc.) after
+// construction; not safe for concurrent CONFIGURATION (SetBaseURL,
+// direct mutation of Headers).
 type HTTP struct {
 	BaseURL string
 	Client  *http.Client
-	// Headers are the client-level default request headers. They are not written by the SDK
-	// after NewHTTP returns, so concurrent use is safe. Per-request overrides go through the
-	// headers parameter of DoRequest.
+	// Headers carries the client-level default request headers. The SDK never
+	// writes to this map after NewHTTP returns, so concurrent reads are safe;
+	// callers must NOT mutate the map after the HTTP value is shared between
+	// goroutines (use WithHeaders during construction, or per-request headers
+	// via DoRequest's headers parameter, instead).
+	//
+	// In a future major release this field may become unexported; treat
+	// direct writes as already-deprecated.
 	Headers map[string]string
 	Timeout time.Duration
 	Logger  Logger

@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strings"
+	"path/filepath"
 )
 
 // GetMaterial 获取永久素材
@@ -156,21 +156,18 @@ func (c *Client) UploadImg(ctx context.Context, filename string, reader io.Reade
 }
 
 // UploadImageByPath 通过文件路径上传图文消息内的图片
-// filepath: 图片文件路径
-func (c *Client) UploadImageByPath(ctx context.Context, filepath string) (*UploadImgResult, error) {
-	// 打开文件
-	file, err := os.Open(filepath)
+// filePath: 图片文件路径
+func (c *Client) UploadImageByPath(ctx context.Context, filePath string) (*UploadImgResult, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("offiaccount: UploadImageByPath: open file: %w", err)
 	}
 	defer file.Close()
 
-	// 获取文件名
-	parts := strings.Split(filepath, "/")
-	filename := parts[len(parts)-1]
-
-	// 上传图片
-	return c.UploadImg(ctx, filename, file)
+	// filepath.Base handles both "/" and "\\" — necessary for Windows callers
+	// since the previous strings.Split(p, "/") returned the full path verbatim
+	// when given a Windows-style "C:\\foo\\bar.jpg".
+	return c.UploadImg(ctx, filepath.Base(filePath), file)
 }
 
 // AddMaterial 新增永久素材
@@ -211,22 +208,16 @@ func (c *Client) AddMaterial(ctx context.Context, materialType MaterialType, fil
 
 // AddMaterialByPath 通过文件路径新增永久素材
 // materialType: 媒体类型
-// filepath: 媒体文件路径
+// filePath: 媒体文件路径
 // description: 视频素材描述信息（仅视频素材需要）
-func (c *Client) AddMaterialByPath(ctx context.Context, materialType MaterialType, filepath string, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
-	// 打开文件
-	file, err := os.Open(filepath)
+func (c *Client) AddMaterialByPath(ctx context.Context, materialType MaterialType, filePath string, description *AddMaterialVideoDescription) (*AddMaterialResult, error) {
+	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("offiaccount: AddMaterialByPath: open file: %w", err)
 	}
 	defer file.Close()
 
-	// 获取文件名
-	parts := strings.Split(filepath, "/")
-	filename := parts[len(parts)-1]
-
-	// 新增素材
-	return c.AddMaterial(ctx, materialType, filename, file, description)
+	return c.AddMaterial(ctx, materialType, filepath.Base(filePath), file, description)
 }
 
 // DelMaterial 删除永久素材

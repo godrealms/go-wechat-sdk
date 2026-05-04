@@ -60,8 +60,29 @@ type componentInner struct {
 
 // decryptNotify reads, verifies the signature of, and decrypts the WeChat
 // notification body from r. It closes r.Body before returning.
+//
+// Order of checks: nil-request guard → query parsing → timestamp window →
+// body read → XML unmarshal → signature verify → AES decrypt. Timestamp is
+// validated BEFORE we touch the body so an attacker cannot force unbounded
+// XML parsing on a stale or future-dated request, mirroring the
+// oplatform/notify.go ordering.
 func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
+	if r == nil {
+		return nil, errors.New("isv: nil *http.Request")
+	}
+	if r.Body == nil {
+		return nil, errors.New("isv: nil request body")
+	}
 	defer r.Body.Close()
+
+	q := r.URL.Query()
+	msgSig := q.Get("msg_signature")
+	timestamp := q.Get("timestamp")
+	nonce := q.Get("nonce")
+	if err := checkISVNotifyTimestamp(timestamp); err != nil {
+		return nil, err
+	}
+
 	raw, err := io.ReadAll(r.Body)
 	if err != nil {
 		return nil, fmt.Errorf("isv: read body: %w", err)
@@ -71,13 +92,6 @@ func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("isv: parse envelope: %w", err)
 	}
 
-	q := r.URL.Query()
-	msgSig := q.Get("msg_signature")
-	timestamp := q.Get("timestamp")
-	nonce := q.Get("nonce")
-	if err := checkISVNotifyTimestamp(timestamp); err != nil {
-		return nil, err
-	}
 	if !c.crypto.VerifySignature(msgSig, timestamp, nonce, env.Encrypt) {
 		return nil, errors.New("isv: invalid msg_signature")
 	}

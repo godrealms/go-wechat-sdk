@@ -9,11 +9,12 @@ import (
 // GetSnsAccessToken 通过code换取网页授权access_token
 // code: 填写第一步获取的code参数
 func (c *Client) GetSnsAccessToken(ctx context.Context, code string) (*SnsAccessToken, error) {
-	// 构造请求URL
+	// 构造请求URL。WeChat 协议要求 secret 走 query string,SDK 自身在 logger
+	// 路径会通过 utils.RedactURL 脱敏。code 走 url.QueryEscape 防止 OAuth code
+	// 包含特殊字符时破坏请求 URL。
 	path := fmt.Sprintf("/sns/oauth2/access_token?appid=%s&secret=%s&code=%s&grant_type=authorization_code",
-		c.Config.AppId, c.Config.AppSecret, code)
+		url.QueryEscape(c.Config.AppId), url.QueryEscape(c.Config.AppSecret), url.QueryEscape(code))
 
-	// 发送请求
 	var result SnsAccessToken
 	if err := c.doGet(ctx, path, nil, &result); err != nil {
 		return nil, err
@@ -25,11 +26,9 @@ func (c *Client) GetSnsAccessToken(ctx context.Context, code string) (*SnsAccess
 // RefreshSnsAccessToken 刷新用户授权凭证
 // refreshToken: 填写通过access_token获取到的refresh_token参数
 func (c *Client) RefreshSnsAccessToken(ctx context.Context, refreshToken string) (*SnsAccessToken, error) {
-	// 构造请求URL
 	path := fmt.Sprintf("/sns/oauth2/refresh_token?appid=%s&grant_type=refresh_token&refresh_token=%s",
-		c.Config.AppId, refreshToken)
+		url.QueryEscape(c.Config.AppId), url.QueryEscape(refreshToken))
 
-	// 发送请求
 	var result SnsAccessToken
 	if err := c.doGet(ctx, path, nil, &result); err != nil {
 		return nil, err
