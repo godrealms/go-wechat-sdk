@@ -53,7 +53,11 @@ func (cc *CorpClient) GetUser(ctx context.Context, userID string) (*UserDetail, 
 }
 
 // ListUserSimple lists users in a department with basic info (userid + name).
+// deptID 0 is valid (root department); negative values are rejected.
 func (cc *CorpClient) ListUserSimple(ctx context.Context, deptID int, fetchChild bool) (*UserSimpleListResp, error) {
+	if deptID < 0 {
+		return nil, fmt.Errorf("isv: ListUserSimple: deptID must be >= 0 (got %d)", deptID)
+	}
 	extra := url.Values{
 		"department_id": {strconv.Itoa(deptID)},
 		"fetch_child":   {boolToStr(fetchChild)},
@@ -66,7 +70,11 @@ func (cc *CorpClient) ListUserSimple(ctx context.Context, deptID int, fetchChild
 }
 
 // ListUserDetail lists users in a department with full detail.
+// deptID 0 is valid (root department); negative values are rejected.
 func (cc *CorpClient) ListUserDetail(ctx context.Context, deptID int, fetchChild bool) (*UserDetailListResp, error) {
+	if deptID < 0 {
+		return nil, fmt.Errorf("isv: ListUserDetail: deptID must be >= 0 (got %d)", deptID)
+	}
 	extra := url.Values{
 		"department_id": {strconv.Itoa(deptID)},
 		"fetch_child":   {boolToStr(fetchChild)},

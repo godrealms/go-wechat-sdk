@@ -1,6 +1,9 @@
 package channels
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // OrderInfo contains the details of a single Channels e-commerce order.
 type OrderInfo struct {
@@ -38,6 +41,9 @@ type ListOrderResp struct {
 
 // GetOrder retrieves the details of the specified Channels e-commerce order.
 func (c *Client) GetOrder(ctx context.Context, req *GetOrderReq) (*GetOrderResp, error) {
+	if req == nil || req.OrderID == "" {
+		return nil, fmt.Errorf("channels: GetOrder: req.OrderID is required")
+	}
 	var resp GetOrderResp
 	if err := c.doPost(ctx, "/channels/ec/order/get", req, &resp); err != nil {
 		return nil, err
@@ -47,6 +53,9 @@ func (c *Client) GetOrder(ctx context.Context, req *GetOrderReq) (*GetOrderResp,
 
 // ListOrder retrieves a paginated list of Channels e-commerce orders matching the given filters.
 func (c *Client) ListOrder(ctx context.Context, req *ListOrderReq) (*ListOrderResp, error) {
+	if req == nil {
+		req = &ListOrderReq{}
+	}
 	var resp ListOrderResp
 	if err := c.doPost(ctx, "/channels/ec/order/list", req, &resp); err != nil {
 		return nil, err

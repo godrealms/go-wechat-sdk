@@ -1,6 +1,9 @@
 package xiaowei
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // MicroProduct represents a Xiaowei product item.
 type MicroProduct struct {
@@ -18,6 +21,15 @@ type AddMicroProductResp struct {
 
 // AddMicroProduct adds a new product to the Xiaowei store.
 func (c *Client) AddMicroProduct(ctx context.Context, product *MicroProduct) (*AddMicroProductResp, error) {
+	if product == nil {
+		return nil, fmt.Errorf("xiaowei: AddMicroProduct: product is required")
+	}
+	if product.Title == "" {
+		return nil, fmt.Errorf("xiaowei: AddMicroProduct: product.Title is required")
+	}
+	if product.Price <= 0 {
+		return nil, fmt.Errorf("xiaowei: AddMicroProduct: product.Price must be > 0 (got %d)", product.Price)
+	}
 	var resp AddMicroProductResp
 	if err := c.doPost(ctx, "/wxaapi/wxamicrostore/add_product", product, &resp); err != nil {
 		return nil, err
@@ -32,6 +44,9 @@ type DelMicroProductReq struct {
 
 // DelMicroProduct removes a product from the Xiaowei store.
 func (c *Client) DelMicroProduct(ctx context.Context, req *DelMicroProductReq) error {
+	if req == nil || req.ProductID == "" {
+		return fmt.Errorf("xiaowei: DelMicroProduct: req.ProductID is required")
+	}
 	return c.doPost(ctx, "/wxaapi/wxamicrostore/del_product", req, nil)
 }
 
@@ -47,6 +62,9 @@ type GetMicroProductResp struct {
 
 // GetMicroProduct returns the details of a Xiaowei product.
 func (c *Client) GetMicroProduct(ctx context.Context, req *GetMicroProductReq) (*GetMicroProductResp, error) {
+	if req == nil || req.ProductID == "" {
+		return nil, fmt.Errorf("xiaowei: GetMicroProduct: req.ProductID is required")
+	}
 	var resp GetMicroProductResp
 	if err := c.doPost(ctx, "/wxaapi/wxamicrostore/get_product", req, &resp); err != nil {
 		return nil, err

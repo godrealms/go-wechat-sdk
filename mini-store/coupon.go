@@ -1,6 +1,9 @@
 package mini_store
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // Coupon represents a Mini Store coupon/promotion.
 type Coupon struct {
@@ -18,6 +21,18 @@ type AddCouponResp struct {
 
 // AddCoupon creates a new coupon and returns its coupon_id.
 func (c *Client) AddCoupon(ctx context.Context, coupon *Coupon) (*AddCouponResp, error) {
+	if coupon == nil {
+		return nil, fmt.Errorf("mini_store: AddCoupon: coupon is required")
+	}
+	if coupon.Name == "" {
+		return nil, fmt.Errorf("mini_store: AddCoupon: coupon.Name is required")
+	}
+	if coupon.Type != 1 && coupon.Type != 2 {
+		return nil, fmt.Errorf("mini_store: AddCoupon: coupon.Type must be 1 (fixed-amount) or 2 (percentage), got %d", coupon.Type)
+	}
+	if coupon.Discount <= 0 {
+		return nil, fmt.Errorf("mini_store: AddCoupon: coupon.Discount must be > 0")
+	}
 	var resp AddCouponResp
 	if err := c.doPost(ctx, "/shop/coupon/add", coupon, &resp); err != nil {
 		return nil, err
@@ -37,6 +52,9 @@ type GetCouponResp struct {
 
 // GetCoupon returns the details of a coupon.
 func (c *Client) GetCoupon(ctx context.Context, req *GetCouponReq) (*GetCouponResp, error) {
+	if req == nil || req.CouponID == "" {
+		return nil, fmt.Errorf("mini_store: GetCoupon: req.CouponID is required")
+	}
 	var resp GetCouponResp
 	if err := c.doPost(ctx, "/shop/coupon/get", req, &resp); err != nil {
 		return nil, err
@@ -52,6 +70,9 @@ type UpdateCouponStatusReq struct {
 
 // UpdateCouponStatus activates or deactivates a coupon.
 func (c *Client) UpdateCouponStatus(ctx context.Context, req *UpdateCouponStatusReq) error {
+	if req == nil || req.CouponID == "" {
+		return fmt.Errorf("mini_store: UpdateCouponStatus: req.CouponID is required")
+	}
 	return c.doPost(ctx, "/shop/coupon/update_status", req, nil)
 }
 

@@ -1,6 +1,9 @@
 package mini_game
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // CreateOrderReq holds the parameters for creating a Mini Game virtual currency order.
 type CreateOrderReq struct {
@@ -33,6 +36,18 @@ type QueryOrderResp struct {
 
 // CreateOrder creates a new Mini Game virtual currency purchase order.
 func (c *Client) CreateOrder(ctx context.Context, req *CreateOrderReq) (*CreateOrderResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_game: CreateOrder: req is required")
+	}
+	if req.OpenID == "" {
+		return nil, fmt.Errorf("mini_game: CreateOrder: req.OpenID is required")
+	}
+	if req.ProductID == "" {
+		return nil, fmt.Errorf("mini_game: CreateOrder: req.ProductID is required")
+	}
+	if req.Quantity <= 0 {
+		return nil, fmt.Errorf("mini_game: CreateOrder: req.Quantity must be > 0 (got %d)", req.Quantity)
+	}
 	var resp CreateOrderResp
 	if err := c.doPost(ctx, "/wxa/game/createorder", req, &resp); err != nil {
 		return nil, err
@@ -42,6 +57,15 @@ func (c *Client) CreateOrder(ctx context.Context, req *CreateOrderReq) (*CreateO
 
 // QueryOrder retrieves the status and details of an existing Mini Game order.
 func (c *Client) QueryOrder(ctx context.Context, req *QueryOrderReq) (*QueryOrderResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("mini_game: QueryOrder: req is required")
+	}
+	if req.OrderID == "" {
+		return nil, fmt.Errorf("mini_game: QueryOrder: req.OrderID is required")
+	}
+	if req.OpenID == "" {
+		return nil, fmt.Errorf("mini_game: QueryOrder: req.OpenID is required")
+	}
 	var resp QueryOrderResp
 	if err := c.doPost(ctx, "/wxa/game/queryorder", req, &resp); err != nil {
 		return nil, err

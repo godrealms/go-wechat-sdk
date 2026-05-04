@@ -1,6 +1,9 @@
 package mini_store
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // Order represents a Mini Store order.
 type Order struct {
@@ -60,6 +63,15 @@ type UpdateOrderPriceReq struct {
 
 // UpdateOrderPrice modifies the total price of a pending order before payment.
 func (c *Client) UpdateOrderPrice(ctx context.Context, req *UpdateOrderPriceReq) error {
+	if req == nil {
+		return fmt.Errorf("mini_store: UpdateOrderPrice: req is required")
+	}
+	if req.OrderID == "" {
+		return fmt.Errorf("mini_store: UpdateOrderPrice: req.OrderID is required")
+	}
+	if req.NewPrice <= 0 {
+		return fmt.Errorf("mini_store: UpdateOrderPrice: req.NewPrice must be > 0 (got %d)", req.NewPrice)
+	}
 	return c.doPost(ctx, "/shop/order/update_price", req, nil)
 }
 
@@ -70,6 +82,9 @@ type CloseOrderReq struct {
 
 // CloseOrder closes an open order, preventing payment.
 func (c *Client) CloseOrder(ctx context.Context, req *CloseOrderReq) error {
+	if req == nil || req.OrderID == "" {
+		return fmt.Errorf("mini_store: CloseOrder: req.OrderID is required")
+	}
 	return c.doPost(ctx, "/shop/order/close", req, nil)
 }
 
@@ -82,6 +97,18 @@ type UploadShippingReq struct {
 
 // UploadShipping records delivery tracking information for an order.
 func (c *Client) UploadShipping(ctx context.Context, req *UploadShippingReq) error {
+	if req == nil {
+		return fmt.Errorf("mini_store: UploadShipping: req is required")
+	}
+	if req.OrderID == "" {
+		return fmt.Errorf("mini_store: UploadShipping: req.OrderID is required")
+	}
+	if req.DeliveryCompany == "" {
+		return fmt.Errorf("mini_store: UploadShipping: req.DeliveryCompany is required")
+	}
+	if req.DeliverySN == "" {
+		return fmt.Errorf("mini_store: UploadShipping: req.DeliverySN is required")
+	}
 	return c.doPost(ctx, "/shop/delivery/send", req, nil)
 }
 
@@ -106,6 +133,9 @@ type GetAfterSaleOrderResp struct {
 
 // GetAfterSaleOrder returns the details of an after-sale (refund/return) order.
 func (c *Client) GetAfterSaleOrder(ctx context.Context, req *GetAfterSaleOrderReq) (*GetAfterSaleOrderResp, error) {
+	if req == nil || req.AfterSaleOrderID == "" {
+		return nil, fmt.Errorf("mini_store: GetAfterSaleOrder: req.AfterSaleOrderID is required")
+	}
 	var resp GetAfterSaleOrderResp
 	if err := c.doPost(ctx, "/shop/aftersale/get_after_sale_order", req, &resp); err != nil {
 		return nil, err
@@ -120,6 +150,9 @@ type AcceptRefundReq struct {
 
 // AcceptRefund approves a customer refund request.
 func (c *Client) AcceptRefund(ctx context.Context, req *AcceptRefundReq) error {
+	if req == nil || req.AfterSaleOrderID == "" {
+		return fmt.Errorf("mini_store: AcceptRefund: req.AfterSaleOrderID is required")
+	}
 	return c.doPost(ctx, "/shop/aftersale/accept_refund", req, nil)
 }
 
@@ -131,5 +164,8 @@ type RejectRefundReq struct {
 
 // RejectRefund declines a customer refund request with an optional reason.
 func (c *Client) RejectRefund(ctx context.Context, req *RejectRefundReq) error {
+	if req == nil || req.AfterSaleOrderID == "" {
+		return fmt.Errorf("mini_store: RejectRefund: req.AfterSaleOrderID is required")
+	}
 	return c.doPost(ctx, "/shop/aftersale/reject_refund", req, nil)
 }

@@ -1,6 +1,9 @@
 package channels
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // CreateRoomReq holds the parameters for creating a new Channels live-streaming room.
 type CreateRoomReq struct {
@@ -61,6 +64,18 @@ type GetLiveReplayListResp struct {
 
 // CreateRoom creates a new live-streaming room for the Channels account.
 func (c *Client) CreateRoom(ctx context.Context, req *CreateRoomReq) (*CreateRoomResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("channels: CreateRoom: req is required")
+	}
+	if req.Name == "" {
+		return nil, fmt.Errorf("channels: CreateRoom: req.Name is required")
+	}
+	if req.StartTime <= 0 {
+		return nil, fmt.Errorf("channels: CreateRoom: req.StartTime must be a unix timestamp > 0")
+	}
+	if req.EndTime <= req.StartTime {
+		return nil, fmt.Errorf("channels: CreateRoom: req.EndTime (%d) must be > req.StartTime (%d)", req.EndTime, req.StartTime)
+	}
 	var resp CreateRoomResp
 	if err := c.doPost(ctx, "/channels/ec/basics/live/createroom", req, &resp); err != nil {
 		return nil, err
@@ -70,11 +85,17 @@ func (c *Client) CreateRoom(ctx context.Context, req *CreateRoomReq) (*CreateRoo
 
 // DeleteRoom deletes the specified Channels live-streaming room.
 func (c *Client) DeleteRoom(ctx context.Context, req *DeleteRoomReq) error {
+	if req == nil {
+		return fmt.Errorf("channels: DeleteRoom: req is required")
+	}
 	return c.doPost(ctx, "/channels/ec/basics/live/deleteroom", req, nil)
 }
 
 // GetLiveInfo retrieves the current status and metadata for the specified live room.
 func (c *Client) GetLiveInfo(ctx context.Context, req *GetLiveInfoReq) (*GetLiveInfoResp, error) {
+	if req == nil {
+		return nil, fmt.Errorf("channels: GetLiveInfo: req is required")
+	}
 	var resp GetLiveInfoResp
 	if err := c.doPost(ctx, "/channels/ec/basics/live/getliveinfo", req, &resp); err != nil {
 		return nil, err

@@ -1,6 +1,9 @@
 package xiaowei
 
-import "context"
+import (
+	"context"
+	"fmt"
+)
 
 // MicroOrder represents a Xiaowei order.
 type MicroOrder struct {
@@ -21,6 +24,9 @@ type GetMicroOrderResp struct {
 
 // GetMicroOrder returns the details of a Xiaowei order.
 func (c *Client) GetMicroOrder(ctx context.Context, req *GetMicroOrderReq) (*GetMicroOrderResp, error) {
+	if req == nil || req.OrderID == "" {
+		return nil, fmt.Errorf("xiaowei: GetMicroOrder: req.OrderID is required")
+	}
 	var resp GetMicroOrderResp
 	if err := c.doPost(ctx, "/wxaapi/wxamicrostore/get_order", req, &resp); err != nil {
 		return nil, err
@@ -61,6 +67,18 @@ type ShipMicroOrderReq struct {
 
 // ShipMicroOrder marks a Xiaowei order as shipped with tracking information.
 func (c *Client) ShipMicroOrder(ctx context.Context, req *ShipMicroOrderReq) error {
+	if req == nil {
+		return fmt.Errorf("xiaowei: ShipMicroOrder: req is required")
+	}
+	if req.OrderID == "" {
+		return fmt.Errorf("xiaowei: ShipMicroOrder: req.OrderID is required")
+	}
+	if req.DeliveryCompany == "" {
+		return fmt.Errorf("xiaowei: ShipMicroOrder: req.DeliveryCompany is required")
+	}
+	if req.TrackingNumber == "" {
+		return fmt.Errorf("xiaowei: ShipMicroOrder: req.TrackingNumber is required")
+	}
 	return c.doPost(ctx, "/wxaapi/wxamicrostore/ship_order", req, nil)
 }
 
@@ -71,7 +89,17 @@ type RefundMicroOrderReq struct {
 	RefundReason string `json:"refund_reason,omitempty"`
 }
 
-// RefundMicroOrder initiates a refund for a Xiaowei order.
+// RefundMicroOrder initiates a refund for a Xiaowei order. RefundAmount of 0
+// means a full refund per the WeChat API; negative values are rejected.
 func (c *Client) RefundMicroOrder(ctx context.Context, req *RefundMicroOrderReq) error {
+	if req == nil {
+		return fmt.Errorf("xiaowei: RefundMicroOrder: req is required")
+	}
+	if req.OrderID == "" {
+		return fmt.Errorf("xiaowei: RefundMicroOrder: req.OrderID is required")
+	}
+	if req.RefundAmount < 0 {
+		return fmt.Errorf("xiaowei: RefundMicroOrder: req.RefundAmount must be >= 0 (use 0 for full refund), got %d", req.RefundAmount)
+	}
 	return c.doPost(ctx, "/wxaapi/wxamicrostore/refund_order", req, nil)
 }

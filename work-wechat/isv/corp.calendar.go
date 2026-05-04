@@ -69,6 +69,9 @@ func (cc *CorpClient) UpdateSchedule(ctx context.Context, req *UpdateScheduleReq
 
 // GetSchedule retrieves the details of one or more schedule events by their IDs.
 func (cc *CorpClient) GetSchedule(ctx context.Context, scheduleIDs []string) (*GetScheduleResp, error) {
+	if len(scheduleIDs) == 0 {
+		return nil, fmt.Errorf("isv: GetSchedule: scheduleIDs is required")
+	}
 	body := &GetScheduleReq{ScheduleIDList: scheduleIDs}
 	var resp GetScheduleResp
 	if err := cc.doPost(ctx, "/cgi-bin/oa/schedule/get", body, &resp); err != nil {

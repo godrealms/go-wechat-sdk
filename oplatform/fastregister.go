@@ -59,6 +59,12 @@ func (f *FastRegisterClient) CreateEnterpriseAccount(ctx context.Context, req *F
 // QueryEnterpriseAccount 查询企业快速注册任务状态。
 // /cgi-bin/component/fastregisterweapp?action=search
 func (f *FastRegisterClient) QueryEnterpriseAccount(ctx context.Context, legalPersonaWechat, legalPersonaName string) (*FastRegEnterpriseStatus, error) {
+	if legalPersonaWechat == "" {
+		return nil, fmt.Errorf("oplatform: QueryEnterpriseAccount: legalPersonaWechat is required")
+	}
+	if legalPersonaName == "" {
+		return nil, fmt.Errorf("oplatform: QueryEnterpriseAccount: legalPersonaName is required")
+	}
 	body := map[string]string{
 		"legal_persona_wechat": legalPersonaWechat,
 		"legal_persona_name":   legalPersonaName,
@@ -83,6 +89,9 @@ func (f *FastRegisterClient) CreatePersonalAccount(ctx context.Context, req *Fas
 // QueryPersonalAccount 查询个人注册任务状态。
 // /cgi-bin/component/fastregisterpersonalweapp?action=query
 func (f *FastRegisterClient) QueryPersonalAccount(ctx context.Context, taskID string) (*FastRegPersonalStatus, error) {
+	if taskID == "" {
+		return nil, fmt.Errorf("oplatform: QueryPersonalAccount: taskID is required")
+	}
 	body := map[string]string{"taskid": taskID}
 	var resp FastRegPersonalStatus
 	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterpersonalweapp?action=query", body, &resp); err != nil {
@@ -104,6 +113,9 @@ func (f *FastRegisterClient) CreateBetaAccount(ctx context.Context, req *FastReg
 // QueryBetaAccount 查询试用版创建任务状态。
 // /cgi-bin/component/fastregisterbetaweapp?action=search
 func (f *FastRegisterClient) QueryBetaAccount(ctx context.Context, uniqueID string) (*FastRegBetaStatus, error) {
+	if uniqueID == "" {
+		return nil, fmt.Errorf("oplatform: QueryBetaAccount: uniqueID is required")
+	}
 	body := map[string]string{"unique_id": uniqueID}
 	var resp FastRegBetaStatus
 	if err := f.doPost(ctx, "/cgi-bin/component/fastregisterbetaweapp?action=search", body, &resp); err != nil {
