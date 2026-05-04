@@ -10,7 +10,18 @@ import (
 	"github.com/godrealms/go-wechat-sdk/merchant/developed/types"
 )
 
+// MaxNotifyBodySize caps the bytes read from a notify callback request body.
+// WeChat Pay notify payloads are well under 100 KiB in practice; the 1 MiB cap
+// gives ~10× headroom while preventing memory exhaustion from a misconfigured
+// or hostile sender. Callers needing a different limit can read and validate
+// the body themselves before invoking the lower-level decryptNotifyResource.
+const MaxNotifyBodySize int64 = 1 << 20
+
 // ParseNotification decodes and verifies an inbound WeChat Pay callback notification from r. It decrypts the resource field using AES-256-GCM with the configured APIv3 key.
+//
+// The request body is read with a MaxNotifyBodySize cap; a body that would
+// exceed the cap is rejected with "notify body exceeds N bytes" rather than
+// being silently truncated.
 func (c *Client) ParseNotification(ctx context.Context, r *http.Request, result any) (*types.Notify, error) {
 	if r == nil {
 		return nil, fmt.Errorf("pay: nil *http.Request")
@@ -19,9 +30,12 @@ func (c *Client) ParseNotification(ctx context.Context, r *http.Request, result 
 		return nil, fmt.Errorf("pay: nil request body")
 	}
 	defer func() { _ = r.Body.Close() }()
-	body, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(io.LimitReader(r.Body, MaxNotifyBodySize+1))
 	if err != nil {
 		return nil, fmt.Errorf("pay: read notify body: %w", err)
+	}
+	if int64(len(body)) > MaxNotifyBodySize {
+		return nil, fmt.Errorf("pay: notify body exceeds %d bytes", MaxNotifyBodySize)
 	}
 
 	if err := c.verifyResponseSignature(ctx, r.Header, body); err != nil {

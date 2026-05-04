@@ -8,8 +8,67 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
+
+// DefaultMaxResponseSize is the default 10 MiB cap applied to response bodies
+// when MaxResponseSize is zero. A response that would exceed this limit is
+// rejected with an explicit error rather than being silently truncated.
+const DefaultMaxResponseSize int64 = 10 << 20
+
+// redactedQueryKeys lists URL query parameter names whose values must be
+// replaced with "***" before logging. WeChat protocols put credentials in
+// the URL for several endpoints (OAuth code exchange, OA clear_quota, etc.)
+// — without redaction these land verbatim in any HTTP debug log sink.
+//
+// Match is case-insensitive (RedactURL lower-cases the key before lookup).
+var redactedQueryKeys = map[string]struct{}{
+	"secret":              {},
+	"appsecret":           {},
+	"app_secret":          {},
+	"component_appsecret": {},
+	"suite_secret":        {},
+	"code":                {},      // OAuth authorization code (single-use but credential-equivalent)
+	"access_token":        {},      // short-lived but still a bearer credential
+	"refresh_token":       {},
+}
+
+// RedactedValue is the placeholder substituted for sensitive query parameter
+// values by RedactURL. Letters-only so URL encoding leaves it untouched and
+// the log line stays human-readable.
+const RedactedValue = "REDACTED"
+
+// RedactURL returns rawURL with the values of any sensitive query parameters
+// (secret, appsecret, code, access_token, refresh_token, etc.) replaced with
+// RedactedValue. Use this when including a WeChat URL in user-visible logs
+// or error messages.
+//
+// If rawURL cannot be parsed it is returned unchanged so the function is
+// safe to apply blindly. The replacement is value-only — the key, parameter
+// order, and other params are preserved as written.
+func RedactURL(rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+	q := u.Query()
+	if len(q) == 0 {
+		return rawURL
+	}
+	changed := false
+	for k := range q {
+		if _, ok := redactedQueryKeys[strings.ToLower(k)]; ok {
+			q.Set(k, RedactedValue)
+			changed = true
+		}
+	}
+	if !changed {
+		return rawURL
+	}
+	u.RawQuery = q.Encode()
+	return u.String()
+}
 
 // Logger is an optional debug-logging interface. By default the SDK does not print any
 // request/response content to avoid leaking sensitive data (OpenIDs, order numbers, amounts)
@@ -35,6 +94,11 @@ type HTTP struct {
 	Headers map[string]string
 	Timeout time.Duration
 	Logger  Logger
+	// MaxResponseSize caps the number of bytes the SDK will read from a response body.
+	// Zero means "use DefaultMaxResponseSize (10 MiB)". A negative value disables the cap.
+	// A response that would exceed the cap is rejected with an explicit error to avoid
+	// OOM from a misconfigured or hostile server.
+	MaxResponseSize int64
 }
 
 // Option is a functional configuration applied to HTTP during NewHTTP.
@@ -81,16 +145,33 @@ func WithHeaders(headers map[string]string) Option {
 
 // WithLogger injects a debug logger. Pass nil to use the no-op default.
 //
-// PII warning: if you inject a logger, the SDK will log request URLs and
-// request/response bodies verbatim at Debug level. WeChat Pay v3 request URLs
-// and headers do not carry secrets on their own, but request and response
-// bodies for refund, profit-sharing, and transfer endpoints may contain
-// encrypted PII (openid, bank data). Audit your logger sink before enabling.
+// Credential redaction: the SDK runs every URL through RedactURL before
+// emitting it, replacing the values of secret / appsecret / code /
+// access_token / refresh_token / etc. with "***". This protects against the
+// most common credential-in-URL leaks (OAuth code-exchange endpoint, OA
+// clear_quota, suite secret).
+//
+// PII warning: request and response BODIES are still logged verbatim. They
+// can contain OpenIDs, payment amounts, encrypted bank data, and other
+// sensitive fields — especially on refund, profit-sharing, and transfer
+// endpoints. Audit your logger sink before enabling on a production
+// workload.
 func WithLogger(logger Logger) Option {
 	return func(h *HTTP) {
 		if logger != nil {
 			h.Logger = logger
 		}
+	}
+}
+
+// WithMaxResponseSize overrides the default 10 MiB response-body cap.
+// Pass a positive value in bytes to set a custom limit. Pass a negative
+// value to disable the cap entirely (only do this for trusted endpoints
+// that legitimately stream large payloads). Zero is treated as "use the
+// default".
+func WithMaxResponseSize(n int64) Option {
+	return func(h *HTTP) {
+		h.MaxResponseSize = n
 	}
 }
 
@@ -108,6 +189,31 @@ func WithHTTPClient(c *http.Client) Option {
 // call only before the client is shared between goroutines.
 func (h *HTTP) SetBaseURL(u string) {
 	h.BaseURL = u
+}
+
+// readLimitedBody reads up to limit+1 bytes from body and returns an error if
+// the result exceeds limit, so callers see an explicit "exceeds N bytes" error
+// rather than silently-truncated JSON. limit==0 uses DefaultMaxResponseSize;
+// limit<0 disables the cap.
+func readLimitedBody(body io.Reader, limit int64) ([]byte, error) {
+	if limit == 0 {
+		limit = DefaultMaxResponseSize
+	}
+	if limit < 0 {
+		buf, err := io.ReadAll(body)
+		if err != nil {
+			return nil, fmt.Errorf("read response body failed: %w", err)
+		}
+		return buf, nil
+	}
+	buf, err := io.ReadAll(io.LimitReader(body, limit+1))
+	if err != nil {
+		return nil, fmt.Errorf("read response body failed: %w", err)
+	}
+	if int64(len(buf)) > limit {
+		return nil, fmt.Errorf("response body exceeds %d bytes", limit)
+	}
+	return buf, nil
 }
 
 // buildURL merges base + path + query into the final URL, handling cases where path
@@ -210,7 +316,8 @@ func (h *HTTP) doRaw(
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	h.Logger.Debugf("http %s %s body=%s", method, fullURL, string(body))
+	loggedURL := RedactURL(fullURL)
+	h.Logger.Debugf("http %s %s body=%s", method, loggedURL, string(body))
 
 	resp, err := h.Client.Do(req)
 	if err != nil {
@@ -218,13 +325,13 @@ func (h *HTTP) doRaw(
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	respBody, err := readLimitedBody(resp.Body, h.MaxResponseSize)
 	if err != nil {
-		return resp.StatusCode, resp.Header, nil, fmt.Errorf("read response body failed: %w", err)
+		return resp.StatusCode, resp.Header, nil, err
 	}
 
 	h.Logger.Debugf("http %s %s status=%d response=%s",
-		method, fullURL, resp.StatusCode, string(respBody))
+		method, loggedURL, resp.StatusCode, string(respBody))
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return resp.StatusCode, resp.Header, respBody, &HTTPError{

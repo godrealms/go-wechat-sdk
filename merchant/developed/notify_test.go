@@ -148,3 +148,27 @@ func TestParseNotification_RejectsStaleTimestamp(t *testing.T) {
 		t.Fatalf("expected stale timestamp rejection, got %v", err)
 	}
 }
+
+// TestParseNotification_RejectsOversizedBody guards against memory exhaustion
+// from a hostile or misconfigured caller posting an arbitrarily large body to
+// the notify endpoint. The cap is MaxNotifyBodySize; a body exceeding it is
+// rejected before signature verification (which we never reach in this test).
+func TestParseNotification_RejectsOversizedBody(t *testing.T) {
+	c, _ := buildClient(t)
+	// Build a body that's MaxNotifyBodySize+1 bytes — exactly one byte over.
+	huge := bytes.Repeat([]byte("a"), int(MaxNotifyBodySize)+1)
+	req := httptest.NewRequest(http.MethodPost, "/notify", bytes.NewReader(huge))
+	// Headers don't matter — body-size check fires before signature verification.
+	req.Header.Set("Wechatpay-Timestamp", fmt.Sprintf("%d", time.Now().Unix()))
+	req.Header.Set("Wechatpay-Nonce", "n")
+	req.Header.Set("Wechatpay-Signature", "s")
+	req.Header.Set("Wechatpay-Serial", utils.GetCertificateSerialNumber(*c.Certificate()))
+
+	_, err := c.ParseNotification(context.Background(), req, nil)
+	if err == nil {
+		t.Fatal("expected oversized body to be rejected")
+	}
+	if !strings.Contains(err.Error(), "exceeds") {
+		t.Errorf("error should mention the size limit, got: %v", err)
+	}
+}
