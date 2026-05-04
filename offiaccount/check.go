@@ -17,34 +17,45 @@ import (
 // If result's underlying struct has no embedded Resp field, doGet behaves
 // exactly like c.Https.Get — this keeps it safe to retrofit across call sites
 // whose result types may not uniformly embed Resp.
+//
+// On a token-expired response (errcode 40001/40014/42001/42007), doGet
+// invalidates the cached token, fetches a fresh one, replaces access_token in
+// params or path, and retries the request once. See IsTokenExpired.
 func (c *Client) doGet(ctx context.Context, path string, params url.Values, result any) error {
-	if err := c.Https.Get(ctx, path, params, result); err != nil {
-		return err
-	}
-	return checkEmbeddedResp(result)
+	return c.doWithRetry(ctx, &path, &params, func() error {
+		if err := c.Https.Get(ctx, path, params, result); err != nil {
+			return err
+		}
+		return checkEmbeddedResp(result)
+	})
 }
 
-// doPost is the POST counterpart to doGet. Same errcode-extraction logic.
+// doPost is the POST counterpart to doGet. Same errcode-extraction logic and
+// 40001 self-heal retry.
 func (c *Client) doPost(ctx context.Context, path string, body any, result any) error {
-	if err := c.Https.Post(ctx, path, body, result); err != nil {
-		return err
-	}
-	return checkEmbeddedResp(result)
+	return c.doWithRetry(ctx, &path, nil, func() error {
+		if err := c.Https.Post(ctx, path, body, result); err != nil {
+			return err
+		}
+		return checkEmbeddedResp(result)
+	})
 }
 
 // doPostRaw POSTs raw bytes with an explicit Content-Type (no JSON marshaling).
 // Use this for endpoints that expect a raw binary body (e.g. voice upload) or
 // a pre-formatted text body (e.g. translate). Automatically performs the
-// embedded-Resp errcode check on result.
+// embedded-Resp errcode check on result and the 40001 self-heal retry.
 func (c *Client) doPostRaw(ctx context.Context, path string, body []byte, contentType string, result any) error {
 	headers := http.Header{}
 	if contentType != "" {
 		headers.Set("Content-Type", contentType)
 	}
-	if err := c.Https.DoRequest(ctx, http.MethodPost, path, nil, body, headers, result); err != nil {
-		return err
-	}
-	return checkEmbeddedResp(result)
+	return c.doWithRetry(ctx, &path, nil, func() error {
+		if err := c.Https.DoRequest(ctx, http.MethodPost, path, nil, body, headers, result); err != nil {
+			return err
+		}
+		return checkEmbeddedResp(result)
+	})
 }
 
 // doPostMultipartFile POSTs a single file field as multipart/form-data.
@@ -87,10 +98,79 @@ func (c *Client) doPostMultipart(
 	}
 	headers := http.Header{}
 	headers.Set("Content-Type", writer.FormDataContentType())
-	if err = c.Https.DoRequest(ctx, http.MethodPost, path, nil, buf.Bytes(), headers, result); err != nil {
+	body := buf.Bytes()
+	return c.doWithRetry(ctx, &path, nil, func() error {
+		if err := c.Https.DoRequest(ctx, http.MethodPost, path, nil, body, headers, result); err != nil {
+			return err
+		}
+		return checkEmbeddedResp(result)
+	})
+}
+
+// doWithRetry runs fn once. If the error indicates an expired access_token
+// (see IsTokenExpired), it invalidates the cache, fetches a fresh token,
+// patches access_token in either *paramsRef (for GET-style query params) or
+// *pathRef (when the token is embedded in the path's query string), and runs
+// fn one more time.
+//
+// The retry is skipped when:
+//   - the error is not a token-expired error
+//   - AccessTokenE fails on refresh (the original error is returned)
+//   - neither paramsRef nor pathRef carries an access_token to replace
+//
+// At most one retry is attempted per call. If the second attempt also returns
+// a token-expired error, that error is propagated to the caller.
+func (c *Client) doWithRetry(
+	ctx context.Context,
+	pathRef *string,
+	paramsRef *url.Values,
+	fn func() error,
+) error {
+	err := fn()
+	if !IsTokenExpired(err) {
 		return err
 	}
-	return checkEmbeddedResp(result)
+	c.Invalidate()
+	newToken, terr := c.AccessTokenE(ctx)
+	if terr != nil {
+		return err
+	}
+	if !patchAccessToken(pathRef, paramsRef, newToken) {
+		return err
+	}
+	return fn()
+}
+
+// patchAccessToken replaces the access_token value in either paramsRef (if
+// non-nil and contains an access_token key) or pathRef (if its query string
+// contains access_token=...). Returns true if a replacement was made.
+//
+// paramsRef is replaced with a clone to avoid mutating a caller-owned map.
+func patchAccessToken(pathRef *string, paramsRef *url.Values, newToken string) bool {
+	if paramsRef != nil && (*paramsRef).Get("access_token") != "" {
+		clone := url.Values{}
+		for k, vs := range *paramsRef {
+			clone[k] = append([]string(nil), vs...)
+		}
+		clone.Set("access_token", newToken)
+		*paramsRef = clone
+		return true
+	}
+	if pathRef == nil {
+		return false
+	}
+	u, err := url.Parse(*pathRef)
+	if err != nil {
+		return false
+	}
+	q := u.Query()
+	if q.Get("access_token") == "" {
+		return false
+	}
+	q.Set("access_token", newToken)
+	u.RawQuery = q.Encode()
+	*pathRef = u.String()
+	return true
 }
 
 // checkEmbeddedResp uses reflection to find an embedded Resp field on the

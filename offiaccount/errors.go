@@ -1,6 +1,7 @@
 package offiaccount
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/godrealms/go-wechat-sdk/utils"
@@ -34,4 +35,27 @@ func CheckResp(r *Resp) error {
 		return nil
 	}
 	return &WeixinError{ErrCode: r.ErrCode, ErrMsg: r.ErrMsg}
+}
+
+// IsTokenExpired reports whether err carries a WeChat errcode that indicates
+// the access_token used in the request is no longer valid. WeChat returns:
+//
+//   - 40001: access_token invalid (most common — admin reset, parallel refresh)
+//   - 40014: access_token format error (rare — corrupted token)
+//   - 42001: access_token has expired (early-expiry edge case)
+//   - 42007: ticket / token has expired
+//
+// When this returns true the caller should call Client.Invalidate() and retry.
+// doGet and doPost do this automatically; callers using c.Https directly may
+// invoke this helper themselves.
+func IsTokenExpired(err error) bool {
+	var werr *WeixinError
+	if !errors.As(err, &werr) {
+		return false
+	}
+	switch werr.ErrCode {
+	case 40001, 40014, 42001, 42007:
+		return true
+	}
+	return false
 }

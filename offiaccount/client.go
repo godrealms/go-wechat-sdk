@@ -72,6 +72,30 @@ func NewClient(ctx context.Context, config *Config, opts ...Option) *Client {
 	return c
 }
 
+// Invalidate clears the cached access_token, forcing the next AccessTokenE
+// call to fetch a fresh one. Use this when WeChat returns a 40001/40014/42001
+// error indicating the cached token is no longer valid.
+//
+// When a TokenSource is configured and implements the Invalidator interface,
+// the call is delegated to it. Otherwise, only the Client's internal cache
+// is cleared.
+//
+// doGet and doPost call this automatically on a token-expired response and
+// retry the request once with a fresh token, so most callers never need to
+// invoke it directly.
+func (c *Client) Invalidate() {
+	if c.tokenSource != nil {
+		if inv, ok := c.tokenSource.(Invalidator); ok {
+			inv.Invalidate()
+		}
+		return
+	}
+	c.tokenMutex.Lock()
+	c.accessToken = ""
+	c.expiresAt = time.Time{}
+	c.tokenMutex.Unlock()
+}
+
 // AccessTokenE returns a valid access_token, propagating any fetch error to the caller.
 // It uses an in-process read-write-locked cache; the token is refreshed 60 s before expiry.
 // When a TokenSource is configured the call is delegated to it without touching /cgi-bin/token.
