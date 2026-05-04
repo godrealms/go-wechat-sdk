@@ -107,6 +107,17 @@ func TestParseNotify_ChangeAuth(t *testing.T) {
 
 func TestParseNotify_CancelAuth(t *testing.T) {
 	c := newTestISVClient(t, "http://unused")
+	// Seed an authorizer that the cancel_auth event must evict.
+	if err := c.store.PutAuthorizer(context.Background(), "suite1", "wxcorp1", &AuthorizerTokens{
+		CorpID:        "wxcorp1",
+		PermanentCode: "perm_code_xyz",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.store.GetAuthorizer(context.Background(), "suite1", "wxcorp1"); err != nil {
+		t.Fatalf("seed failed: %v", err)
+	}
+
 	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[cancel_auth]]></InfoType><AuthCorpId><![CDATA[wxcorp1]]></AuthCorpId></xml>`
 	req := buildNotifyRequest(t, c, inner)
 
@@ -116,6 +127,45 @@ func TestParseNotify_CancelAuth(t *testing.T) {
 	}
 	if _, ok := ev.(*CancelAuthEvent); !ok {
 		t.Fatalf("type: %T", ev)
+	}
+
+	// Authorizer must have been evicted from the store.
+	if _, err := c.store.GetAuthorizer(context.Background(), "suite1", "wxcorp1"); err == nil {
+		t.Error("authorizer was not evicted on cancel_auth")
+	}
+}
+
+// failingDeleteStore wraps MemoryStore to inject a DeleteAuthorizer failure.
+// All other methods delegate to the embedded MemoryStore.
+type failingDeleteStore struct {
+	*MemoryStore
+	deleteErr error
+}
+
+func (s *failingDeleteStore) DeleteAuthorizer(_ context.Context, _, _ string) error {
+	return s.deleteErr
+}
+
+func TestParseNotify_CancelAuth_StoreFailurePropagates(t *testing.T) {
+	// When the store cannot evict the authorizer, ParseNotify must surface the
+	// error — silently swallowing it would leave a dead PermanentCode behind
+	// and reintroduce the original H3 bug under a different failure mode.
+	c := newTestISVClient(t, "http://unused")
+	mem := NewMemoryStore()
+	failing := &failingDeleteStore{MemoryStore: mem, deleteErr: fmt.Errorf("disk full")}
+	c.store = failing
+	// Reseed the suite ticket on the new store so decryption keeps working.
+	_ = mem.PutSuiteTicket(context.Background(), "suite1", "ticket")
+
+	inner := `<xml><SuiteId><![CDATA[suite1]]></SuiteId><InfoType><![CDATA[cancel_auth]]></InfoType><AuthCorpId><![CDATA[wxcorp1]]></AuthCorpId></xml>`
+	req := buildNotifyRequest(t, c, inner)
+
+	_, err := c.ParseNotify(req)
+	if err == nil {
+		t.Fatal("expected error when DeleteAuthorizer fails")
+	}
+	if !strings.Contains(err.Error(), "evict authorizer") {
+		t.Errorf("error message should mention eviction, got: %v", err)
 	}
 }
 

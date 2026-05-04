@@ -119,6 +119,15 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 	case "change_auth":
 		return &ChangeAuthEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
 	case "cancel_auth":
+		// WeChat pushes cancel_auth when an authorized corp revokes the suite.
+		// The cached AuthorizerTokens (incl. PermanentCode) are no longer valid;
+		// future CorpClient.AccessToken calls would fail with WeChat error
+		// "permanent code not found / invalid". Evict here so callers self-heal
+		// by re-authorizing rather than retrying with dead credentials.
+		// Mirrors oplatform's reactive eviction on errcode 61023.
+		if err := c.store.DeleteAuthorizer(ctx, inner.SuiteID, inner.AuthCorpID); err != nil {
+			return nil, fmt.Errorf("isv: evict authorizer on cancel_auth: %w", err)
+		}
 		return &CancelAuthEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
 	case "reset_permanent_code":
 		return &ResetPermanentCodeEvent{baseEvent: base, AuthCorpID: inner.AuthCorpID}, nil
