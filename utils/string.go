@@ -40,20 +40,40 @@ func RandomString(length int, prefix string) string {
 //
 // 与 RandomString 的区别：本函数使用包含 0/O、1/I 等易混淆字符的更宽 charset
 // (A-Za-z0-9, 共 62 个字符)，结果长度严格等于 length，不附加前缀。
+//
+// 实现采用 rejection sampling 而非简单的取模 (b % len(charset))，避免后者
+// 引入的 ~25% 相对偏置 (256 mod 62 = 8，前 8 个字符抽中概率 5/256，其余
+// 4/256)。被拒绝的字节会从 crypto/rand 重新读取直到 length 个字符填满。
+// 期望需要 ~16 个 rejection 字节(每读 256 字节剩 248 可用)，远低于一次系统
+// 调用的成本。
 func GenerateNonceString(length int) string {
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+	// 248 = 256 - (256 % 62)，丢弃 [248, 255] 让模数均匀。
+	const cutoff = byte(256 - (256 % len(charset)))
 	if length <= 0 {
 		length = 32
 	}
 	result := make([]byte, length)
-	randomBytes := make([]byte, length)
-
-	if _, err := io.ReadFull(cryptoRand.Reader, randomBytes); err != nil {
-		return RandomString(length, "")
-	}
-
-	for i, b := range randomBytes {
-		result[i] = charset[b%byte(len(charset))]
+	// 每次读 length+padding 个字节，统计上 padding=length/4 足够覆盖期望
+	// rejection rate (~3.1%)；不够再读一轮。
+	buf := make([]byte, length+length/4+4)
+	got := 0
+	for got < length {
+		if _, err := io.ReadFull(cryptoRand.Reader, buf); err != nil {
+			// crypto/rand 失败时退化到非 rejection 路径以保证调用方拿到
+			// 长度正确的字符串。这是极端情况(在 Linux/Darwin 上不会发生)。
+			return RandomString(length, "")
+		}
+		for _, b := range buf {
+			if b >= cutoff {
+				continue
+			}
+			if got == length {
+				break
+			}
+			result[got] = charset[b%byte(len(charset))]
+			got++
+		}
 	}
 	return string(result)
 }

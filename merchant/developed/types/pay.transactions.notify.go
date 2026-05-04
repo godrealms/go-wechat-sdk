@@ -2,8 +2,6 @@ package types
 
 import (
 	"crypto"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rsa"
 	"crypto/sha256"
 	"crypto/x509"
@@ -12,6 +10,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 // Resource
@@ -80,9 +80,19 @@ type Notify struct {
 // body: 请求体
 // signature: 签名
 //
-// Deprecated: 该方法只用于早期手动验签场景，且解析的是 PKIX 公钥而非
-// 微信支付平台证书，无法自动跟随平台证书轮换。请改用
-// pay.Client.ParseNotification，它会自动用本地缓存或拉取的平台证书校验签名。
+// Deprecated: 不要用这个方法。它存在三个独立的安全/正确性问题：
+//  1. 静默吞错: 当 publicKey PEM 解析失败、不是 RSA 公钥、或 signature
+//     base64 解码失败时，方法返回 false。调用方无法区分 "签名校验失败"
+//     和 "调用方传错了公钥" 这两种完全不同的情况——后者意味着所有合法
+//     回调都会被错误地拒绝。
+//  2. 不跟随平台证书轮换: 该方法解析的是调用方传入的 PKIX 公钥，而
+//     微信支付平台证书会按月轮换。一旦 WeChat 切换到新证书，所有
+//     之前的回调都会被这个方法误判为无效。
+//  3. 无时间戳/nonce 重放检查: 单纯校验签名不足以拒绝重放攻击。
+//
+// 正确做法: 调用 pay.Client.ParseNotification——它会用本地缓存或自动
+// 拉取的最新平台证书校验签名、强制 ±5 分钟时间戳窗口、并返回结构化的
+// 错误以区分以上三类失败。
 func (n *Notify) VerifySignature(timestamp, nonce, signature, body, publicKey string) bool {
 	// 构造验签串
 	message := fmt.Sprintf("%s\n%s\n%s\n", timestamp, nonce, body)
@@ -131,27 +141,16 @@ func (n *Notify) DecryptResource(apiV3Key string) (*Transaction, error) {
 	return &transaction, nil
 }
 
-// DecryptAES256GCM 使用 AEAD_AES_256_GCM 算法进行解密 - 官方实现
-// 你可以使用此算法完成微信支付平台证书和回调报文解密，详见：
+// DecryptAES256GCM 使用 AEAD_AES_256_GCM 算法解密 n.Resource.Ciphertext。
+// 官方实现已抽到 utils.DecryptAEADAES256GCM,此处为薄包装,保持 API 兼容。
+//
+// 详见 WeChat 文档:
 // https://wechatpay-api.gitbook.io/wechatpay-api-v3/qian-ming-zhi-nan-1/zheng-shu-he-hui-tiao-bao-wen-jie-mi
 func (n *Notify) DecryptAES256GCM(aesKey string) (plaintext []byte, err error) {
-	decodedCiphertext, err := base64.StdEncoding.DecodeString(n.Resource.Ciphertext)
-	if err != nil {
-		return nil, err
+	if n.Resource == nil {
+		return nil, fmt.Errorf("notify resource is nil")
 	}
-	c, err := aes.NewCipher([]byte(aesKey))
-	if err != nil {
-		return nil, err
-	}
-	gcm, err := cipher.NewGCM(c)
-	if err != nil {
-		return nil, err
-	}
-	dataBytes, err := gcm.Open(nil, []byte(n.Resource.Nonce), decodedCiphertext, []byte(n.Resource.AssociatedData))
-	if err != nil {
-		return nil, err
-	}
-	return dataBytes, nil
+	return utils.DecryptAEADAES256GCM(aesKey, n.Resource.Nonce, n.Resource.AssociatedData, n.Resource.Ciphertext)
 }
 
 // IsPaymentSuccess 判断是否支付成功

@@ -13,9 +13,12 @@ import (
 // 既能应对微信不定期新增字段，也避免被 types 限死。
 // 如需强类型，可自行在 types 目录下定义结构体传入。
 
-// ProfitSharingOrder 创建分账单。
+// ProfitSharingOrder 创建分账单。body 必须包含非空 out_order_no 作为幂等键。
 // https://pay.weixin.qq.com/wiki/doc/apiv3/apis/chapter8_1_1.shtml
 func (c *Client) ProfitSharingOrder(ctx context.Context, body any) (map[string]any, error) {
+	if err := requireIdempotencyKey(body, "out_order_no"); err != nil {
+		return nil, err
+	}
 	result := map[string]any{}
 	if err := c.postV3(ctx, "/v3/profitsharing/orders", body, &result); err != nil {
 		return nil, err
@@ -37,8 +40,11 @@ func (c *Client) ProfitSharingQueryOrder(ctx context.Context, outOrderNo, transa
 	return result, nil
 }
 
-// ProfitSharingReturn 请求分账回退。
+// ProfitSharingReturn 请求分账回退。body 必须包含非空 out_return_no。
 func (c *Client) ProfitSharingReturn(ctx context.Context, body any) (map[string]any, error) {
+	if err := requireIdempotencyKey(body, "out_return_no"); err != nil {
+		return nil, err
+	}
 	result := map[string]any{}
 	if err := c.postV3(ctx, "/v3/profitsharing/return-orders", body, &result); err != nil {
 		return nil, err
@@ -60,8 +66,11 @@ func (c *Client) ProfitSharingQueryReturn(ctx context.Context, outReturnNo, outO
 	return result, nil
 }
 
-// ProfitSharingUnfreeze 解冻剩余资金。
+// ProfitSharingUnfreeze 解冻剩余资金。body 必须包含非空 out_order_no。
 func (c *Client) ProfitSharingUnfreeze(ctx context.Context, body any) (map[string]any, error) {
+	if err := requireIdempotencyKey(body, "out_order_no"); err != nil {
+		return nil, err
+	}
 	result := map[string]any{}
 	if err := c.postV3(ctx, "/v3/profitsharing/orders/unfreeze", body, &result); err != nil {
 		return nil, err

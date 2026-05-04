@@ -12,8 +12,13 @@ import (
 // This file provides a thin wrapper around the WeChat Pay merchant transfer API.
 // Request and response bodies use map[string]any, consistent with profit_sharing.go.
 
-// CreateTransferBatch 发起商家转账。
+// CreateTransferBatch 发起商家转账。body 必须包含非空 out_batch_no——这是
+// 微信支付为这个端点设计的幂等键,缺失或重复会导致重复打款风险。SDK 在
+// 提交前做最小校验,具体的 batch_no 生成/持久化策略仍由调用方负责。
 func (c *Client) CreateTransferBatch(ctx context.Context, body any) (map[string]any, error) {
+	if err := requireIdempotencyKey(body, "out_batch_no"); err != nil {
+		return nil, err
+	}
 	result := map[string]any{}
 	if err := c.postV3(ctx, "/v3/transfer/batches", body, &result); err != nil {
 		return nil, err

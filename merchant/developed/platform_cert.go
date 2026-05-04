@@ -2,11 +2,8 @@ package pay
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -159,27 +156,10 @@ func (c *Client) verifyResponseSignature(ctx context.Context, header http.Header
 }
 
 // decryptAES256GCM 用 APIv3Key 解密 base64 密文。
+// 实际实现在 utils.DecryptAEADAES256GCM,这里保留薄包装是为了不破坏
+// 包内部调用(platform 证书刷新 + ParseNotification)。
 func decryptAES256GCM(key, nonce, associatedData, ciphertext string) ([]byte, error) {
-	decoded, err := base64.StdEncoding.DecodeString(ciphertext)
-	if err != nil {
-		return nil, err
-	}
-	c, err := aes.NewCipher([]byte(key))
-	if err != nil {
-		return nil, err
-	}
-	gcm, err := cipher.NewGCM(c)
-	if err != nil {
-		return nil, err
-	}
-	plain, err := gcm.Open(nil, []byte(nonce), decoded, []byte(associatedData))
-	if err != nil {
-		return nil, err
-	}
-	if len(plain) == 0 {
-		return nil, errors.New("empty plaintext")
-	}
-	return plain, nil
+	return utils.DecryptAEADAES256GCM(key, nonce, associatedData, ciphertext)
 }
 
 // checkWechatpayTimestamp validates the Wechatpay-Timestamp header against the local clock.
