@@ -85,3 +85,19 @@ func (c *Client) AccessToken(ctx context.Context) (string, error) {
 	}
 	return c.cache.Get(ctx)
 }
+
+// Invalidate evicts the cached access_token so the next request fetches a fresh
+// one. The package's do* helpers call it automatically on a token-expired
+// response (see utils.IsTokenExpired); callers using AccessToken directly may
+// invoke it after observing a 40001/40014/42001/42007 themselves. When a
+// TokenSource is injected, invalidation is forwarded to it if it implements
+// utils.Invalidator. Implements utils.Invalidator.
+func (c *Client) Invalidate() {
+	if c.tokenSource != nil {
+		if inv, ok := c.tokenSource.(utils.Invalidator); ok {
+			inv.Invalidate()
+		}
+		return
+	}
+	c.cache.Invalidate()
+}

@@ -17,21 +17,23 @@ import (
 // 业务 out 类型都"成功 unmarshal"成零值，于是错误被静默吞掉。本函数走
 // DoRequestWithRawResponse + 自己反序列化，强制走一次 errcode 检查。
 func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out any) error {
-	tok, err := c.AccessToken(ctx)
-	if err != nil {
-		return err
-	}
-	q := url.Values{"access_token": {tok}}
-	for k, vs := range extra {
-		q[k] = vs
-	}
-	_, _, respBody, err := c.http.DoRequestWithRawResponse(
-		ctx, http.MethodGet, path, q, nil, nil,
-	)
-	if err != nil {
-		return err
-	}
-	return decodeEnvelope(path, respBody, out)
+	return utils.DoWithTokenRetry(c, func() error {
+		tok, err := c.AccessToken(ctx)
+		if err != nil {
+			return err
+		}
+		q := url.Values{"access_token": {tok}}
+		for k, vs := range extra {
+			q[k] = vs
+		}
+		_, _, respBody, err := c.http.DoRequestWithRawResponse(
+			ctx, http.MethodGet, path, q, nil, nil,
+		)
+		if err != nil {
+			return err
+		}
+		return decodeEnvelope(path, respBody, out)
+	})
 }
 
 // doPost 发送 POST JSON，自动注入 access_token，始终检查 errcode。
@@ -42,23 +44,24 @@ func (c *Client) doGet(ctx context.Context, path string, extra url.Values, out a
 // 实现注：刻意不走 c.http.Post，而是用 DoRequestWithRawResponse + 自己
 // 反序列化，让所有 JSON 解码错误都在本文件统一格式化。
 func (c *Client) doPost(ctx context.Context, path string, body any, out any) error {
-	tok, err := c.AccessToken(ctx)
-	if err != nil {
-		return err
-	}
-	q := url.Values{"access_token": {tok}}
-
 	raw, err := json.Marshal(body)
 	if err != nil {
 		return fmt.Errorf("mini-program: %s: marshal request: %w", path, err)
 	}
-	_, _, respBody, err := c.http.DoRequestWithRawResponse(
-		ctx, http.MethodPost, path, q, raw, nil,
-	)
-	if err != nil {
-		return err
-	}
-	return decodeEnvelope(path, respBody, out)
+	return utils.DoWithTokenRetry(c, func() error {
+		tok, err := c.AccessToken(ctx)
+		if err != nil {
+			return err
+		}
+		q := url.Values{"access_token": {tok}}
+		_, _, respBody, err := c.http.DoRequestWithRawResponse(
+			ctx, http.MethodPost, path, q, raw, nil,
+		)
+		if err != nil {
+			return err
+		}
+		return decodeEnvelope(path, respBody, out)
+	})
 }
 
 // decodeEnvelope delegates to the shared utils.DecodeEnvelope, producing a
@@ -81,24 +84,32 @@ func decodeEnvelope(path string, respBody []byte, out any) error {
 // 成二进制原样返回，调用方直到尝试解码图片才会发现异常。这是"二进制/JSON
 // 同端点"设计的固有代价，不是 bug。
 func (c *Client) doPostRaw(ctx context.Context, path string, body any) ([]byte, error) {
-	tok, err := c.AccessToken(ctx)
-	if err != nil {
-		return nil, err
-	}
-	q := url.Values{"access_token": {tok}}
 	raw, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
-	_, _, respBody, err := c.http.DoRequestWithRawResponse(ctx, http.MethodPost, path, q, raw, nil)
+	var respBody []byte
+	err = utils.DoWithTokenRetry(c, func() error {
+		tok, err := c.AccessToken(ctx)
+		if err != nil {
+			return err
+		}
+		q := url.Values{"access_token": {tok}}
+		_, _, rb, err := c.http.DoRequestWithRawResponse(ctx, http.MethodPost, path, q, raw, nil)
+		if err != nil {
+			return err
+		}
+		if len(rb) > 0 && rb[0] == '{' {
+			var base utils.BaseResp
+			if json.Unmarshal(rb, &base) == nil && base.ErrCode != 0 {
+				return &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
+			}
+		}
+		respBody = rb
+		return nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	if len(respBody) > 0 && respBody[0] == '{' {
-		var base utils.BaseResp
-		if json.Unmarshal(respBody, &base) == nil && base.ErrCode != 0 {
-			return nil, &APIError{ErrCode: base.ErrCode, ErrMsg: base.ErrMsg, Path: path}
-		}
 	}
 	return respBody, nil
 }

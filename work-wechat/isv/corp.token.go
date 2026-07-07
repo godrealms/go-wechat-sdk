@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -26,6 +27,12 @@ func (c *Client) GetCorpToken(ctx context.Context, corpID, permanentCode string)
 type CorpClient struct {
 	parent *Client
 	corpID string
+	// forceRefresh, when set by Invalidate, makes the next AccessToken skip the
+	// Store-cached corp_access_token and re-fetch it via permanent_code. It is
+	// the Store-backed equivalent of utils.TokenCache.Invalidate, and drives the
+	// 40001 self-heal in corp.http.go. Because CorpClient embeds an atomic value
+	// it must never be copied — always use the *CorpClient from Client.CorpClient.
+	forceRefresh atomic.Bool
 }
 
 // CorpClient 工厂。
@@ -37,24 +44,34 @@ func (c *Client) CorpClient(corpID string) *CorpClient {
 func (cc *CorpClient) CorpID() string { return cc.corpID }
 
 // AccessToken 返回企业 corp_access_token(lazy + 双检锁 + 单飞)。
+// 若 Invalidate 置位了 forceRefresh(40001 自愈路径),则跳过缓存快路径,
+// 强制走 refreshLocked 用 permanent_code 换新 token,刷新成功后清除标志。
 func (cc *CorpClient) AccessToken(ctx context.Context) (string, error) {
-	if tok, ok, err := cc.readValidCorpToken(ctx); err != nil {
-		return "", err
-	} else if ok {
-		return tok, nil
+	if !cc.forceRefresh.Load() {
+		if tok, ok, err := cc.readValidCorpToken(ctx); err != nil {
+			return "", err
+		} else if ok {
+			return tok, nil
+		}
 	}
 
 	lock := cc.parent.lockFor(cc.corpID)
 	lock.Lock()
 	defer lock.Unlock()
 
-	if tok, ok, err := cc.readValidCorpToken(ctx); err != nil {
-		return "", err
-	} else if ok {
-		return tok, nil
+	if !cc.forceRefresh.Load() {
+		if tok, ok, err := cc.readValidCorpToken(ctx); err != nil {
+			return "", err
+		} else if ok {
+			return tok, nil
+		}
 	}
 
-	return cc.refreshLocked(ctx)
+	tok, err := cc.refreshLocked(ctx)
+	if err == nil {
+		cc.forceRefresh.Store(false)
+	}
+	return tok, err
 }
 
 // Refresh 强制刷新单个企业的 corp_token(忽略缓存)。
