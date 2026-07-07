@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"crypto/sha256"
+	"crypto/sha1"
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
@@ -49,8 +49,13 @@ func (c *Client) anyPlatformCert() (*x509.Certificate, string) {
 	return nil, ""
 }
 
-// EncryptSensitiveField 用 RSA-OAEP (SHA-256) 把 plaintext 加密成 base64 密文，
-// 适用于微信支付各类敏感字段（进件、分账收款人姓名、退款用户姓名等）。
+// EncryptSensitiveField 用 RSA-OAEP (SHA-1, MGF1-SHA-1) 把 plaintext 加密成
+// base64 密文，适用于微信支付各类敏感字段（进件、分账收款人姓名、退款用户姓名等）。
+//
+// 摘要必须是 SHA-1：微信支付 v3 规定敏感信息加密算法为
+// RSA/ECB/OAEPWithSHA-1AndMGF1Padding，服务端只能用 SHA-1 的 OAEP 解密。用
+// SHA-256 加密的字段微信服务端无法解密，会导致进件、分账/退款收款人姓名等流程
+// 失败；也切勿因此降级为不带 OAEP 的裸 PKCS#1 v1.5（存在 Bleichenbacher 风险）。
 //
 // 传入的 cert 通常来自 Client.PlatformCertForEncrypt 返回值，
 // 对应的序列号必须通过 Wechatpay-Serial 头一并上送。
@@ -62,7 +67,7 @@ func EncryptSensitiveField(cert *x509.Certificate, plaintext string) (string, er
 	if !ok {
 		return "", errors.New("pay: platform cert is not RSA")
 	}
-	cipher, err := rsa.EncryptOAEP(sha256.New(), rand.Reader, pub, []byte(plaintext), nil)
+	cipher, err := rsa.EncryptOAEP(sha1.New(), rand.Reader, pub, []byte(plaintext), nil)
 	if err != nil {
 		return "", fmt.Errorf("pay: rsa oaep encrypt: %w", err)
 	}
