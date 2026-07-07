@@ -100,6 +100,7 @@ type GetTagidListResult struct {
 
 // UserInfo 用户信息
 type UserInfo struct {
+	Resp                   // 内嵌错误封套：GetUserInfo 经 checkEmbeddedResp 检查 errcode，缺失会导致微信业务错误（如 40003 invalid openid）被静默吞掉、返回全零 UserInfo。
 	Subscribe      int     `json:"subscribe"`       // 用户是否订阅该公众号标识，值为0时，代表此用户没有关注该公众号，拉取不到其余信息。
 	Openid         string  `json:"openid"`          // 用户的标识，对当前公众号唯一
 	Language       string  `json:"language"`        // 用户的语言，简体中文为zh_CN
