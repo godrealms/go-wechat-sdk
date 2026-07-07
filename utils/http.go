@@ -111,6 +111,49 @@ type HTTP struct {
 // Option is a functional configuration applied to HTTP during NewHTTP.
 type Option func(*HTTP)
 
+// sdkTransport is the process-wide HTTP transport shared by every SDK client.
+//
+// http.DefaultTransport caps idle connections per host at 2
+// (http.DefaultMaxIdleConnsPerHost). WeChat's API hosts negotiate HTTP/1.1
+// (not HTTP/2), so under concurrency greater than 2 against a single host every
+// extra in-flight request opens a fresh connection, pays a full TLS handshake,
+// and — once done — cannot be pooled, leaking TIME_WAIT sockets that eventually
+// exhaust ephemeral ports. Raising MaxIdleConnsPerHost is the single
+// highest-leverage performance fix for a WeChat SDK.
+//
+// We clone http.DefaultTransport rather than build one from scratch so we keep
+// its Proxy (ProxyFromEnvironment) and tuned DialContext, then raise the
+// idle-pool limits. A *http.Transport keeps its own connection pool and is safe
+// for concurrent use, so a single shared instance lets all product lines reuse
+// connections to the same hosts. Built once at package initialisation.
+var sdkTransport = newSDKTransport()
+
+func newSDKTransport() *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.MaxIdleConns = 100
+	t.MaxIdleConnsPerHost = 64
+	t.IdleConnTimeout = 90 * time.Second
+	t.TLSHandshakeTimeout = 10 * time.Second
+	t.ExpectContinueTimeout = 1 * time.Second
+	t.ForceAttemptHTTP2 = true
+	return t
+}
+
+// NewHTTPClient returns an *http.Client with the given per-request timeout,
+// backed by the shared connection-pool-tuned SDK transport (see sdkTransport).
+// A timeout of zero means no client-level deadline (callers should then rely on
+// per-request context deadlines).
+//
+// Packages that build their own *http.Client instead of using HTTP (e.g.
+// work-wechat/isv) should construct it through this helper so they inherit the
+// tuned pool rather than the under-provisioned http.DefaultTransport.
+func NewHTTPClient(timeout time.Duration) *http.Client {
+	return &http.Client{
+		Timeout:   timeout,
+		Transport: sdkTransport,
+	}
+}
+
 // NewHTTP constructs an HTTP client rooted at baseURL.
 // All relative paths passed to Get/Post/etc. are joined to baseURL.
 // Default timeout is 30 s; override with WithTimeout.
@@ -127,7 +170,7 @@ func NewHTTP(baseURL string, opts ...Option) *HTTP {
 	}
 
 	if h.Client == nil {
-		h.Client = &http.Client{Timeout: h.Timeout}
+		h.Client = NewHTTPClient(h.Timeout)
 	}
 
 	return h

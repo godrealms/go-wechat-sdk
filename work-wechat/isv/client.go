@@ -23,11 +23,14 @@ const (
 	defaultHTTPTimout = 10 * time.Second
 )
 
-// newDefaultHTTPClient returns a private *http.Client with a sane total timeout.
-// Avoids sharing http.DefaultClient (which has no timeout and can leak goroutines
-// on network hangs). Callers can still override with WithHTTPClient.
+// newDefaultHTTPClient returns a private *http.Client with a sane total timeout,
+// backed by the SDK's shared connection-pool-tuned transport (utils.NewHTTPClient
+// / sdkTransport). Avoids sharing http.DefaultClient (which has no timeout and
+// can leak goroutines on network hangs) and http.DefaultTransport (whose
+// MaxIdleConnsPerHost of 2 throttles concurrent WeCom API calls). Callers can
+// still override with WithHTTPClient.
 func newDefaultHTTPClient() *http.Client {
-	return &http.Client{Timeout: defaultHTTPTimout}
+	return utils.NewHTTPClient(defaultHTTPTimout)
 }
 
 // Config holds the WeCom ISV suite credentials.
