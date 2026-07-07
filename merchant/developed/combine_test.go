@@ -15,8 +15,8 @@ func TestClient_CombineTransactionsJsapi_HappyPath(t *testing.T) {
 	}
 
 	resp, err := client.CombineTransactionsJsapi(context.Background(), map[string]any{
-		"combine_appid":      "wxtest",
-		"combine_mchid":      "1900000001",
+		"combine_appid":        "wxtest",
+		"combine_mchid":        "1900000001",
 		"combine_out_trade_no": "OUT_COMBINE_123",
 	})
 	if err != nil {

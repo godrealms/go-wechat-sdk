@@ -94,7 +94,9 @@ func TestHTTP_Get_InvalidJSON(t *testing.T) {
 	defer srv.Close()
 
 	h := newHTTP(t, srv)
-	type Resp struct{ ErrCode int `json:"errcode"` }
+	type Resp struct {
+		ErrCode int `json:"errcode"`
+	}
 	var result Resp
 	err := h.Get(context.Background(), "/bad-json", nil, &result)
 	if err == nil {
@@ -106,8 +108,12 @@ func TestHTTP_Get_InvalidJSON(t *testing.T) {
 }
 
 func TestHTTP_Post_Success(t *testing.T) {
-	type ReqBody struct{ Foo string `json:"foo"` }
-	type Resp struct{ Bar int `json:"bar"` }
+	type ReqBody struct {
+		Foo string `json:"foo"`
+	}
+	type Resp struct {
+		Bar int `json:"bar"`
+	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

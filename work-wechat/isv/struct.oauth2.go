@@ -5,7 +5,7 @@ package isv
 // 注意:官方字段名大小写混用,必须原样映射。
 type UserInfo3rdResp struct {
 	CorpID         string `json:"CorpId"`
-	UserID         string `json:"UserId"`          // 企业成员
+	UserID         string `json:"UserId"` // 企业成员
 	DeviceID       string `json:"DeviceId"`
 	UserTicket     string `json:"user_ticket"`     // 企业成员才返回,用于后续换详情
 	ExpiresIn      int    `json:"expires_in"`      // user_ticket 有效期(秒)

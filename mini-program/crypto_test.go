@@ -69,8 +69,8 @@ func TestDecryptUserData_OpaqueErrors(t *testing.T) {
 	tamperedB64 := base64.StdEncoding.EncodeToString(tamperedBytes)
 
 	cases := []struct {
-		name                       string
-		sessionKey, encrypted, iv  string
+		name                      string
+		sessionKey, encrypted, iv string
 	}{
 		{"bad base64 sessionKey", "!!!bad!!!", encB64, ivB64},
 		{"bad base64 encryptedData", keyB64, "!!!bad!!!", ivB64},

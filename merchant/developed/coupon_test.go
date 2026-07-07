@@ -15,8 +15,8 @@ func TestClient_FavorCreateStock_HappyPath(t *testing.T) {
 	}
 
 	resp, err := client.FavorCreateStock(context.Background(), map[string]any{
-		"stock_name":          "test stock",
-		"belong_merchant":     "1900000001",
+		"stock_name":           "test stock",
+		"belong_merchant":      "1900000001",
 		"available_begin_time": "2026-04-14T00:00:00+08:00",
 	})
 	if err != nil {

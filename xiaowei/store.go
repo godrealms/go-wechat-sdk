@@ -6,7 +6,7 @@ import "context"
 type StoreInfo struct {
 	StoreName   string `json:"store_name,omitempty"`
 	StoreHead   string `json:"store_head_img,omitempty"` // logo URL
-	StoreStatus int    `json:"store_status,omitempty"`  // 1=active, 2=suspended
+	StoreStatus int    `json:"store_status,omitempty"`   // 1=active, 2=suspended
 }
 
 // GetStoreInfoResp is the response from GetStoreInfo.
@@ -51,10 +51,10 @@ func (c *Client) GetKYCStatus(ctx context.Context) (*GetKYCStatusResp, error) {
 
 // SubmitKYCReq is the request to submit KYC (real-name) verification.
 type SubmitKYCReq struct {
-	RealName    string `json:"real_name"`          // legal name of the individual merchant
-	IDCardNo    string `json:"id_card_no"`         // national ID card number
-	IDCardFront string `json:"id_card_front_img"`  // media_id of front photo
-	IDCardBack  string `json:"id_card_back_img"`   // media_id of back photo
+	RealName    string `json:"real_name"`         // legal name of the individual merchant
+	IDCardNo    string `json:"id_card_no"`        // national ID card number
+	IDCardFront string `json:"id_card_front_img"` // media_id of front photo
+	IDCardBack  string `json:"id_card_back_img"`  // media_id of back photo
 }
 
 // SubmitKYC submits the merchant's real-name verification (KYC) documents.

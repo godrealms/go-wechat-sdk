@@ -77,4 +77,3 @@ func (c *Client) RefundsCombine(ctx context.Context, body any) (map[string]any, 
 	}
 	return result, nil
 }
-

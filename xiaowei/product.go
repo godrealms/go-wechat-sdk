@@ -9,7 +9,7 @@ import (
 type MicroProduct struct {
 	ProductID string   `json:"product_id,omitempty"`
 	Title     string   `json:"title"`
-	Price     int64    `json:"price"`            // price in fen
+	Price     int64    `json:"price"` // price in fen
 	Stock     int      `json:"stock,omitempty"`
 	ImgURLs   []string `json:"img_urls,omitempty"`
 }

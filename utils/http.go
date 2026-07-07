@@ -29,8 +29,8 @@ var redactedQueryKeys = map[string]struct{}{
 	"app_secret":          {},
 	"component_appsecret": {},
 	"suite_secret":        {},
-	"code":                {},      // OAuth authorization code (single-use but credential-equivalent)
-	"access_token":        {},      // short-lived but still a bearer credential
+	"code":                {}, // OAuth authorization code (single-use but credential-equivalent)
+	"access_token":        {}, // short-lived but still a bearer credential
 	"refresh_token":       {},
 }
 

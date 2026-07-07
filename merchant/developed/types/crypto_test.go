@@ -57,7 +57,7 @@ func TestTransactionsJsapi_GenerateSignature_Success(t *testing.T) {
 		TimeStamp: "1609459200",
 		NonceStr:  "abc123",
 		Package:   "prepay_id=test_prepay_id",
-		SignType:   "RSA",
+		SignType:  "RSA",
 	}
 	err := j.GenerateSignature("wx_app_id", key)
 	if err != nil {
