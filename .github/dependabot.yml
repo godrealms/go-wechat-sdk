@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Keep the pinned GitHub Actions (checkout, setup-go, ...) up to date and
+  # security-tracked. This is the highest-value ecosystem here since the SDK
+  # itself has zero third-party Go dependencies.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # Surfaces Go toolchain / go.mod directive updates. Low volume given the
+  # zero-dependency go.mod, but flags Go version bumps worth adopting.
+  - package-ecosystem: "gomod"
+    directory: "/"
+    schedule:
+      interval: "weekly"

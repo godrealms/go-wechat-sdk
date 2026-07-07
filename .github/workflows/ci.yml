@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    # To broaden coverage later, enable this matrix (and set go-version below to
+    # ${{ matrix.go }}):
+    #   strategy:
+    #     fail-fast: false
+    #     matrix:
+    #       go: ["1.23", "1.24"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+
+      - name: gofmt (fail on unformatted files)
+        run: |
+          # Only tracked .go files — immune to any stray untracked cruft.
+          unformatted="$(git ls-files '*.go' | xargs gofmt -l)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt found unformatted files:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: build
+        run: go build ./...
+
+      - name: test (race + coverage)
+        run: go test -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage.out
+
+  govulncheck:
+    runs-on: ubuntu-latest
+    # Non-blocking to start: reports Go stdlib CVEs (the SDK has zero third-party
+    # deps, so stdlib is the whole surface) without failing PRs, since findings
+    # here depend on the runner's Go patch level, not on this repo's code. Once
+    # you pin a patched toolchain, drop continue-on-error to make it a hard gate.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+      - name: govulncheck (stdlib CVE tracking)
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
+  lint:
+    runs-on: ubuntu-latest
+    # Non-blocking to start: collects a golangci-lint baseline without failing
+    # PRs. Remove continue-on-error to make it a hard gate once the baseline is
+    # clean.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache: true
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
