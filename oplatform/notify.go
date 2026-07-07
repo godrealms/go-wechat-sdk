@@ -3,10 +3,11 @@ package oplatform
 import (
 	"encoding/xml"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 // componentEnvelope 外层加密信封。
@@ -49,9 +50,11 @@ func (c *Client) ParseNotify(r *http.Request, rawBody []byte) (*ComponentNotify,
 	}
 
 	if rawBody == nil {
-		body, err := io.ReadAll(r.Body)
+		// Cap the body before parsing: this handler is a public webhook, so an
+		// unauthenticated caller could otherwise force unbounded reads/XML parsing.
+		body, err := utils.ReadNotifyBody(r, 0)
 		if err != nil {
-			return nil, fmt.Errorf("oplatform: read body: %w", err)
+			return nil, fmt.Errorf("oplatform: %w", err)
 		}
 		_ = r.Body.Close()
 		rawBody = body

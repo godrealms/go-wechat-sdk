@@ -4,11 +4,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
 
+	"github.com/godrealms/go-wechat-sdk/utils"
 	"github.com/godrealms/go-wechat-sdk/utils/wxcrypto"
 )
 
@@ -70,9 +70,11 @@ func ParseNotify(r *http.Request, crypto *MsgCrypto) ([]byte, error) {
 		return []byte(q.Get("echostr")), nil
 	}
 
-	body, err := io.ReadAll(r.Body)
+	// Cap the body before parsing: this handler is a public webhook, so an
+	// unauthenticated caller could otherwise force unbounded reads/XML parsing.
+	body, err := utils.ReadNotifyBody(r, 0)
 	if err != nil {
-		return nil, fmt.Errorf("offiaccount: read body: %w", err)
+		return nil, fmt.Errorf("offiaccount: %w", err)
 	}
 	_ = r.Body.Close()
 
@@ -120,9 +122,12 @@ func ParseNotifyPlaintext(r *http.Request, token string) ([]byte, error) {
 	if r.Method == http.MethodGet {
 		return []byte(q.Get("echostr")), nil
 	}
-	body, err := io.ReadAll(r.Body)
+	// The plaintext-mode signature covers only token/timestamp/nonce, not the
+	// body, so a captured-and-replayed valid signature could still carry a huge
+	// body — cap it.
+	body, err := utils.ReadNotifyBody(r, 0)
 	if err != nil {
-		return nil, fmt.Errorf("offiaccount: read body: %w", err)
+		return nil, fmt.Errorf("offiaccount: %w", err)
 	}
 	_ = r.Body.Close()
 	return body, nil

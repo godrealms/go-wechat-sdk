@@ -4,10 +4,11 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/godrealms/go-wechat-sdk/utils"
 )
 
 // componentEnvelope 是外层加密信封 XML。
@@ -83,9 +84,12 @@ func (c *Client) decryptNotify(r *http.Request) ([]byte, error) {
 		return nil, err
 	}
 
-	raw, err := io.ReadAll(r.Body)
+	// Cap the body before parsing: this handler is a public webhook, so an
+	// unauthenticated caller could otherwise force unbounded reads/XML parsing.
+	// Timestamp is already validated above; the signature is checked below.
+	raw, err := utils.ReadNotifyBody(r, 0)
 	if err != nil {
-		return nil, fmt.Errorf("isv: read body: %w", err)
+		return nil, fmt.Errorf("isv: %w", err)
 	}
 	var env componentEnvelope
 	if err := xml.Unmarshal(raw, &env); err != nil {
@@ -209,7 +213,7 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 				baseEvent: base, AuthCorpID: inner.AuthCorpID,
 				ChangeType: inner.ChangeType, UserID: inner.UserID,
 				ExternalUserID: inner.ExternalUserID,
-				State: inner.State, WelcomeCode: inner.WelcomeCode,
+				State:          inner.State, WelcomeCode: inner.WelcomeCode,
 			}, nil
 		case "edit_external_contact":
 			return &ExtContactEditEvent{
@@ -234,7 +238,7 @@ func (c *Client) ParseNotify(r *http.Request) (Event, error) {
 				baseEvent: base, AuthCorpID: inner.AuthCorpID,
 				ChangeType: inner.ChangeType, UserID: inner.UserID,
 				ExternalUserID: inner.ExternalUserID,
-				State: inner.State, WelcomeCode: inner.WelcomeCode,
+				State:          inner.State, WelcomeCode: inner.WelcomeCode,
 			}, nil
 		default:
 			return &RawEvent{baseEvent: base, InfoType: inner.InfoType, RawXML: string(plain)}, nil
