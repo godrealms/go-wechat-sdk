@@ -18,7 +18,7 @@ jobs:
     #     matrix:
     #       go: ["1.23", "1.24"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
@@ -58,7 +58,7 @@ jobs:
     # you pin a patched toolchain, drop continue-on-error to make it a hard gate.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
@@ -75,7 +75,7 @@ jobs:
     # clean.
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
