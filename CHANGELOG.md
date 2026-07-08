@@ -12,6 +12,36 @@ them before upgrading.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-07-08
+
+### Added
+
+- `utils.IsTokenExpired` and `utils.DoWithTokenRetry` helpers, plus an
+  `Invalidate()` method on the six flat-package Clients (channels,
+  mini-program, mini-game, mini-store, aispeech, xiaowei) and the ISV
+  `CorpClient`. These back the expired-token self-heal described under
+  **Changed**. (audit P1-2)
+- `utils.NewHTTPClient(timeout)` for constructing an `*http.Client` backed by
+  the shared, connection-pool-tuned SDK transport.
+
+### Changed
+
+- Relaxed the `go` directive from `go 1.23.1` to `go 1.23`. Pinning the patch
+  version over-constrained downstream modules and forced govulncheck onto a
+  specific toolchain patch; the minor version is the correct granularity for a
+  library. (audit M3)
+- Every SDK HTTP client now shares one connection-pool-tuned transport
+  (`MaxIdleConnsPerHost` raised from the stdlib default of 2 to 64,
+  `MaxIdleConns=100`). Clients previously fell back to `http.DefaultTransport`,
+  whose 2-idle-connection-per-host cap throttled concurrent calls to WeChat's
+  HTTP/1.1 API hosts into a fresh TLS handshake per request. (audit P1-1)
+- Expired-`access_token` self-heal (errcodes 40001/40014/42001/42007) now
+  covers every product line. A stale-token response transparently invalidates
+  the cached token and retries once; previously only `offiaccount` did this,
+  leaving the six flat packages and `work-wechat/isv` to fail every call for up
+  to ~2h after an early token expiry under multi-instance deployment. (audit
+  P1-2)
+
 ## [0.1.0] - 2026-07-08
 
 First tagged release. Prior to this tag, consumers could only depend on Go
@@ -71,5 +101,6 @@ an earlier pseudo-version is aware of them.
 - URL credential redaction (`utils.RedactURL`) and a default 10 MiB response
   body cap are applied across the shared HTTP client.
 
-[Unreleased]: https://github.com/godrealms/go-wechat-sdk/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/godrealms/go-wechat-sdk/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/godrealms/go-wechat-sdk/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/godrealms/go-wechat-sdk/releases/tag/v0.1.0
